@@ -44,7 +44,8 @@ def initialize_task(config, env, init_sim=True):
     from omniisaacgymenvs.tasks.quadcopter import QuadcopterTask
     from omniisaacgymenvs.tasks.shadow_hand import ShadowHandTask
     from omniisaacgymenvs.tasks.crazyflie import CrazyflieTask
-    
+    from omniisaacgymenvs.tasks.trial_task import TrialTask
+
     # Mappings from strings to environments
     task_map = {
         "AllegroHand": AllegroHandTask,
@@ -62,13 +63,17 @@ def initialize_task(config, env, init_sim=True):
         "ShadowHand": ShadowHandTask,
         "ShadowHandOpenAI_FF": ShadowHandTask,
         "ShadowHandOpenAI_LSTM": ShadowHandTask,
+        "TrialTask": TrialTask,
     }
 
     cfg = sim_config.config
-    task = task_map[cfg["task_name"]](
-        name=cfg["task_name"], sim_config=sim_config, env=env
-    )
+    task = task_map[cfg["task_name"]](name=cfg["task_name"],
+                                      sim_config=sim_config,
+                                      env=env)
 
-    env.set_task(task=task, sim_params=sim_config.get_physics_params(), backend="torch", init_sim=init_sim)
+    env.set_task(task=task,
+                 sim_params=sim_config.get_physics_params(),
+                 backend="torch",
+                 init_sim=init_sim)
 
     return task

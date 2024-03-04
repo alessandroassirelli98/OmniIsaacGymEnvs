@@ -88,3 +88,22 @@ class VecEnvRLGames(VecEnvBase):
         obs_dict, _, _, _ = self.step(actions)
 
         return obs_dict
+    
+    def start_logging(self, save_path):
+        self.data_logger = self._world.get_data_logger() # a DataLogger object is defined in the World by default
+        self._save_path = save_path
+        robot = self._task.robot_to_log
+
+        # A data logging function is called at every time step index if the data logger is started already.
+        # We define the function here. The tasks and scene are passed to this function when called.
+        def frame_logging_func(tasks, scene):
+            # return always a dict
+            return {
+                "joint_positions": robot.get_joint_positions().tolist(), # save data as lists since its a json file.
+                "applied_joint_positions": robot.get_applied_actions().joint_positions.tolist(),
+            }
+        self.data_logger.add_data_frame_logging_func(frame_logging_func)
+        self.data_logger.start()
+
+    def save_log(self):
+        self.data_logger.save(self._save_path)

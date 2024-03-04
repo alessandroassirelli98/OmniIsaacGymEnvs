@@ -28,6 +28,7 @@
 
 
 import numpy as np
+import keyboard
 import torch
 import hydra
 from omegaconf import DictConfig
@@ -54,16 +55,27 @@ def parse_hydra_configs(cfg: DictConfig):
     cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
     cfg_dict['seed'] = cfg.seed
     task = initialize_task(cfg_dict, env)
-
+    env.start_logging("C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/logs/logs.json")
+    t = 0
     while env._simulation_app.is_running():
         if env._world.is_playing():
             if env._world.current_time_step_index == 0:
                 env._world.reset(soft=True)
-            actions = torch.tensor(np.array([env.action_space.sample() for _ in range(env.num_envs)]), device=task.rl_device)
+            t += 1/120
+            omega = 2*np.pi/10
+            action = np.zeros_like(env.action_space.sample())
+            action[0] = np.sin(omega * t)
+            # actions = torch.tensor(np.array([env.action_space.sample() for _ in range(env.num_envs)]), device=task.rl_device)
+            actions = torch.tensor(np.array([action for _ in range(env.num_envs)]), device=task.rl_device)
             env._task.pre_physics_step(actions)
             env._world.step(render=render)
             env.sim_frame_count += 1
             env._task.post_physics_step()
+
+            if keyboard.is_pressed('q'):
+                env.save_log()
+                break
+
         else:
             env._world.step(render=render)
 
