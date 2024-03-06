@@ -5,9 +5,9 @@ physics_engine: ${..physics_engine}
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: 1
+  numEnvs: ${resolve_default:4096,${...num_envs}}
   envSpacing: 3.0
-  episodeLength: 500
+  episodeLength: 200
   enableDebugVis: False
 
   clipObservations: 5.0
@@ -21,7 +21,7 @@ env:
   numProps: 4
   aggregateMode: 3
 
-  actionScale: 20.
+  actionScale: 2.5
   dofVelocityScale: 0.1
   distRewardScale: 2.0
   rotRewardScale: 0.5
@@ -89,7 +89,7 @@ sim:
     # per-body
     density: -1
     max_depenetration_velocity: 1000.0
-  cube:
+  sphere:
     # -1 to use default values
     override_usd_defaults: False
     enable_self_collisions: False
@@ -101,7 +101,8 @@ sim:
     sleep_threshold: 0.0
     stabilization_threshold: 0.001
     # per-body
-    density: -1
+    density: 200
+    mass: 1
     max_depenetration_velocity: 1000.0
 
 

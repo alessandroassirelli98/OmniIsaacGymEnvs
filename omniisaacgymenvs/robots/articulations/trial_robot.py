@@ -48,7 +48,7 @@ class FrankaSimple(Robot):
         drive_type = ["angular"] * 7
         default_dof_pos = [math.degrees(x) for x in [0.0, -1.0, 0.0, -2.2, 0.0, 2.4, 0.8]]
         stiffness = [400*np.pi/180] * 7
-        damping = [10*np.pi/180] * 7
+        damping = [80*np.pi/180] * 7
         max_force = [87, 87, 87, 87, 12, 12, 12]
         max_velocity = [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]]
 

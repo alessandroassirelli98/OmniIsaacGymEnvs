@@ -363,7 +363,6 @@ class FrankaCabinetTask(RLTask):
         num_envs, dist_reward_scale, rot_reward_scale, around_handle_reward_scale, open_reward_scale,
         finger_dist_reward_scale, action_penalty_scale, distX_offset, max_episode_length, joint_positions, finger_close_reward_scale
     ):
-        # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, int, float, float, float, float, float, float, float, float, Tensor) -> Tuple[Tensor, Tensor]
 
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drawer_grasp_pos, p=2, dim=-1)
