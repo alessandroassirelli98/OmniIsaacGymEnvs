@@ -45,6 +45,8 @@ def initialize_task(config, env, init_sim=True):
     from omniisaacgymenvs.tasks.shadow_hand import ShadowHandTask
     from omniisaacgymenvs.tasks.crazyflie import CrazyflieTask
     from omniisaacgymenvs.tasks.trial_task import TrialTask
+    from omniisaacgymenvs.tasks.ball_picking import BallPicking
+    from omniisaacgymenvs.tasks.tekken_task import TekkenTask
 
     # Mappings from strings to environments
     task_map = {
@@ -64,6 +66,8 @@ def initialize_task(config, env, init_sim=True):
         "ShadowHandOpenAI_FF": ShadowHandTask,
         "ShadowHandOpenAI_LSTM": ShadowHandTask,
         "TrialTask": TrialTask,
+        "BallPicking": BallPicking,
+        "Tekken": TekkenTask,
     }
 
     cfg = sim_config.config
