@@ -57,6 +57,7 @@ class Tekken(Robot):
             "Right_Little_Phaprox/Right_Little_2",
             "Right_Thumb_Phaprox/Right_Thumb_2",
 
+            # These joints are coupled
             "Right_Index_Phamed/Right_Index_3",
             "Right_Middle_Phamed/Right_Middle_3",
             "Right_Ring_Phamed/Right_Ring_3",
@@ -67,8 +68,8 @@ class Tekken(Robot):
 
         drive_type = ["angular"] * 20
         default_dof_pos = [0. for _ in range(20)]
-        stiffness = [1*np.pi/180] * 20
-        damping = [0.5*np.pi/180] * 20
+        stiffness = [0.1] * 20
+        damping = [0.005] * 20
         max_force = [1. for _ in range(20)]
         max_velocity = [2.1 for _ in range(20)]
 

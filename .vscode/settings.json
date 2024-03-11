@@ -703,5 +703,8 @@
         "C:/Users/ows-user/AppData/Local/ov/pkg/isaac_sim-2022.2.1/kit/kernel/py",
         "C:/Users/ows-user/AppData/Local/ov/pkg/isaac_sim-2022.2.1/kit/plugins/bindings-python",
         "C:/Users/ows-user/AppData/Local/ov/pkg/isaac_sim-2022.2.1/kit/python/lib/python3.10/site-packages",
-    ]
+    ],
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    }
 }

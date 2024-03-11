@@ -92,16 +92,19 @@ class VecEnvRLGames(VecEnvBase):
     def start_logging(self, save_path):
         self.data_logger = self._world.get_data_logger() # a DataLogger object is defined in the World by default
         self._save_path = save_path
-        robot = self._task.robot_to_log
+        robots = self._task.robots_to_log
 
         # A data logging function is called at every time step index if the data logger is started already.
         # We define the function here. The tasks and scene are passed to this function when called.
         def frame_logging_func(tasks, scene):
             # return always a dict
-            return {
-                "joint_positions": robot.get_joint_positions().tolist(), # save data as lists since its a json file.
-                "applied_joint_positions": robot.get_applied_actions().joint_positions.tolist(),
-            }
+            robot_dict = {}
+            for robot in robots:
+                robot_dict[robot.name]= {"joint_positions" : robot.get_joint_positions().tolist(),
+                                         "applied_joint_positions": robot.get_applied_actions().joint_positions.tolist()
+                                         }
+            return  robot_dict
+        
         self.data_logger.add_data_frame_logging_func(frame_logging_func)
         self.data_logger.start()
 
