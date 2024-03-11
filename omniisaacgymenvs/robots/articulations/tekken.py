@@ -58,11 +58,11 @@ class Tekken(Robot):
             "Right_Thumb_Phaprox/Right_Thumb_2",
 
             # These joints are coupled
-            "Right_Index_Phamed/Right_Index_3",
-            "Right_Middle_Phamed/Right_Middle_3",
-            "Right_Ring_Phamed/Right_Ring_3",
-            "Right_Little_Phamed/Right_Little_3",
-            "Right_Thumb_Phamed/Right_Thumb_3",
+            # "Right_Index_Phamed/Right_Index_3",
+            # "Right_Middle_Phamed/Right_Middle_3",
+            # "Right_Ring_Phamed/Right_Ring_3",
+            # "Right_Little_Phamed/Right_Little_3",
+            # "Right_Thumb_Phamed/Right_Thumb_3",
 
         ]
 

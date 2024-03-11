@@ -95,7 +95,6 @@ class TekkenTask(RLTask):
         #     self.reset_idx(reset_env_ids)
 
         self.actions = actions.clone().to(self._device)
-        self.copule_dofs()
         targets = self.tekken_dof_targets + self.dt * self.actions * self.action_scale
         self.tekken_dof_targets[:] = tensor_clamp(targets, self.tekken_dof_lower_limits, self.tekken_dof_upper_limits)
         env_ids_int32 = torch.arange(self._tekkens_cad.count, dtype=torch.int32, device=self._device)
