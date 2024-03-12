@@ -68,10 +68,12 @@ class Tekken(Robot):
 
         drive_type = ["angular"] * 20
         default_dof_pos = [0. for _ in range(20)]
-        stiffness = [0.1] * 20
-        damping = [0.005] * 20
-        max_force = [1. for _ in range(20)]
-        max_velocity = [2.1 for _ in range(20)]
+        stiffness = [0.05, 0.05, 0.05, 0.05] * 5
+        damping = [0.0009375, 0.000625, 0.000625, 0.000625] * 5
+        max_force = [10, 1.5, 0.6, 0.3] * 5
+        max_velocity = [3.14 for _ in range(20)]
+
+        # STICK WITH THE URDF DRIVE PARAMETERS
 
         for i, dof in enumerate(dof_paths):
             set_drive(

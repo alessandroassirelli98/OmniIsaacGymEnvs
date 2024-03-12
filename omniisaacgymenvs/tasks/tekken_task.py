@@ -12,6 +12,7 @@ from omni.isaac.core.utils.stage import add_reference_to_stage
 from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad
 from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, FixedSphere
 from omniisaacgymenvs.robots.articulations.tekken import Tekken
+from omniisaacgymenvs.robots.articulations.views.tekken_view import TekkenView
 
 
 
@@ -34,7 +35,7 @@ class TekkenTask(RLTask):
         self.dt = self._task_cfg["sim"]["dt"]
 
         self._num_observations = 14 + 3 + 3
-        self._num_actions = 20
+        self._num_actions = 15
         self.action_space = spaces.Box(np.zeros(self._num_actions), np.ones(self._num_actions) * 1.0)
 
         RLTask.__init__(self, name, env)
@@ -45,24 +46,12 @@ class TekkenTask(RLTask):
         self.get_tekken(name="hithand_cad",
                         usd_path="C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/tekken_cad/tekken_cad.usd",
                         translation=self.hithand_cad_translation)
-        self.get_tekken(name="hithand_old",
-                        usd_path="C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/tekken_standard/tekken_standard.usd",
-                        translation=self.hithand_old_translation)
 
         super().set_up_scene(scene)
-        self._tekkens_cad = ArticulationView(
-            prim_paths_expr="/World/envs/.*/hithand_cad",
-            name="tekken_cad_view",
-            reset_xform_properties=False)
-        self.robots_to_log.append(self._tekkens_cad) # Robot that gets logged by the logger
-        scene.add(self._tekkens_cad)  # add view to scene for initialization
 
-        self._tekkens_old = ArticulationView(
-            prim_paths_expr="/World/envs/.*/hithand_old",
-            name="tekken_old_view",
-            reset_xform_properties=False)
-        self.robots_to_log.append(self._tekkens_old) # Robot that gets logged by the logger
-        scene.add(self._tekkens_old)  # add view to scene for initialization
+        self._tekkens = TekkenView(prim_paths_expr="/World/envs/.*/hithand_cad", name="tekken_view")
+        self.robots_to_log.append(self._tekkens) # Robot that gets logged by the logger
+        scene.add(self._tekkens)  # add view to scene for initialization
 
         
     def get_tekken(self, name, usd_path, translation):
@@ -75,12 +64,17 @@ class TekkenTask(RLTask):
         
     def post_reset(self):
         # implement any logic required for simulation on-start here
-        self.num_tekken_dofs = self._tekkens_cad.num_dof
+        self.num_tekken_dofs = self._tekkens.num_dof
+        self.actuated_dof_indices = self._tekkens.actuated_dof_indices
         self.tekken_dof_targets = torch.zeros((self.num_envs, self.num_tekken_dofs), device=self._device)
-        dof_limits = self._tekkens_cad.get_dof_limits()
+        dof_limits = self._tekkens.get_dof_limits()
         self.tekken_dof_lower_limits = dof_limits[0, :, 0].to(device=self._device)
         self.tekken_dof_upper_limits = dof_limits[0, :, 1].to(device=self._device)
-        
+
+        self._tekkens.set_joint_positions(self.tekken_dof_targets)
+        self._tekkens.set_joint_velocities(torch.zeros((self.num_envs, self.num_tekken_dofs), device=self._device))
+        self._tekkens.set_joint_position_targets(self.tekken_dof_targets)
+        pass
         
     def init_franka(self):
         pass
@@ -95,11 +89,10 @@ class TekkenTask(RLTask):
         #     self.reset_idx(reset_env_ids)
 
         self.actions = actions.clone().to(self._device)
-        targets = self.tekken_dof_targets + self.dt * self.actions * self.action_scale
-        self.tekken_dof_targets[:] = tensor_clamp(targets, self.tekken_dof_lower_limits, self.tekken_dof_upper_limits)
-        env_ids_int32 = torch.arange(self._tekkens_cad.count, dtype=torch.int32, device=self._device)
-        self._tekkens_cad.set_joint_position_targets(self.tekken_dof_targets, indices=env_ids_int32)
-        self._tekkens_old.set_joint_position_targets(self.tekken_dof_targets, indices=env_ids_int32)
+        targets = self.tekken_dof_targets[:, self.actuated_dof_indices] + self.dt * self.actions * self.action_scale
+        self.tekken_dof_targets[:, self.actuated_dof_indices] = targets
+        env_ids_int32 = torch.arange(self._tekkens.count, dtype=torch.int32, device=self._device)
+        self._tekkens.set_joint_position_targets(self.tekken_dof_targets, indices=env_ids_int32)
 
 
         
