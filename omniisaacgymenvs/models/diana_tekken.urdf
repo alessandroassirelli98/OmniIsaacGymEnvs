@@ -4,6 +4,46 @@
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
   name="diana_v2">
+     <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+  <material name="lightblue">
+    <color rgba="0.0 0.0 1.0 1.0"/>
+  </material>
+
+  <material name="random">
+    <color rgba="0.7 0.2 1.0 1.0"/>
+  </material>
+
+  <material name="grey">
+    <color rgba="0.66 0.66 0.66 1.0"/>
+  </material>
+
+  <material name="purple">
+    <color rgba="0.929 0.176 0.918 1.0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="0.969 0.459 0.18 1.0"/>
+  </material>
+
+  <material name="dark_pink">
+    <color rgba="0.69 0.047 0.463 1.0"/>
+  </material>
+
+  <material name="dark_yellow">
+    <color rgba="1 0.87 0 1.0"/>
+  </material>
+
+  <material name="lime">
+    <color rgba="0.749 1.0 0.0 1.0"/>
+  </material>
+
+  <material name="diyyu">
+    <color rgba="0.255 0.278 0.502 1.0"/>
+  </material>
+
   <link
     name="base">
     <inertial>
@@ -29,9 +69,7 @@
           filename="./meshes/visual/obj/base.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.796078431372549 0.823529411764706 0.937254901960784 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -69,9 +107,7 @@
           filename="./meshes/visual/obj/link_1.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.796078431372549 0.823529411764706 0.937254901960784 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -127,9 +163,7 @@
           filename="./meshes/visual/obj/link_2.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.980392156862745 0.980392156862745 0.470588235294118 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -185,9 +219,7 @@
           filename="./meshes/visual/obj/link_3.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -243,9 +275,7 @@
           filename="./meshes/visual/obj/link_4.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -301,9 +331,7 @@
           filename="./meshes/visual/obj/link_5.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -359,9 +387,7 @@
           filename="./meshes/visual/obj/link_6.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.980392156862745 0.980392156862745 0.470588235294118 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -417,9 +443,7 @@
           filename="./meshes/visual/obj/link_7.obj" />
       </geometry>
       <material
-        name="">
-        <color
-          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+        name="grey">
       </material>
     </visual>
     <collision>
@@ -468,7 +492,7 @@
       <geometry>
         <mesh filename="./meshes/visual/palm/hit-hand-2-palm-right.obj"/>
       </geometry>
-      <material name="grey"/>
+      <material name="white"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -495,7 +519,7 @@
       <geometry>
         <mesh filename="./meshes/visual/palm/hit-hand-2-palm-right.obj"/>
       </geometry>
-      <material name="grey"/>
+      <material name="diyyu"/>
     </visual>
     <collision concave="yes">
       <origin rpy="-1.57 0 0" xyz="0 0 0"/>
@@ -566,7 +590,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phaprox.stl"/>
       </geometry>
-      <material name="lightblue"/>
+      <material name="dark_pink"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -626,7 +650,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phadist.stl"/>
       </geometry>
-      <material name="random"/>
+      <material name="white"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -686,7 +710,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phaprox.stl"/>
       </geometry>
-      <material name="lightblue"/>
+      <material name="dark_pink"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -746,7 +770,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phadist.stl"/>
       </geometry>
-      <material name="random"/>
+      <material name="dwhite"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -806,7 +830,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phaprox.stl"/>
       </geometry>
-      <material name="lightblue"/>
+      <material name="dark_pink"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -866,7 +890,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phadist.stl"/>
       </geometry>
-      <material name="random"/>
+      <material name="dwhite"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -926,7 +950,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phaprox.stl"/>
       </geometry>
-      <material name="lightblue"/>
+      <material name="dark_pink"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -986,7 +1010,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phadist.stl"/>
       </geometry>
-      <material name="random"/>
+      <material name="dwhite"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1046,7 +1070,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phaprox.stl"/>
       </geometry>
-      <material name="lightblue"/>
+      <material name="dark_pink"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1106,7 +1130,7 @@
       <geometry>
         <mesh filename="./meshes/visual/finger/hit-hand-2-finger-phadist.stl"/>
       </geometry>
-      <material name="random"/>
+      <material name="dwhite"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>

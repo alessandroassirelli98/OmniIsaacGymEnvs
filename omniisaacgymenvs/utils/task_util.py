@@ -47,6 +47,7 @@ def initialize_task(config, env, init_sim=True):
     from omniisaacgymenvs.tasks.trial_task import TrialTask
     from omniisaacgymenvs.tasks.ball_picking import BallPicking
     from omniisaacgymenvs.tasks.tekken_task import TekkenTask
+    from omniisaacgymenvs.tasks.diana_tekken_task import DianaTekkenTask
 
     # Mappings from strings to environments
     task_map = {
@@ -68,6 +69,7 @@ def initialize_task(config, env, init_sim=True):
         "TrialTask": TrialTask,
         "BallPicking": BallPicking,
         "Tekken": TekkenTask,
+        "DianaTekken": DianaTekkenTask,
     }
 
     cfg = sim_config.config
