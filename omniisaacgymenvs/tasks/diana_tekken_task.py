@@ -54,6 +54,8 @@ class DianaTekkenTask(RLTask):
         self.robots_to_log.append(self.diana_tekkens) # Robot that gets logged by the logger
         scene.add(self.diana_tekkens)  # add view to scene for initialization
 
+        scene.add(self.diana_tekkens._palm_centers)
+
         self._spheres = RigidPrimView(prim_paths_expr="/World/envs/.*/sphere", name="sphere_view", reset_xform_properties=False)
         scene.add(self._spheres)
         
@@ -143,7 +145,7 @@ class DianaTekkenTask(RLTask):
     def get_observations(self) -> dict:
         dof_pos = self.diana_tekkens.get_joint_positions(clone=False)
         dof_vel = self.diana_tekkens.get_joint_velocities(clone=False)
-        hand_pos_world,  self.hand_rot = self.diana_tekkens._palm_center.get_world_poses(clone=False)
+        hand_pos_world,  self.hand_rot = self.diana_tekkens._palm_centers.get_world_poses(clone=False)
         target_pos_world, self.target_rot = self._spheres.get_world_poses(clone=False)
 
         self.hand_pos = hand_pos_world - self._env_pos
@@ -206,6 +208,7 @@ class DianaTekkenTask(RLTask):
 
         reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         self.rew_buf[:] = reward
+        # pass
 
     def is_done(self) -> None:
         # implement logic to update dones/reset buffer
