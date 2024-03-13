@@ -47,7 +47,7 @@ class DianaTekkenView(ArticulationView):
             reset_xform_properties=False
         )
 
-        self._palm_center = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/palm_link_hithand", name="palm_centers_view", reset_xform_properties=False)
+        self._palm_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/palm_link_hithand", name="palm_centers_view", reset_xform_properties=False)
 
 
     @property

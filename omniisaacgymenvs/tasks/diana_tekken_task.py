@@ -43,7 +43,7 @@ class DianaTekkenTask(RLTask):
     def set_up_scene(self, scene) -> None:
         # implement environment setup here
         self.get_tekken(name="diana",
-                        usd_path="C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd",
+                        usd_path="C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken_simplified/diana_tekken_simplified.usd",
                         translation=self.hithand_cad_translation)
         self.get_cube()
         self.get_target_sphere()
@@ -104,7 +104,7 @@ class DianaTekkenTask(RLTask):
         self.num_diana_tekken_dofs = self.diana_tekkens.num_dof
         self.actuated_dof_indices = self.diana_tekkens.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
-        self.default_dof_pos = torch.zeros(self.num_diana_tekken_dofs, device=self._device)
+        self.default_dof_pos = torch.tensor([0., -0.4,  0., 1.3, 0., -1.3, 0.] + [0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self.diana_tekken_dof_targets = pos
@@ -128,9 +128,9 @@ class DianaTekkenTask(RLTask):
         if not self._env._world.is_playing():
             return
         
-        # reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
-        # if len(reset_env_ids) > 0:
-        #     self.reset_idx(reset_env_ids)
+        reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
+        if len(reset_env_ids) > 0:
+            self.reset_idx(reset_env_ids)
 
         self.actions = actions.clone().to(self._device)
         targets = self.diana_tekken_dof_targets[:, self.actuated_dof_indices] + self.dt * self.actions * self.action_scale
@@ -193,7 +193,6 @@ class DianaTekkenTask(RLTask):
         dof_pos = torch.zeros((num_indices, 3), device=self._device)
         dof_pos[:, :] = pos + self._env_pos[env_ids]
         self._spheres.set_world_poses(positions=dof_pos, indices=indices)
-
 
         # bookkeeping
         self.reset_buf[env_ids] = 0

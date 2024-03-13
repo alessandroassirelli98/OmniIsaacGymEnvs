@@ -21,7 +21,7 @@ env:
   numProps: 4
   aggregateMode: 3
 
-  actionScale: 1.
+  actionScale: 2.5
   dofVelocityScale: 0.1
   distRewardScale: 2.0
   rotRewardScale: 0.5
