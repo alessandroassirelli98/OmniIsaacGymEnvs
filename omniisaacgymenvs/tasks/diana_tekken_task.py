@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import torch
+import carb
 from gym import spaces
 from omni.isaac.core.utils.torch.maths import tensor_clamp
 from omni.isaac.core.articulations import ArticulationView
@@ -13,6 +14,7 @@ from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad
 from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, FixedSphere
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
 from omniisaacgymenvs.robots.articulations.views.diana_tekken_view import DianaTekkenView
+from omniisaacgymenvs.robots.articulations.utils.kinematic_solver import KinematicsSolver
 
 
 
@@ -29,8 +31,7 @@ class DianaTekkenTask(RLTask):
         self._max_episode_length = self._task_cfg["env"]["episodeLength"]
         self.robots_to_log = []
 
-        self.hithand_cad_translation = torch.tensor([0.0, -0.15, 0.])
-        self.hithand_old_translation = torch.tensor([0.0, 0.15, 0.])
+        self.diana_tekken_translation = torch.tensor([0.0, -0.15, 0.])
 
         self.dt = self._task_cfg["sim"]["dt"]
 
@@ -44,7 +45,7 @@ class DianaTekkenTask(RLTask):
         # implement environment setup here
         self.get_tekken(name="diana",
                         usd_path="C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd",
-                        translation=self.hithand_cad_translation)
+                        translation=self.diana_tekken_translation)
         self.get_cube()
         self.get_target_sphere()
 
@@ -70,11 +71,12 @@ class DianaTekkenTask(RLTask):
 
         
     def get_tekken(self, name, usd_path, translation):
-        hithand = DianaTekken(prim_path=self.default_zero_env_path + '/' + name,
+        diana_tekken = DianaTekken(prim_path=self.default_zero_env_path + '/' + name,
                               usd_path=usd_path,
                               name=name,
                               translation=translation)
-        self._sim_config.apply_articulation_settings(name, get_prim_at_path(hithand.prim_path), self._sim_config.parse_actor_config(name))
+        self._sim_config.apply_articulation_settings(name, get_prim_at_path(diana_tekken.prim_path), self._sim_config.parse_actor_config(name))
+
         
     def get_cube(self):
         self.translation = torch.tensor([0.0, 0.0, 0.0])
@@ -100,7 +102,7 @@ class DianaTekkenTask(RLTask):
                                   translation= self._sphere_position,
                                   radius = self._sphere_radius,
                                   color=self._sphere_color,
-                                  mass = 0.3)
+                                  mass = 0.03)
         
         # sphere.set_collision_enabled(False) # Disable collision as it is used as a target
         self._sim_config.apply_articulation_settings("sphere", get_prim_at_path(sphere.prim_path), self._sim_config.parse_actor_config("sphere"))
@@ -131,8 +133,7 @@ class DianaTekkenTask(RLTask):
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
-        # self.reset_idx(indices)
-        pass
+        self.reset_idx(indices)
         
 
     def pre_physics_step(self, actions: torch.Tensor) -> None:
@@ -140,11 +141,11 @@ class DianaTekkenTask(RLTask):
         if not self._env._world.is_playing():
             return
         
-        # reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
-        # if len(reset_env_ids) > 0:
-        #     self.reset_idx(reset_env_ids)
+        reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
+        if len(reset_env_ids) > 0:
+            self.reset_idx(reset_env_ids)
 
-        self.push_downward()
+        # self.push_downward()
 
         self.actions = actions.clone().to(self._device)
         targets = self.diana_tekken_dof_targets[:, self.actuated_dof_indices] + self.dt * self.actions * self.action_scale
@@ -239,20 +240,9 @@ class DianaTekkenTask(RLTask):
     def calculate_metrics(self) -> None:
         # implement logic to compute rewards
         # Distance to target
-        d = torch.norm(self.index_pose - self.target_pos, p=2, dim=1)
+        d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-        d = torch.norm(self.middle_pose - self.target_pos, p=2, dim=1)
-        reward += torch.log(1 / (1.0 + d ** 2))
-
-        d = torch.norm(self.ring_pose - self.target_pos, p=2, dim=1)
-        reward += torch.log(1 / (1.0 + d ** 2))
-
-        d = torch.norm(self.little_pose - self.target_pos, p=2, dim=1)
-        reward += torch.log(1 / (1.0 + d ** 2))
-
-        d = torch.norm(self.thumb_pose - self.target_pos, p=2, dim=1)
-        reward += torch.log(1 / (1.0 + d ** 2))
 
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
