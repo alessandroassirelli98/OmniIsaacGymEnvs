@@ -47,44 +47,43 @@ class DianaTekken(Robot):
             "link_5/joint_6",
             "link_6/joint_7",
 
-            # "base_link_hithand/Right_Index_0", 
-            # "base_link_hithand/Right_Middle_0",
-            # "base_link_hithand/Right_Ring_0",
-            # "base_link_hithand/Right_Little_0",
-            # "base_link_hithand/Right_Thumb_0",
+            "base_link_hithand/Right_Index_0", 
+            "base_link_hithand/Right_Middle_0",
+            "base_link_hithand/Right_Ring_0",
+            "base_link_hithand/Right_Little_0",
+            "base_link_hithand/Right_Thumb_0",
 
-            # "Right_Index_Basecover/Right_Index_1",
-            # "Right_Middle_Basecover/Right_Middle_1",
-            # "Right_Ring_Basecover/Right_Ring_1",
-            # "Right_Little_Basecover/Right_Little_1",
-            # "Right_Thumb_Basecover/Right_Thumb_1",
+            "Right_Index_Basecover/Right_Index_1",
+            "Right_Middle_Basecover/Right_Middle_1",
+            "Right_Ring_Basecover/Right_Ring_1",
+            "Right_Little_Basecover/Right_Little_1",
+            "Right_Thumb_Basecover/Right_Thumb_1",
 
-            # "Right_Index_Phaprox/Right_Index_2",
-            # "Right_Middle_Phaprox/Right_Middle_2",
-            # "Right_Ring_Phaprox/Right_Ring_2",
-            # "Right_Little_Phaprox/Right_Little_2",
-            # "Right_Thumb_Phaprox/Right_Thumb_2",
+            "Right_Index_Phaprox/Right_Index_2",
+            "Right_Middle_Phaprox/Right_Middle_2",
+            "Right_Ring_Phaprox/Right_Ring_2",
+            "Right_Little_Phaprox/Right_Little_2",
+            "Right_Thumb_Phaprox/Right_Thumb_2",
+        ]
 
-            # These joints are coupled
+        # These joints are coupled, so don't need to set the drive
             # "Right_Index_Phamed/Right_Index_3",
             # "Right_Middle_Phamed/Right_Middle_3",
             # "Right_Ring_Phamed/Right_Ring_3",
             # "Right_Little_Phamed/Right_Little_3",
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
-        ]
-
-        drive_type = ["angular"] * 7
-        # default_dof_pos = [math.degrees(x) for x in [0.0, -1.0, 0.0, -2.2, 0.0, 2.4, 0.8]] + [0. for _ in range(20)]
-        default_dof_pos = [math.degrees(x) for x in [0.0, -1.0, 0.0, -2.2, 0.0, 2.4, 0.8]]
-        # stiffness = [400*np.pi/180] * 7 + [0.05, 0.05, 0.05, 0.05] * 5
-        stiffness = [400*np.pi/180] * 7
-        # damping = [80*np.pi/180] * 7 + [0.0009375, 0.000625, 0.000625, 0.000625] * 5
-        damping = [80*np.pi/180] * 7
-        # max_force = [87, 87, 87, 87, 12, 12, 12] + [10, 1.5, 0.6, 0.3] * 5
-        max_force = [87, 87, 87, 87, 12, 12, 12]
-        # max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(20)]
-        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]]
+        drive_type = ["angular"] * 22
+        default_dof_pos = [math.degrees(x) for x in [0.0, -1.0, 0.0, -2.2, 0.0, 2.4, 0.8]] + [0. for _ in range(15)]
+        # default_dof_pos = [math.degrees(x) for x in [0.0, -1.0, 0.0, -2.2, 0.0, 2.4, 0.8]]
+        stiffness = [400*np.pi/180] * 7 + [0.05, 0.05, 0.05] * 5
+        # stiffness = [400*np.pi/180] * 7
+        damping = [80*np.pi/180] * 7 + [0.0009375, 0.000625, 0.000625] * 5
+        # damping = [80*np.pi/180] * 7
+        max_force = [87, 87, 87, 87, 12, 12, 12] + [10, 1.5, 0.6] * 5
+        # max_force = [87, 87, 87, 87, 12, 12, 12]
+        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(15)]
+        # max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]]
 
         # STICK WITH THE URDF DRIVE PARAMETERS
 
@@ -100,4 +99,46 @@ class DianaTekken(Robot):
             )
         
         PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
-        
+
+        self._setup_tendons()
+
+    def _setup_tendons(self, use_limits=False):
+        tendon_root_paths = [
+            "Right_Index_Phaprox/Right_Index_2",
+            "Right_Middle_Phaprox/Right_Middle_2",
+            "Right_Ring_Phaprox/Right_Ring_2",
+            "Right_Little_Phaprox/Right_Little_2",
+            "Right_Thumb_Phaprox/Right_Thumb_2"]
+        tendon_driven_paths = [
+            "Right_Index_Phamed/Right_Index_3",
+            "Right_Middle_Phamed/Right_Middle_3",
+            "Right_Ring_Phamed/Right_Ring_3",
+            "Right_Little_Phamed/Right_Little_3",
+            "Right_Thumb_Phamed/Right_Thumb_3"]
+    
+        tendon_gearing = [1, -1]
+        tendon_force_coeff = [1, -1]  
+        tendon_names =["Index_tendon", "Middle_tendon", "Ring_tendon", "Little_tenodn", "Thumb_tendon"]
+
+        for i, (root, driven) in enumerate(zip(tendon_root_paths, tendon_driven_paths)):
+            root_joint_prim = get_prim_at_path(self.prim_path + "/" + root)
+            driven_joint_prim = get_prim_at_path(self.prim_path + "/" + driven)
+            # setup drive joint
+            rootApi = PhysxSchema.PhysxTendonAxisRootAPI.Apply(root_joint_prim, tendon_names[i])
+            if use_limits:
+                rootApi.CreateLimitStiffnessAttr().Set(0.05)
+                # rootApi.CreateDampingAttr().Set(0.000625)
+                # limit is +/- 1 deg
+                rootApi.CreateLowerLimitAttr().Set(-self._symmetric_limit)
+                rootApi.CreateUpperLimitAttr().Set(self._symmetric_limit)
+            else:
+                rootApi.CreateStiffnessAttr().Set(0.05)
+                rootApi.CreateDampingAttr().Set(0.000625)
+            rootApi.CreateGearingAttr().Set([tendon_gearing[0]])
+            rootApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
+            # setup second joint
+            axisApi = PhysxSchema.PhysxTendonAxisAPI.Apply(driven_joint_prim, tendon_names[i])
+            axisApi.CreateGearingAttr().Set([tendon_gearing[1]])
+            axisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[1]])
+
+

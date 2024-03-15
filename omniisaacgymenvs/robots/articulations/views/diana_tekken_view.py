@@ -48,6 +48,11 @@ class DianaTekkenView(ArticulationView):
         )
 
         self._palm_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/palm_link_hithand", name="palm_centers_view", reset_xform_properties=False)
+        self._index_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/Right_Index_Phadist", name="right_indices_view", reset_xform_properties=False)
+        self._middle_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/Right_Middle_Phadist", name="right_middles_view", reset_xform_properties=False)
+        self._ring_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/Right_Ring_Phadist", name="right_rings_view", reset_xform_properties=False)
+        self._little_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/Right_Little_Phadist", name="right_littles_view", reset_xform_properties=False)
+        self._thumb_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/Right_Thumb_Phadist", name="right_thumbs_view", reset_xform_properties=False)
 
 
     @property
@@ -66,23 +71,23 @@ class DianaTekkenView(ArticulationView):
             "joint_6",
             "joint_7",
 
-            # "Right_Index_0", 
-            # "Right_Middle_0",
-            # "Right_Ring_0",
-            # "Right_Little_0",
-            # "Right_Thumb_0",
+            "Right_Index_0", 
+            "Right_Middle_0",
+            "Right_Ring_0",
+            "Right_Little_0",
+            "Right_Thumb_0",
 
-            # "Right_Index_1",
-            # "Right_Middle_1",
-            # "Right_Ring_1",
-            # "Right_Little_1",
-            # "Right_Thumb_1",
+            "Right_Index_1",
+            "Right_Middle_1",
+            "Right_Ring_1",
+            "Right_Little_1",
+            "Right_Thumb_1",
 
-            # "Right_Index_2",
-            # "Right_Middle_2",
-            # "Right_Ring_2",
-            # "Right_Little_2",
-            # "Right_Thumb_2"
+            "Right_Index_2",
+            "Right_Middle_2",
+            "Right_Ring_2",
+            "Right_Little_2",
+            "Right_Thumb_2"
             ]
         
         self._actuated_dof_indices = list()
@@ -90,6 +95,3 @@ class DianaTekkenView(ArticulationView):
             self._actuated_dof_indices.append(self.get_dof_index(joint_name))
         self._actuated_dof_indices.sort()
 
-        # limit_stiffness = torch.tensor([0.05] * self.num_fixed_tendons, device=self._device)
-        # damping = torch.tensor([0.000625] * self.num_fixed_tendons, device=self._device)
-        # self.set_fixed_tendon_properties(dampings=damping, stiffnesses=limit_stiffness)

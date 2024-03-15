@@ -94,6 +94,7 @@ sim:
     override_usd_defaults: False
     enable_self_collisions: False
     enable_gyroscopic_forces: True
+    make_kinematic: False
     # also in stage params
     # per-actor
     solver_position_iteration_count: 12
@@ -101,7 +102,6 @@ sim:
     sleep_threshold: 0.0
     stabilization_threshold: 0.001
     # per-body
-    density: 200
     mass: 1
     max_depenetration_velocity: 1000.0
 
