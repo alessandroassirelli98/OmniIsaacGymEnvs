@@ -58,7 +58,7 @@ def parse_hydra_configs(cfg: DictConfig):
     cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
     cfg_dict['seed'] = cfg.seed
     task = initialize_task(cfg_dict, env)
-    # env.start_logging("C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/logs/logs.json")
+    env.start_logging("C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/demonstrations/1.json")
     t = 0
     while env._simulation_app.is_running():
         if env._world.is_playing():
@@ -68,6 +68,10 @@ def parse_hydra_configs(cfg: DictConfig):
             env._world.step(render=render)
             env.sim_frame_count += 1
             env._task.post_physics_step()
+
+            if input_manager.kill: 
+                env.save_log()
+                env._simulation_app.close()
 
         else:
             env._world.step(render=render)

@@ -78,7 +78,7 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         if succ:
             robot_actions.joint_positions[robot_actions.joint_positions == None] = 0.
             robots_actions = torch.tensor((robot_actions.joint_positions.reshape(1,-1)).astype(np.float32))
-            robots_actions[:, self.actuated_dof_indices] = (robots_actions[:, self.actuated_dof_indices] - self._robot_dof_targets[:, self.actuated_dof_indices])/(self.dt * self.action_scale)
+            robots_actions[:, self.actuated_dof_indices] = (robots_actions[:, self.actuated_dof_indices] - self._robots.get_applied_actions().joint_positions[:, self.actuated_dof_indices])/(self.dt * self.action_scale)
 
             super().pre_physics_step(robots_actions[:, self.actuated_dof_indices])
         else:
