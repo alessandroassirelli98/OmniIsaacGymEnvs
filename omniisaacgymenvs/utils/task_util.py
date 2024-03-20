@@ -48,7 +48,7 @@ def initialize_task(config, env, init_sim=True):
     from omniisaacgymenvs.tasks.ball_picking import BallPicking
     from omniisaacgymenvs.tasks.tekken_task import TekkenTask
     from omniisaacgymenvs.tasks.diana_tekken_task import DianaTekkenTask
-    # from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
+    from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
 
     # Mappings from strings to environments
     task_map = {
@@ -71,7 +71,7 @@ def initialize_task(config, env, init_sim=True):
         "BallPicking": BallPicking,
         "Tekken": TekkenTask,
         "DianaTekken": DianaTekkenTask,
-        # "DianaTekkenManualControl": DianaTekkenManualControlTask
+        "DianaTekkenManualControl": DianaTekkenManualControlTask
     }
 
     cfg = sim_config.config
