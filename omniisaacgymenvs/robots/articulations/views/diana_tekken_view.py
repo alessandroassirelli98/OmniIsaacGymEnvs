@@ -58,6 +58,12 @@ class DianaTekkenView(ArticulationView):
     @property
     def actuated_dof_indices(self):
         return self._actuated_dof_indices
+    @property
+    def actuated_diana_dof_indices(self):
+        return self._actuated_diana_dof_indices
+    @property
+    def actuated_finger_dof_indices(self):
+        return self._actuated_finger_dof_indices
 
     def initialize(self, physics_sim_view):
         super().initialize(physics_sim_view)
@@ -89,9 +95,40 @@ class DianaTekkenView(ArticulationView):
             "Right_Little_2",
             "Right_Thumb_2"
             ]
+        self.actuated_diana_joint_names = [
+            "joint_1",
+            "joint_2",
+            "joint_3",
+            "joint_4",
+            "joint_5",
+            "joint_6",
+            "joint_7"
+            ]
+        self.actuated_finger_joint_names = [
+            "Right_Index_1",
+            "Right_Middle_1",
+            "Right_Ring_1",
+            "Right_Little_1",
+            "Right_Thumb_1",
+
+            "Right_Index_2",
+            "Right_Middle_2",
+            "Right_Ring_2",
+            "Right_Little_2",
+            "Right_Thumb_2"
+            ]
         
         self._actuated_dof_indices = list()
+        self._actuated_diana_dof_indices = list()
+        self._actuated_finger_dof_indices = list()
         for joint_name in self.actuated_joint_names:
             self._actuated_dof_indices.append(self.get_dof_index(joint_name))
+        for joint_name in self.actuated_diana_joint_names:
+            self._actuated_diana_dof_indices.append(self.get_dof_index(joint_name))
+        for joint_name in self.actuated_finger_joint_names:
+            self._actuated_finger_dof_indices.append(self.get_dof_index(joint_name))
+
         self._actuated_dof_indices.sort()
+        self._actuated_diana_dof_indices.sort()
+        self._actuated_finger_dof_indices.sort()
 

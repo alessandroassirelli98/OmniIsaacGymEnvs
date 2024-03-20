@@ -3,9 +3,9 @@ from pynput import keyboard
 from omni.isaac.kit import SimulationApp
 
 class KeyboardManager():
-    def __init__(self, hand_coord, closure):
+    def __init__(self, hand_coord):
         self.action = hand_coord
-        self.close_hand = closure
+        self.hand_close_idx = len(self.action)-1
         self.kill = False
         listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         listener.start()
@@ -29,7 +29,7 @@ class KeyboardManager():
             self.action[3] = -1
 
         if (key == keyboard.Key.space):
-            self.close_hand[0] = 1
+            self.action[self.hand_close_idx] = 1
 
         if (key == keyboard.Key.esc):
             self.kill = True
@@ -45,6 +45,6 @@ class KeyboardManager():
             self.action[3] = 0
 
         if (key == keyboard.Key.space):
-            self.close_hand[0] = 0
+            self.action[self.hand_close_idx] = 0
 
     

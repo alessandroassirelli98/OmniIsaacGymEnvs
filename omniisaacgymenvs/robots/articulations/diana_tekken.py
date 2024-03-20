@@ -95,18 +95,7 @@ class DianaTekken(Robot):
         
         PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
 
-
         self._setup_tendons()
-
-    @property
-    def actuated_dof_indices(self):
-        return self._actuated_dof_indices
-    @property
-    def actuated_diana_dof_indices(self):
-        return self._actuated_diana_dof_indices
-    @property
-    def actuated_finger_dof_indices(self):
-        return self._actuated_finger_dof_indices
     
     def _setup_tendons(self, use_limits=False):
         tendon_root_paths = [
@@ -148,67 +137,3 @@ class DianaTekken(Robot):
             axisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[1]])
 
 
-    def initialize_dof_indices(self):
-        self.actuated_joint_names = [
-            "joint_1",
-            "joint_2",
-            "joint_3",
-            "joint_4",
-            "joint_5",
-            "joint_6",
-            "joint_7",
-
-            "Right_Index_0", 
-            "Right_Middle_0",
-            "Right_Ring_0",
-            "Right_Little_0",
-            "Right_Thumb_0",
-
-            "Right_Index_1",
-            "Right_Middle_1",
-            "Right_Ring_1",
-            "Right_Little_1",
-            "Right_Thumb_1",
-
-            "Right_Index_2",
-            "Right_Middle_2",
-            "Right_Ring_2",
-            "Right_Little_2",
-            "Right_Thumb_2"
-            ]
-        self.actuated_diana_joint_names = [
-            "joint_1",
-            "joint_2",
-            "joint_3",
-            "joint_4",
-            "joint_5",
-            "joint_6",
-            "joint_7"
-            ]
-        self.actuated_finger_joint_names = [
-            "Right_Index_1",
-            "Right_Middle_1",
-            "Right_Ring_1",
-            "Right_Little_1",
-            "Right_Thumb_1",
-
-            "Right_Index_2",
-            "Right_Middle_2",
-            "Right_Ring_2",
-            "Right_Little_2",
-            "Right_Thumb_2"
-            ]
-        
-        self._actuated_dof_indices = list()
-        self._actuated_diana_dof_indices = list()
-        self._actuated_finger_dof_indices = list()
-        for joint_name in self.actuated_joint_names:
-            self._actuated_dof_indices.append(self.get_dof_index(joint_name))
-        for joint_name in self.actuated_diana_joint_names:
-            self._actuated_diana_dof_indices.append(self.get_dof_index(joint_name))
-        for joint_name in self.actuated_finger_joint_names:
-            self._actuated_finger_dof_indices.append(self.get_dof_index(joint_name))
-
-        self._actuated_dof_indices.sort()
-        self._actuated_diana_dof_indices.sort()
-        self._actuated_finger_dof_indices.sort()
