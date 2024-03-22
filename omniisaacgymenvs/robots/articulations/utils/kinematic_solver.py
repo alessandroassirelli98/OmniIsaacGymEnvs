@@ -6,9 +6,9 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
-from omni.isaac.motion_generation import ArticulationKinematicsSolver, interface_config_loader, LulaKinematicsSolver
-from omni.isaac.core.articulations import Articulation
-from typing import Optional
+import os
+from omni.isaac.motion_generation.articulation_kinematics_solver import ArticulationKinematicsSolver
+from omni.isaac.motion_generation.lula.kinematics import LulaKinematicsSolver
 
 
 class KinematicsSolver(ArticulationKinematicsSolver):
@@ -22,8 +22,8 @@ class KinematicsSolver(ArticulationKinematicsSolver):
 
     def __init__(self, articulation) -> None:
         # Load Diana URDF
-        urdf_dir = "C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana.urdf"
-        descriptor_dir = "C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/robot_descriptor.yaml"
+        urdf_dir = f'{os.getcwd()}{"/models/diana.urdf"}'
+        descriptor_dir = f'{os.getcwd()}{"/models/robot_descriptor.yaml"}'
 
         self._kinematics_solver = LulaKinematicsSolver(
             robot_description_path = descriptor_dir,

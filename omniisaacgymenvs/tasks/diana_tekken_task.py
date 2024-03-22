@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import os
 import torch
 import carb
 from gym import spaces
@@ -42,7 +43,7 @@ class DianaTekkenTask(RLTask):
     def set_up_scene(self, scene) -> None:
         # implement environment setup here
         self.get_robot(name="diana",
-                        usd_path="C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd",
+                        usd_path=f'{os.getcwd()}{"/models/diana_tekken/diana_tekken.usd"}',
                         translation=self._robot_translation)
         self.get_cube()
         self.get_pick_up_cube()
@@ -111,7 +112,11 @@ class DianaTekkenTask(RLTask):
         self.default_dof_pos = torch.tensor([0., -0.4,  0., 1.3, 0., -1.3, 0.] + [0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
-        self._robot_dof_targets = pos
+        self._dof_targets = torch.zeros(
+            (self._num_envs, self.num_diana_tekken_dofs), dtype=torch.float, device=self._device
+        )
+
+        self._dof_targets = pos
 
         dof_limits = self._robots.get_dof_limits()
         self._robot_dof_lower_limits = dof_limits[0, :, 0].to(device=self._device)
@@ -129,7 +134,7 @@ class DianaTekkenTask(RLTask):
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
-        self.reset_idx(indices)
+        # self.reset_idx(indices)
         
 
     def pre_physics_step(self, actions: torch.Tensor) -> None:
@@ -139,16 +144,18 @@ class DianaTekkenTask(RLTask):
         
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
         if len(reset_env_ids) > 0:
-            self.reset_idx(reset_env_ids)
+            pass
+            # self.reset_idx(reset_env_ids)
 
         # self.push_downward()
         self.actions = actions.clone().to(self._device)
 
-        self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
-        self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
+        targets = self._dof_targets[:, self.actuated_dof_indices] + self.dt * self.actions * self.action_scale
+        self._dof_targets[:, self.actuated_dof_indices] = tensor_clamp(targets, self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
+        
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
 
-        self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
+        self._robots.set_joint_position_targets(self._dof_targets, indices=env_ids_int32)
 
 
     def push_downward(self):
@@ -207,12 +214,12 @@ class DianaTekkenTask(RLTask):
         dof_vel = torch.zeros((num_indices, self.num_diana_tekken_dofs), device=self._device)
 
         dof_pos[:, self.actuated_dof_indices] = pos
-        self._robot_dof_targets[env_ids, :] = dof_pos
+        self._dof_targets[env_ids, :] = dof_pos
 
         
         self._robots.set_joint_positions(dof_pos, indices=indices)
         self._robots.set_joint_velocities(dof_vel, indices=indices)
-        self._robots.set_joint_position_targets(self._robot_dof_targets[env_ids], indices=indices)
+        self._robots.set_joint_position_targets(self._dof_targets[env_ids], indices=indices)
 
         # Reset target positions
         pos = tensor_clamp(

@@ -68,6 +68,10 @@ class DianaTekkenView(ArticulationView):
     def initialize(self, physics_sim_view):
         super().initialize(physics_sim_view)
 
+        # limit_stiffness = torch.tensor([30.0] * self.num_fixed_tendons, device=self._device)
+        # damping = torch.tensor([0.1] * self.num_fixed_tendons, device=self._device)
+        # self.set_fixed_tendon_properties(dampings=damping, limit_stiffnesses=limit_stiffness)
+
         self.actuated_joint_names = [
             "joint_1",
             "joint_2",
