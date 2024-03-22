@@ -115,24 +115,34 @@ class CartpoleTask(RLTask):
 
         actions = actions.to(self._device)
 
-        forces = torch.zeros((self._cartpoles.count, self._cartpoles.num_dof), dtype=torch.float32, device=self._device)
+        forces = torch.zeros((self._cartpoles.count, self._cartpoles.num_dof),
+                             dtype=torch.float32,
+                             device=self._device)
         forces[:, self._cart_dof_idx] = self._max_push_effort * actions[:, 0]
 
-        indices = torch.arange(self._cartpoles.count, dtype=torch.int32, device=self._device)
+        indices = torch.arange(self._cartpoles.count,
+                               dtype=torch.int32,
+                               device=self._device)
         self._cartpoles.set_joint_efforts(forces, indices=indices)
 
     def reset_idx(self, env_ids):
         num_resets = len(env_ids)
 
         # randomize DOF positions
-        dof_pos = torch.zeros((num_resets, self._cartpoles.num_dof), device=self._device)
-        dof_pos[:, self._cart_dof_idx] = 1.0 * (1.0 - 2.0 * torch.rand(num_resets, device=self._device))
-        dof_pos[:, self._pole_dof_idx] = 0.125 * math.pi * (1.0 - 2.0 * torch.rand(num_resets, device=self._device))
+        dof_pos = torch.zeros((num_resets, self._cartpoles.num_dof),
+                              device=self._device)
+        dof_pos[:, self._cart_dof_idx] = 1.0 * (
+            1.0 - 2.0 * torch.rand(num_resets, device=self._device))
+        dof_pos[:, self._pole_dof_idx] = 0.125 * math.pi * (
+            1.0 - 2.0 * torch.rand(num_resets, device=self._device))
 
         # randomize DOF velocities
-        dof_vel = torch.zeros((num_resets, self._cartpoles.num_dof), device=self._device)
-        dof_vel[:, self._cart_dof_idx] = 0.5 * (1.0 - 2.0 * torch.rand(num_resets, device=self._device))
-        dof_vel[:, self._pole_dof_idx] = 0.25 * math.pi * (1.0 - 2.0 * torch.rand(num_resets, device=self._device))
+        dof_vel = torch.zeros((num_resets, self._cartpoles.num_dof),
+                              device=self._device)
+        dof_vel[:, self._cart_dof_idx] = 0.5 * (
+            1.0 - 2.0 * torch.rand(num_resets, device=self._device))
+        dof_vel[:, self._pole_dof_idx] = 0.25 * math.pi * (
+            1.0 - 2.0 * torch.rand(num_resets, device=self._device))
 
         # apply resets
         indices = env_ids.to(dtype=torch.int32)
@@ -147,7 +157,9 @@ class CartpoleTask(RLTask):
         self._cart_dof_idx = self._cartpoles.get_dof_index("cartJoint")
         self._pole_dof_idx = self._cartpoles.get_dof_index("poleJoint")
         # randomize all envs
-        indices = torch.arange(self._cartpoles.count, dtype=torch.int64, device=self._device)
+        indices = torch.arange(self._cartpoles.count,
+                               dtype=torch.int64,
+                               device=self._device)
         self.reset_idx(indices)
 
     def calculate_metrics(self) -> None:
