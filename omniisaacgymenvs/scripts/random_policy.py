@@ -72,10 +72,6 @@ def parse_hydra_configs(cfg: DictConfig):
             env.sim_frame_count += 1
             env._task.post_physics_step()
 
-            if keyboard.is_pressed('q'):
-                env.save_log()
-                break
-
         else:
             env._world.step(render=render)
 

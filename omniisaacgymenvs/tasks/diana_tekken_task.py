@@ -1,5 +1,5 @@
 import math
-
+import os
 import numpy as np
 import torch
 import carb
@@ -42,7 +42,7 @@ class DianaTekkenTask(RLTask):
     def set_up_scene(self, scene) -> None:
         # implement environment setup here
         self.get_robot(name="diana",
-                        usd_path="C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd",
+                        usd_path=f'{os.getcwd()}{"/models/diana_tekken/diana_tekken.usd"}',
                         translation=self._robot_translation)
         self.get_cube()
         self.get_pick_up_cube()

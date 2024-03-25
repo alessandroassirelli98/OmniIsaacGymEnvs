@@ -1,6 +1,5 @@
 import numpy as np
 from pynput import keyboard
-from omni.isaac.kit import SimulationApp
 
 class KeyboardManager():
     def __init__(self, hand_coord):
