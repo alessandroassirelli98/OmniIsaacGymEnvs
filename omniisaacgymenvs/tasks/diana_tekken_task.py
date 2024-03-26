@@ -33,7 +33,7 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 60
+        self._num_observations = 68
         if not hasattr(self, '_num_actions'): self._num_actions = 22 # If the number of actions has been defined from a child
 
         RLTask.__init__(self, name, env)
@@ -42,7 +42,8 @@ class DianaTekkenTask(RLTask):
     def set_up_scene(self, scene) -> None:
         # implement environment setup here
         self.get_robot(name="diana",
-                        usd_path=f'{os.getcwd()}{"/models/diana_tekken/diana_tekken.usd"}',
+                        #usd_path=f'{os.path.abspath()}{"/models/diana_tekken/diana_tekken.usd"}',
+                        usd_path='/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd',
                         translation=self._robot_translation)
         self.get_cube()
         self.get_pick_up_cube()
@@ -184,8 +185,10 @@ class DianaTekkenTask(RLTask):
 
         self.obs_buf[:, :27] = dof_pos
         self.obs_buf[:, 27:30] = self.hand_pos
-        self.obs_buf[:, 30:33] = self.target_pos
-        self.obs_buf[:, 33:60] = dof_vel
+        self.obs_buf[:, 30:34] = self.hand_rot
+        self.obs_buf[:, 34:37] = self.target_pos
+        self.obs_buf[:, 37:41] = self.target_rot
+        self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
         observations = {self._robots.name: {"obs_buf": self.obs_buf}}
         return observations

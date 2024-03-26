@@ -28,6 +28,7 @@
 
 
 import numpy as np
+import os
 from omniisaacgymenvs.utils.input_manager import KeyboardManager
 import torch
 import hydra
@@ -58,7 +59,18 @@ def parse_hydra_configs(cfg: DictConfig):
     cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
     cfg_dict['seed'] = cfg.seed
     task = initialize_task(cfg_dict, env)
-    # env.start_logging("C:/Users/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/demonstrations/1.json")
+
+    # Saving path
+    for i in range(15):
+        dire = f'{os.getcwd()}{"/demonstrations/data"}'
+        file_path = f'{dire}{"/"}{str(i)}{".json"}'
+        if not os.path.isfile(file_path):
+            print("Saving demonstration in: " + file_path)
+            break
+        if i == 14:
+            print("Directory busy")
+            exit()
+    env.start_logging(file_path)
     t = 0
     while env._simulation_app.is_running():
         if env._world.is_playing():

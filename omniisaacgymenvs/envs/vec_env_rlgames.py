@@ -100,9 +100,10 @@ class VecEnvRLGames(VecEnvBase):
         def frame_logging_func(tasks, scene):
             # return always a dict
             
-            return  {robot.name : {"obs_buf" : task.obs_buf.tolist(),
+            return  {robot.name : {"states" : task.obs_buf.tolist(),
                                    "actions" : task.actions.tolist(),
-                                    "reward": task.rew_buf.tolist(),
+                                    "rewards": task.rew_buf.tolist(),
+                                    "terminated": task.reset_buf.tolist(),
                                     "applied_joint_actions": robot.get_applied_actions().joint_positions.tolist()}}
         
         self.data_logger.add_data_frame_logging_func(frame_logging_func)

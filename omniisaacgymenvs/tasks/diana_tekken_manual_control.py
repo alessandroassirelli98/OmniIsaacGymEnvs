@@ -59,8 +59,8 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         # Move target position and orientation
         target_pos, target_rot = self._ref_cubes.get_local_poses()
         rpy_target = torch.tensor(get_euler_xyz(target_rot)).unsqueeze(0)
-        target_pos[0, :3] += actions[:3] * 0.01
-        rpy_target[0, 1] += actions[3] * 0.01
+        target_pos[0, :3] += actions[:3] * 0.001
+        rpy_target[0, 1] += actions[3] * 0.001
         target_rot = euler_angles_to_quats(rpy_target)
 
         self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
@@ -104,9 +104,6 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         # return {self._robot.name: {"obs_buf": self.obs_buf}}
         super().get_observations()
 
-
-    def calculate_metrics(self) -> None:
-        pass
 
     def is_done(self) -> None:
         pass
