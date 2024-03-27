@@ -79,7 +79,7 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
             robot_actions.joint_positions[robot_actions.joint_positions == None] = 0.
             robots_actions = torch.tensor((robot_actions.joint_positions.reshape(1,-1)).astype(np.float32))
             robots_actions[:, self.actuated_dof_indices] = (robots_actions[:, self.actuated_dof_indices] - self._robots.get_applied_actions().joint_positions[:, self.actuated_dof_indices])/(self.dt * self.action_scale)
-
+            robots_actions[:, self.actuated_dof_indices] = tensor_clamp(robots_actions[:, self.actuated_dof_indices], -1. * torch.ones(1, self.num_actuated_dofs), 1. * torch.ones(1, self.num_actuated_dofs))
             super().pre_physics_step(robots_actions[:, self.actuated_dof_indices])
         else:
             carb.log_warn("IK did not converge to a solution.  No action is being taken.")
@@ -89,22 +89,9 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
 
 
     def get_observations(self) -> dict:
-        # dof_pos = self._robot.get_joint_positions()
-        # dof_vel = self._robot.get_joint_velocities()
-        # self.hand_pos,  self.hand_rot = self._palm_center.get_local_poses()
-        # self.pick_up_cube_pos, self.pick_up_cube_rot = self._pick_up_cube.get_local_pose()
-
-        # self.obs_buf[:27] = dof_pos
-        # self.obs_buf[27:30] = self.hand_pos
-        # self.obs_buf[30:34] = self.hand_rot
-        # self.obs_buf[34:37] = self.pick_up_cube_pos
-        # self.obs_buf[37:41] = self.pick_up_cube_rot
-        # self.obs_buf[41:68] = dof_vel
-
-        # return {self._robot.name: {"obs_buf": self.obs_buf}}
         super().get_observations()
 
 
-    def is_done(self) -> None:
-        pass
+    # def is_done(self) -> None:
+    #     pass
 

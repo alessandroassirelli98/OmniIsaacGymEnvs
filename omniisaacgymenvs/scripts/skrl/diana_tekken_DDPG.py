@@ -50,7 +50,7 @@ class Critic(DeterministicMixin, Model):
 
 
 # load and wrap the Omniverse Isaac Gym environment
-env = load_omniverse_isaacgym_env(task_name="DianaTekken", num_envs=8, headless=headless)
+env = load_omniverse_isaacgym_env(task_name="DianaTekken", num_envs=64, headless=headless)
 env = wrap_env(env)
 
 device = env.device
@@ -86,8 +86,8 @@ cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
 cfg["experiment"]["write_interval"] = 800
-cfg["experiment"]["checkpoint_interval"] = 8000
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["checkpoint_interval"] = 4000
+# cfg["experiment"]["wandb"] = True
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 
 agent = DDPG(models=models,
@@ -99,7 +99,7 @@ agent = DDPG(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 1600000, "headless": headless}
+cfg_trainer = {"timesteps": 160000, "headless": headless}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 
