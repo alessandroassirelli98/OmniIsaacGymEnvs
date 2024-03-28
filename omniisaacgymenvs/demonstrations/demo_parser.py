@@ -44,11 +44,12 @@ def parse_json_demo():
 if __name__ == "__main__":
     e = parse_json_demo()
     ep_ret = []
-    for ep in range(1, 6):
+    for ep in range(1, 3):
         r = []
         for i in range(1200 * ep, 1200 * (ep+1)):
             r.append(e[i]["rewards"])
         ep_ret.append(r)
     print("Average Return: ", np.mean(ep_ret))
+    print("DEmonstrations length: ", len(e))
     plt.plot(np.array(r))
     plt.show()

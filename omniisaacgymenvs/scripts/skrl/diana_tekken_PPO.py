@@ -96,10 +96,10 @@ cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": dev
 cfg["value_preprocessor"] = RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
-cfg["experiment"]["write_interval"] = 800
-cfg["experiment"]["checkpoint_interval"] = 8000
+cfg["experiment"]["write_interval"] = 200
+cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-# cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = True
 # cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
 #                                      "project": "DianaTekkenAlgoTrials"}
 
@@ -127,8 +127,8 @@ trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 # from skrl.utils.huggingface import download_model_from_huggingface
 
 # # download the trained agent's checkpoint from Hugging Face Hub and load it
-path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/scripts/runs/torch/DianaTekken/24-03-27_11-28-36-179669_PPO/checkpoints/best_agent.pt"
+path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-03-27_19-44-08-224916_PPO/checkpoints/best_agent.pt"
 agent.load(path)
 
-# # start evaluation
+# # # start evaluation
 trainer.eval()

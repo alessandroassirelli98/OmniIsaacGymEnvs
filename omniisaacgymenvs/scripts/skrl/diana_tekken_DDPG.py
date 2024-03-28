@@ -16,7 +16,7 @@ from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
 
 # seed for reproducibility
 set_seed()  # e.g. `set_seed(42)` for fixed seed
-headless=True
+headless=False
 
 # define models (deterministic models) using mixins
 class DeterministicActor(DeterministicMixin, Model):
@@ -50,14 +50,14 @@ class Critic(DeterministicMixin, Model):
 
 
 # load and wrap the Omniverse Isaac Gym environment
-env = load_omniverse_isaacgym_env(task_name="DianaTekken", num_envs=64, headless=headless)
+env = load_omniverse_isaacgym_env(task_name="DianaTekken", num_envs=8, headless=headless)
 env = wrap_env(env)
 
 device = env.device
 
 
 # instantiate a memory as rollout buffer (any memory can be used for this)
-memory = RandomMemory(memory_size=160000, num_envs=env.num_envs, device=device)
+memory = RandomMemory(memory_size=50000, num_envs=env.num_envs, device=device)
 
 
 # instantiate the agent's models (function approximators).
@@ -87,7 +87,7 @@ cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": dev
 # logging to TensorBoard and write checkpoints (in timesteps)
 cfg["experiment"]["write_interval"] = 800
 cfg["experiment"]["checkpoint_interval"] = 4000
-# cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 
 agent = DDPG(models=models,
@@ -114,8 +114,8 @@ for tstep in episode:
     memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
     
 # start training
-trainer.train()
+# trainer.train()
 
 
-# agent.load("runs/torch/DianaTekken/24-03-26_12-33-58-898982_DDPG/checkpoints/best_agent.pt")
-# trainer.eval()
+agent.load("/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-03-27_18-08-46-681507_DDPG/checkpoints/best_agent.pt")
+trainer.eval()

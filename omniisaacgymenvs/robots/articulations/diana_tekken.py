@@ -23,8 +23,8 @@ class DianaTekken(Robot):
         orientation: Optional[np.ndarray] = None,
     ) -> None:
 
-        if usd_path is None:
-            print("Need to reference a usd Tekken file !")
+
+        usd_path='/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd'
 
         self._usd_path = usd_path
         self._name = name

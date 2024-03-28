@@ -10,9 +10,10 @@ from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.prims import GeometryPrimView, RigidPrimView
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
 from omni.isaac.core.utils.stage import add_reference_to_stage
-from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad
+from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad, euler_angles_to_quats
 from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, FixedSphere, DynamicCuboid
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
+from omniisaacgymenvs.robots.articulations.drill import Drill
 from omniisaacgymenvs.robots.articulations.views.diana_tekken_view import DianaTekkenView
 
 
@@ -42,11 +43,10 @@ class DianaTekkenTask(RLTask):
     def set_up_scene(self, scene) -> None:
         # implement environment setup here
         self.get_robot(name="diana",
-                        #usd_path=f'{os.path.abspath()}{"/models/diana_tekken/diana_tekken.usd"}',
-                        usd_path='/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd',
                         translation=self._robot_translation)
         self.get_cube()
         self.get_pick_up_cube()
+        # self.get_drill()
 
         super().set_up_scene(scene)
 
@@ -67,14 +67,26 @@ class DianaTekkenTask(RLTask):
         self._cubes = GeometryPrimView(prim_paths_expr="/World/envs/.*/cube", name="cube_view", reset_xform_properties=False)
         scene.add(self._cubes)
 
+        # self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False)
+        # scene.add(self._drills)
+
 
         
-    def get_robot(self, name, usd_path, translation):
+    def get_robot(self, name, translation):
         self._robot = DianaTekken(prim_path=self.default_zero_env_path + '/' + name,
-                              usd_path=usd_path,
                               name=name,
                               translation=translation)
         self._sim_config.apply_articulation_settings(name, get_prim_at_path(self._robot.prim_path), self._sim_config.parse_actor_config(name))
+
+
+    def get_drill(self):
+        orientation = torch.tensor([torch.pi / 2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
+        self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
+                              name="drill",
+                              translation=torch.tensor([0.4, 0, 0.31]),
+                              orientation=euler_angles_to_quats(orientation).squeeze(0))
+        self._sim_config.apply_articulation_settings("drill", get_prim_at_path(self._drill.prim_path), self._sim_config.parse_actor_config("drill"))
+        
  
     def get_cube(self):
         self.translation = torch.tensor([0.0, 0.0, 0.0])
@@ -125,14 +137,13 @@ class DianaTekkenTask(RLTask):
         self.target_pos = torch.ones((self._num_envs, 3), device=self._device) * self._pick_up_cube_position  - self._env_pos
 
 
-        self.spheres_to_pull = torch.zeros(self.num_envs, device = self._device)
-        self.applied_ext_forces = torch.tensor([5., 5., -5.], device=self._device)
+        self._cubes_to_pull = torch.zeros(self.num_envs, device = self._device)
+        self.applied_ext_forces = torch.tensor([1., 1., -1.], device=self._device)
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
         self.reset_idx(indices)
         
-
     def pre_physics_step(self, actions: torch.Tensor) -> None:
         # implement logic to be performed before physics steps
         if not self._env._world.is_playing():
@@ -142,7 +153,7 @@ class DianaTekkenTask(RLTask):
         if len(reset_env_ids) > 0:
             self.reset_idx(reset_env_ids)
 
-        # self.push_downward()
+        self.push_downward()
         self.actions = actions.clone().to(self._device)
 
         self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
@@ -151,16 +162,15 @@ class DianaTekkenTask(RLTask):
 
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-
     def push_downward(self):
-        self.spheres_to_pull = torch.where(self.target_pos[:, 2] > 0.5, torch.ones_like(self.spheres_to_pull), self.spheres_to_pull)
-        pull_env_ids = self.spheres_to_pull.nonzero(as_tuple=False).squeeze(-1)
+        self._cubes_to_pull = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self._cubes_to_pull), self._cubes_to_pull)
+        pull_env_ids = self._cubes_to_pull.nonzero(as_tuple=False).squeeze(-1)
 
         if len(pull_env_ids) > 0:
             indices = pull_env_ids.to(dtype=torch.int32)
-            self._spheres.apply_forces(self.applied_ext_forces, indices=indices)
+            self._pick_up_cubes.apply_forces(self.applied_ext_forces, indices=indices)
 
-            self.spheres_to_pull[pull_env_ids] = 0.
+            self._cubes_to_pull[pull_env_ids] = 0.
 
     def get_observations(self) -> dict:
         dof_pos = self._robots.get_joint_positions(clone=False)
@@ -230,6 +240,12 @@ class DianaTekkenTask(RLTask):
         self._pick_up_cubes.set_world_poses(positions=dof_pos, indices=indices)
         self._pick_up_cubes.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
 
+        if hasattr(self, "_ref_cubes"):
+            ref_cube_pos = dof_pos
+            ref_cube_pos[:, 2] = torch.ones((num_indices, 1), device=self._device) * 0.8
+            self._ref_cubes.set_world_poses(positions=ref_cube_pos, indices=indices)
+
+
         # bookkeeping
         self.reset_buf[env_ids] = 0
         self.progress_buf[env_ids] = 0
@@ -241,10 +257,8 @@ class DianaTekkenTask(RLTask):
         d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-
-
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
-        reward = torch.where(self.target_pos[:, 2] > 0.5, reward + 10, reward)
+        reward = torch.where(self.target_pos[:, 2] > 0.55, reward + 10, reward)
 
         reward = torch.where(torch.any(self.target_pos[:, :2] >= self._pick_up_cube_upper_bound[:2], dim=1), reward - 10, reward)
         reward = torch.where(torch.any(self.target_pos[:, :2] <= self._pick_up_cube_lower_bound[:2], dim=1), reward - 10, reward)
