@@ -80,6 +80,7 @@ def parse_hydra_configs(cfg: DictConfig):
             env._world.step(render=render)
             env.sim_frame_count += 1
             env._task.post_physics_step()
+            env.logging_step()
 
             if input_manager.kill: 
                 env.save_log()

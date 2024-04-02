@@ -107,7 +107,15 @@ class VecEnvRLGames(VecEnvBase):
                                     "applied_joint_actions": robot.get_applied_actions().joint_positions.tolist()}}
         
         self.data_logger.add_data_frame_logging_func(frame_logging_func)
-        self.data_logger.start()
+        
+        # self.data_logger.start() # Do Not execute this, otherwise the logger will be called inside the world step. Instead we want to call it after post step
+
+    
+    def logging_step(self):
+        data = self.data_logger._data_frame_logging_func(tasks=self._world.get_current_tasks(), scene=self._world.scene)
+        self.data_logger.add_data(
+            data=data, current_time_step=self._world.current_time_step_index, current_time=self._world.current_time
+        )
 
     def save_log(self):
         self.data_logger.save(self._save_path)
