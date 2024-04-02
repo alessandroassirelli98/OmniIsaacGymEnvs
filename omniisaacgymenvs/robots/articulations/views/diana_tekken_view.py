@@ -108,13 +108,13 @@ class DianaTekkenView(ArticulationView):
             "Right_Index_1",
             "Right_Middle_1",
             "Right_Ring_1",
-            "Right_Little_1",
+            # "Right_Little_1",
             "Right_Thumb_1",
 
             "Right_Index_2",
             "Right_Middle_2",
             "Right_Ring_2",
-            "Right_Little_2",
+            # "Right_Little_2",
             "Right_Thumb_2"
             ]
         

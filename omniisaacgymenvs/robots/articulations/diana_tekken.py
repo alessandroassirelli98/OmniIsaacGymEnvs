@@ -74,9 +74,9 @@ class DianaTekken(Robot):
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
         drive_type = ["angular"] * 22
-        default_dof_pos = [math.degrees(x) for x in [    0., -0.4,  0., 1.3, 0., -1.3, 0.]] + [0. for _ in range(15)]
-        stiffness = [400*np.pi/180] * 7 + [0.05, 0.05, 0.05] * 5
-        damping = [80*np.pi/180] * 7 + [0.0009375, 0.000625, 0.000625] * 5
+        default_dof_pos = [math.degrees(x) for x in [0., 0.,  0., 1.3, -3.14, 0, 1.57]] + [0. for _ in range(15)]
+        stiffness = [1000*np.pi/180] * 7 + [10, 10, 10] * 5
+        damping = [80*np.pi/180] * 7 + [0.009375, 0.0625, 0.0625] * 5
         max_force = [87, 87, 87, 87, 12, 12, 12] + [10, 1.5, 0.6] * 5
         max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(15)]
 
@@ -127,7 +127,7 @@ class DianaTekken(Robot):
                 rootApi.CreateLowerLimitAttr().Set(-self._symmetric_limit)
                 rootApi.CreateUpperLimitAttr().Set(self._symmetric_limit)
             else:
-                rootApi.CreateStiffnessAttr().Set(0.05)
+                rootApi.CreateStiffnessAttr().Set(0.5)
                 rootApi.CreateDampingAttr().Set(0.000625)
             rootApi.CreateGearingAttr().Set([tendon_gearing[0]])
             rootApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
