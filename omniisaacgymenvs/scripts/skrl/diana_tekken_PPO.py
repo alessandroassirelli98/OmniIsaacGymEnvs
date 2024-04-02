@@ -100,8 +100,8 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-# cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
-#                                      "project": "DianaTekkenAlgoTrials"}
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
+                                     "project": "DrillPickUpAlgoTrials"}
 
 
 agent = PPO(models=models,
@@ -113,11 +113,11 @@ agent = PPO(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 160000, "headless": False}
+cfg_trainer = {"timesteps": 16000, "headless": False}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # start training
-# trainer.train()
+trainer.train()
 
 
 # # ---------------------------------------------------------
@@ -127,8 +127,8 @@ trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 # from skrl.utils.huggingface import download_model_from_huggingface
 
 # # download the trained agent's checkpoint from Hugging Face Hub and load it
-path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-03-27_19-44-08-224916_PPO/checkpoints/best_agent.pt"
-agent.load(path)
+# path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-03-27_19-44-08-224916_PPO/checkpoints/best_agent.pt"
+# agent.load(path)
 
 # # # start evaluation
-trainer.eval()
+# trainer.eval()

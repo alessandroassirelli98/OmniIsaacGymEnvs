@@ -83,7 +83,7 @@ class DianaTekkenTask(RLTask):
         orientation = torch.tensor([torch.pi / 2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
         self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.45], device=self._device)
         self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.5], device=self._device)
-        self._drills_rot = euler_angles_to_quats(orientation)
+        self._drills_rot = euler_angles_to_quats(orientation, device=self._device)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
                               name="drill",
@@ -281,5 +281,4 @@ class DianaTekkenTask(RLTask):
         self.reset_buf = torch.where(self.progress_buf >= self._max_episode_length - 1, torch.ones_like(self.reset_buf), self.reset_buf)
         self.reset_buf = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
         self.reset_buf = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
-        
 
