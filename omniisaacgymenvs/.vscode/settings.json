@@ -1,4 +1,5 @@
 {"python.analysis.extraPaths": [
+    "~/devel/git-repos/my_fork/skrl",
     "~/.local/share/ov/pkg/isaac_sim-2022.2.1/exts/omni.isaac.app.selector",
     "~/.local/share/ov/pkg/isaac_sim-2022.2.1/exts/omni.isaac.app.setup",
     "~/.local/share/ov/pkg/isaac_sim-2022.2.1/exts/omni.isaac.articulation_inspector",
