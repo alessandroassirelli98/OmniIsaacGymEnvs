@@ -80,16 +80,16 @@ cfg["smooth_regularization_noise"] = GaussianNoise(0, 0.2, device=device)
 cfg["smooth_regularization_clip"] = 0.5
 cfg["gradient_steps"] = 1
 cfg["batch_size"] = 4096
-cfg["discount_factor"] = 0.99
-cfg["polyak"] = 0.005
-cfg["actor_learning_rate"] = 5e-4
-cfg["critic_learning_rate"] = 5e-4
+cfg["discount_factor"] = 0.95
+cfg["polyak"] = 0.05
+cfg["actor_learning_rate"] = 1e-3
+cfg["critic_learning_rate"] = 1e-3
 cfg["random_timesteps"] = 80
 cfg["learning_starts"] = 80
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
-cfg["experiment"]["write_interval"] = 800
+cfg["experiment"]["write_interval"] = 400
 cfg["experiment"]["checkpoint_interval"] = 8000
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"

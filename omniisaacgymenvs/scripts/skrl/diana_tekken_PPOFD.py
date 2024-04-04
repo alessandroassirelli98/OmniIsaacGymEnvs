@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
+import sys
 
 # import the skrl components to build the RL system
-from skrl.agents.torch.ppo import PPO, PPO_DEFAULT_CONFIG
+from skrl.agents.torch.ppofd import PPOFD, PPOFD_DEFAULT_CONFIG
 from skrl.envs.loaders.torch import load_omniverse_isaacgym_env
 from skrl.envs.wrappers.torch import wrap_env
 from skrl.memories.torch import RandomMemory
@@ -11,6 +12,7 @@ from skrl.resources.preprocessors.torch import RunningStandardScaler
 from skrl.resources.schedulers.torch import KLAdaptiveRL
 from skrl.trainers.torch import SequentialTrainer
 from skrl.utils import set_seed
+from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
 
 
 # seed for reproducibility
@@ -57,7 +59,6 @@ env = wrap_env(env)
 
 device = env.device
 
-
 # instantiate a memory as rollout buffer (any memory can be used for this)
 memory = RandomMemory(memory_size=16, num_envs=env.num_envs, device=device)
 
@@ -72,7 +73,7 @@ models["value"] = models["policy"]  # same instance: shared model
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
-cfg = PPO_DEFAULT_CONFIG.copy()
+cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 5
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768
@@ -100,12 +101,41 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD"], 
                                      "project": "DrillPickUpAlgoTrials"}
 
+defined = False
+for arg in sys.argv:
+    if arg.startswith("test="):
+        defined = True
+        break
+# get wandb usage from command line arguments
+if defined:
+    test = bool(arg.split("test=")[1].split(" ")[0])
+    if test: cfg["experiment"]["wandb"] = False
+else: 
+    test = False
 
-agent = PPO(models=models,
+defined = False
+for arg in sys.argv:
+    if arg.startswith("checkpoint="):
+        defined = True
+        break
+# get wandb usage from command line arguments
+if defined:
+    checkpoint_path = (arg.split("checkpoint=")[1].split(" ")[0])
+else: 
+    checkpoint_path = None
+        
+
+# Buffer prefill
+episode = parse_json_demo()
+demo_size = len(episode)
+demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=device)
+
+agent = PPOFD(models=models,
             memory=memory,
+            demonstration_memory=demonstration_memory,
             cfg=cfg,
             observation_space=env.observation_space,
             action_space=env.action_space,
@@ -116,19 +146,21 @@ agent = PPO(models=models,
 cfg_trainer = {"timesteps": 160000, "headless": False}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
+# demonstrations injection
+for tstep in episode:
+    states = torch.tensor(tstep["states"], device=device)
+    actions = torch.tensor(tstep["actions"], device=device)
+    rewards = torch.tensor(tstep["rewards"], device=device)
+    terminated = torch.tensor(tstep["terminated"], device=device)
+    next_states = torch.tensor(tstep["next_states"], device=device)
+    demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
+
 # start training
-# trainer.train()
+if checkpoint_path:
+    agent.load(checkpoint_path)
 
+if not test:
+    trainer.train()
+else:
+    trainer.eval()
 
-# # ---------------------------------------------------------
-# # comment the code above: `trainer.train()`, and...
-# # uncomment the following lines to evaluate a trained agent
-# # ---------------------------------------------------------
-# from skrl.utils.huggingface import download_model_from_huggingface
-
-# # download the trained agent's checkpoint from Hugging Face Hub and load it
-path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-04-02_18-23-32-564916_PPO/checkpoints/best_agent.pt"
-agent.load(path)
-
-# # # start evaluation
-trainer.eval()

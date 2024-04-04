@@ -16,7 +16,7 @@ from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
 
 # seed for reproducibility
 set_seed()  # e.g. `set_seed(42)` for fixed seed
-headless=False
+headless=True
 
 # define models (deterministic models) using mixins
 class DeterministicActor(DeterministicMixin, Model):
@@ -50,7 +50,7 @@ class Critic(DeterministicMixin, Model):
 
 
 # load and wrap the Omniverse Isaac Gym environment
-env = load_omniverse_isaacgym_env(task_name="DianaTekken", num_envs=8, headless=headless)
+env = load_omniverse_isaacgym_env(task_name="DianaTekken", num_envs=64, headless=headless)
 env = wrap_env(env)
 
 device = env.device
@@ -76,8 +76,8 @@ cfg = DDPG_DEFAULT_CONFIG.copy()
 cfg["exploration"]["noise"] = OrnsteinUhlenbeckNoise(theta=0.15, sigma=0.1, base_scale=0.5, device=device)
 cfg["gradient_steps"] = 1
 cfg["batch_size"] = 4096
-cfg["discount_factor"] = 0.99
-cfg["polyak"] = 0.005
+cfg["discount_factor"] = 0.95
+cfg["polyak"] = 0.05
 cfg["actor_learning_rate"] = 5e-4
 cfg["critic_learning_rate"] = 5e-4
 cfg["random_timesteps"] = 80
@@ -85,10 +85,13 @@ cfg["learning_starts"] = 80
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
-cfg["experiment"]["write_interval"] = 800
+cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["DDPG"], 
+                                     "project": "DrillPickUpAlgoTrials"}
+
 
 agent = DDPG(models=models,
              memory=memory,
@@ -114,8 +117,8 @@ for tstep in episode:
     memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
     
 # start training
-# trainer.train()
+trainer.train()
 
 
-agent.load("/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-03-27_18-08-46-681507_DDPG/checkpoints/best_agent.pt")
-trainer.eval()
+# agent.load("/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-03-27_18-08-46-681507_DDPG/checkpoints/best_agent.pt")
+# trainer.eval()
