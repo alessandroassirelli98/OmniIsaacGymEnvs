@@ -103,7 +103,7 @@ cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD"], 
-                                     "project": "DrillPickUpAlgoTrials"}
+                                     "project": "BC_evaluation"}
 
 defined = False
 for arg in sys.argv:
