@@ -250,7 +250,7 @@ class DianaTekkenTask(RLTask):
         if hasattr(self, "_ref_cubes"):
             ref_cube_pos = dof_pos
             ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
-            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.08
+            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.1
 
             self._ref_cubes.set_world_poses(positions=ref_cube_pos, orientations=rot, indices=indices)
 
@@ -269,8 +269,8 @@ class DianaTekkenTask(RLTask):
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         reward = torch.where(self.target_pos[:, 2] > 0.7, reward + 10, reward)
 
-        reward = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - 100, reward)
-        reward = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), reward - 100, reward)
+        reward = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - 10, reward)
+        reward = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), reward - 10, reward)
 
         self.rew_buf[:] = reward
         # pass

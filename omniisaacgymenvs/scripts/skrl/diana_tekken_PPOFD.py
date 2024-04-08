@@ -10,14 +10,13 @@ from skrl.memories.torch import RandomMemory
 from skrl.models.torch import DeterministicMixin, GaussianMixin, Model
 from skrl.resources.preprocessors.torch import RunningStandardScaler
 from skrl.resources.schedulers.torch import KLAdaptiveRL
-from skrl.trainers.torch import SequentialTrainer
+from skrl.trainers.torch import SequentialTrainer, Pretrainer
 from skrl.utils import set_seed
 from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
 
 
 # seed for reproducibility
-set_seed()  # e.g. `set_seed(42)` for fixed seed
-
+set_seed(42)  # e.g. `set_seed(42)` for fixed seed
 
 # define shared model (stochastic and deterministic models) using mixins
 class Shared(GaussianMixin, DeterministicMixin, Model):
@@ -74,23 +73,25 @@ models["value"] = models["policy"]  # same instance: shared model
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 cfg = PPOFD_DEFAULT_CONFIG.copy()
+cfg["pretrain"] = False
+cfg["pretrainer_epochs"] = 30
+cfg["pretrainer_lr"] = 5e-4
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 5
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768
 cfg["discount_factor"] = 0.99
 cfg["lambda"] = 0.95
 cfg["learning_rate"] = 5e-4
-cfg["learning_rate_scheduler"] = KLAdaptiveRL
-cfg["learning_rate_scheduler_kwargs"] = {"kl_threshold": 0.016}
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
+cfg["learning_rate_scheduler"] = KLAdaptiveRL
+cfg["learning_rate_scheduler_kwargs"] = {"kl_threshold": 0.016}
 cfg["clip_predicted_values"] = True
 cfg["entropy_loss_scale"] = 0.0
 cfg["value_loss_scale"] = 2.0
-cfg["kl_threshold"] = 0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
@@ -112,9 +113,11 @@ for arg in sys.argv:
 # get wandb usage from command line arguments
 if defined:
     test = bool(arg.split("test=")[1].split(" ")[0])
-    if test: cfg["experiment"]["wandb"] = False
+    # if test: cfg["experiment"]["wandb"] = False
 else: 
     test = False
+
+cfg["test"] = test
 
 defined = False
 for arg in sys.argv:
@@ -155,9 +158,27 @@ for tstep in episode:
     next_states = torch.tensor(tstep["next_states"], device=device)
     demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
 
+pt = Pretrainer(agent=agent,
+               lr=cfg["pretrainer_lr"],
+               epochs=cfg["pretrainer_epochs"],
+               batch_size=128)
+cfg["mean_expert_rew"] = pt.mean_exp_rew
+
 # start training
 if checkpoint_path:
     agent.load(checkpoint_path)
+
+if cfg["pretrain"]:
+    pt.train_bc()
+    import matplotlib.pyplot as plt
+    plt.title("BC loss")
+    plt.plot(pt.log_loss.cpu())
+    plt.show()
+
+    pt.test_bc()
+    plt.title("BC test loss")
+    plt.plot(pt.test_loss.cpu())
+    plt.show()
 
 if not test:
     trainer.train()
