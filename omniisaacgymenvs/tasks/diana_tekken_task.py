@@ -269,8 +269,8 @@ class DianaTekkenTask(RLTask):
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         reward = torch.where(self.target_pos[:, 2] > 0.7, reward + 10, reward)
 
-        reward = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - 10, reward)
-        reward = torch.where(torch.any(self.target_pos[:, :2] <= self._drill_lower_bound[:2], dim=1), reward - 10, reward)
+        reward = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - 100, reward)
+        reward = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), reward - 100, reward)
 
         self.rew_buf[:] = reward
         # pass
