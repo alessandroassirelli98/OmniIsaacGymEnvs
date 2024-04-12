@@ -147,7 +147,7 @@ class DianaTekkenTask(RLTask):
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
-        self.reset_idx(indices)
+        self.reset_idx(indices, True)
         
     def pre_physics_step(self, actions: torch.Tensor) -> None:
         # implement logic to be performed before physics steps
@@ -157,7 +157,7 @@ class DianaTekkenTask(RLTask):
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
         if len(reset_env_ids) > 0:
             # pass
-            self.reset_idx(reset_env_ids)
+            self.reset_idx(reset_env_ids, True)
 
         # self.push_downward()
         self.actions = actions.clone().to(self._device)
@@ -210,17 +210,20 @@ class DianaTekkenTask(RLTask):
         return observations
 
 
-    def reset_idx(self, env_ids):
+    def reset_idx(self, env_ids, deterministic=False):
         indices = env_ids.to(dtype=torch.int32)
         num_indices = len(indices)
 
         # Reset Diana Tekken robots
-        pos = tensor_clamp(
-            self.default_dof_pos[self.actuated_dof_indices].unsqueeze(0)
-            + 0.25 * (torch.rand((len(env_ids), self.num_actuated_dofs), device=self._device) - 0.5),
-            self._robot_dof_lower_limits[self.actuated_dof_indices],
-            self._robot_dof_upper_limits[self.actuated_dof_indices],
-        )
+        if not deterministic:
+            pos = tensor_clamp(
+                self.default_dof_pos[self.actuated_dof_indices].unsqueeze(0)
+                + 0.25 * (torch.rand((len(env_ids), self.num_actuated_dofs), device=self._device) - 0.5),
+                self._robot_dof_lower_limits[self.actuated_dof_indices],
+                self._robot_dof_upper_limits[self.actuated_dof_indices],
+            )
+        else:
+            pos = self.default_dof_pos[self.actuated_dof_indices].unsqueeze(0)
 
         dof_pos = torch.zeros((num_indices, self.num_diana_tekken_dofs), device=self._device)
         dof_vel = torch.zeros((num_indices, self.num_diana_tekken_dofs), device=self._device)
@@ -234,12 +237,16 @@ class DianaTekkenTask(RLTask):
         self._robots.set_joint_position_targets(self._robot_dof_targets[env_ids], indices=indices)
 
         # Reset target positions
-        pos = tensor_clamp(
-            self._drill_position.unsqueeze(0)
-            + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
-            self._drill_lower_bound,
-            self._drill_upper_bound,
-        )
+        if not deterministic:
+            pos = tensor_clamp(
+                self._drill_position.unsqueeze(0)
+                + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
+                self._drill_lower_bound,
+                self._drill_upper_bound,
+            )
+        else:
+            pos = self._drill_position.unsqueeze(0)
+
         dof_pos = torch.zeros((num_indices, 3), device=self._device)
         dof_pos[:, :] = pos + self._env_pos[env_ids]
         rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
