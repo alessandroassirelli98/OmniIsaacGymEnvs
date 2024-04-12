@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": "${command:pickArgs} task=DianaTekken headless=True num_envs=2"
+            "args": "${command:pickArgs} task=DianaTekken headless=False num_envs=1"
         }
     ]
 }

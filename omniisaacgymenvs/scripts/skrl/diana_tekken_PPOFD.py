@@ -73,7 +73,7 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
 
         self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions),
                                         nn.Tanh())
-        self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions))
+        self.log_std_parameter = nn.Parameter(torch.ones(self.num_actions) * (0))
 
         self.value_layer = nn.Linear(64, 1)
 
@@ -114,8 +114,8 @@ models["value"] = models["policy"]  # same instance: shared model
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["pretrain"] = True
-cfg["pretrainer_epochs"] = 250
-cfg["pretrainer_lr"] = 1e-4
+cfg["pretrainer_epochs"] = 1000
+cfg["pretrainer_lr"] = 1e-3
 
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 5
@@ -203,8 +203,8 @@ for tstep in episode:
     dict["next_states"] = next_states
     dict["terminated"] = terminated
     transitions.append(dict)
+    demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
 
-# demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
 # trainer.pre_train(transitions, 10)
 pt = Pretrainer(agent=agent,
                 transitions=transitions,
@@ -223,17 +223,20 @@ if cfg["pretrain"]:
     plt.plot(pt.log_policy_loss.cpu())
     plt.show()
 
-    value_loss_cpu = pt.log_std.cpu()
-    plt.title("Value loss")
-    plt.plot(pt.log_value_loss.cpu())
-    plt.ylabel("loss")
-    plt.xlabel("iteration")
-    plt.show()
-
-    # pt.test_bc()
-    # plt.title("BC test loss")
-    # plt.plot(pt.test_loss.cpu())
+    # value_loss_cpu = pt.log_std.cpu()
+    # plt.title("Value loss")
+    # plt.plot(pt.log_value_loss.cpu())
+    # plt.ylabel("loss")
+    # plt.xlabel("iteration")
     # plt.show()
+    replay_actions = pt.test_bc()
+    test_cpu = pt.test_loss.cpu()
+    plt.title("timestep error")
+    for i in range(test_cpu.shape[1]):
+        plt.plot(test_cpu[:,i])
+    plt.ylabel("error")
+    plt.xlabel("timestep")
+    plt.show()
 
     std_cpu = pt.log_std.cpu()
     plt.title("Actions std")
@@ -256,5 +259,5 @@ if cfg["pretrain"]:
 if not test:
     trainer.train()
 else:
-    trainer.eval()
+    trainer.eval(replay_actions)
 

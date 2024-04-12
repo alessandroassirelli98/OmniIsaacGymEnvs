@@ -76,7 +76,7 @@ def parse_hydra_configs(cfg: DictConfig):
     while env._simulation_app.is_running():
         if env._world.is_playing():
             if env._world.current_time_step_index == 0:
-                env._world.reset(soft=True)
+                env.reset(soft=True)
             env._task.pre_physics_step(action)
             env._world.step(render=render)
             env.sim_frame_count += 1

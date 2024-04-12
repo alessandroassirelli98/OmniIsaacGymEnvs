@@ -79,10 +79,10 @@ class DianaTekkenTask(RLTask):
 
 
     def get_drill(self):
-        self._drill_position = torch.tensor([0.8, 0, 0.54], device=self._device)
+        self._drill_position = torch.tensor([0.8, 0, 0.515], device=self._device)
         orientation = torch.tensor([torch.pi / 2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.54], device=self._device)
-        self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.54], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.45], device=self._device)
+        self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.6], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
@@ -125,7 +125,7 @@ class DianaTekkenTask(RLTask):
         self.num_diana_tekken_dofs = self._robots.num_dof
         self.actuated_dof_indices = self._robots.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
-        self.default_dof_pos = torch.tensor([0., 0.,  0., 1.3, -3.14, 0, 1.57] + [0.] * 20, device=self._device)
+        self.default_dof_pos = torch.tensor([0.8, -0.7,  -0.9, 2.2, -2.7, -0.1, 0.54] + [0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos

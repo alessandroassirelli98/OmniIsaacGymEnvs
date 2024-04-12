@@ -14,7 +14,7 @@ env:
   clipObservations: 5.0
   clipActions: 1.0
 
-  controlFrequencyInv: 2 # 60 Hz
+  controlFrequencyInv: 1 # 60 Hz
 
   actionScale: 2.5
 
