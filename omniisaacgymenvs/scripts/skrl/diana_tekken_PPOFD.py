@@ -114,21 +114,21 @@ models["value"] = models["policy"]  # same instance: shared model
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["pretrain"] = True
-cfg["pretrainer_epochs"] = 1000
+cfg["pretrainer_epochs"] = 100
 cfg["pretrainer_lr"] = 1e-3
 
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 5
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768
 cfg["discount_factor"] = 0.99
-cfg["lambda"] = 0
+cfg["lambda"] = 0.95
 cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
-cfg["clip_predicted_values"] = False
+cfg["clip_predicted_values"] = True
 cfg["entropy_loss_scale"] = 0.0
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = None#lambda rewards, timestep, timesteps: rewards * 0.01
@@ -141,7 +141,7 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = False
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["BC value "], 
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
                                      "project": "BC_evaluation"}
 
 defined = False
@@ -223,12 +223,13 @@ if cfg["pretrain"]:
     plt.plot(pt.log_policy_loss.cpu())
     plt.show()
 
-    # value_loss_cpu = pt.log_std.cpu()
-    # plt.title("Value loss")
-    # plt.plot(pt.log_value_loss.cpu())
-    # plt.ylabel("loss")
-    # plt.xlabel("iteration")
-    # plt.show()
+    value_loss_cpu = pt.log_std.cpu()
+    plt.title("Value loss")
+    plt.plot(pt.log_value_loss.cpu())
+    plt.ylabel("loss")
+    plt.xlabel("iteration")
+    plt.show()
+
     replay_actions = pt.test_bc()
     test_cpu = pt.test_loss.cpu()
     plt.title("timestep error")
