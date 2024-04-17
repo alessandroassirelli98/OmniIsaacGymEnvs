@@ -113,7 +113,7 @@ models["value"] = models["policy"]  # same instance: shared model
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 cfg = PPOFD_DEFAULT_CONFIG.copy()
-cfg["pretrain"] = True
+cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 200
 cfg["pretrainer_lr"] = 1e-3
 
@@ -141,7 +141,7 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["BC_policy init"], 
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
                                      "project": "BC_evaluation"}
 
 defined = False
