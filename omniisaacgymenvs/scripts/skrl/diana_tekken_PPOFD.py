@@ -114,7 +114,7 @@ models["value"] = models["policy"]  # same instance: shared model
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["pretrain"] = True
-cfg["pretrainer_epochs"] = 100
+cfg["pretrainer_epochs"] = 200
 cfg["pretrainer_lr"] = 1e-3
 
 cfg["rollouts"] = 16  # memory_size
@@ -140,8 +140,8 @@ cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
+cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["BC_policy init"], 
                                      "project": "BC_evaluation"}
 
 defined = False
@@ -233,8 +233,7 @@ if cfg["pretrain"]:
     replay_actions = pt.test_bc()
     test_cpu = pt.test_loss.cpu()
     plt.title("timestep error")
-    for i in range(test_cpu.shape[1]):
-        plt.plot(test_cpu[:,i])
+    plt.plot(test_cpu)
     plt.ylabel("error")
     plt.xlabel("timestep")
     plt.show()
@@ -256,9 +255,9 @@ if cfg["pretrain"]:
     plt.show()
 
 
-# agent.policy.reset_std()
+agent.policy.reset_std()
 if not test:
     trainer.train()
 else:
-    trainer.eval(replay_actions)
+    trainer.eval()
 

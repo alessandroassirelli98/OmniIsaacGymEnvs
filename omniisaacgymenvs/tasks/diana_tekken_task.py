@@ -79,7 +79,7 @@ class DianaTekkenTask(RLTask):
 
 
     def get_drill(self):
-        self._drill_position = torch.tensor([0.8, 0, 0.6], device=self._device)
+        self._drill_position = torch.tensor([0.8, 0, 0.52], device=self._device)
         orientation = torch.tensor([0, 0, -torch.pi/2], device=self._device).unsqueeze(0)
         self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.45], device=self._device)
         self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.7], device=self._device)
@@ -89,7 +89,7 @@ class DianaTekkenTask(RLTask):
                               name="drill",
                               translation=self._drill_position,
                               orientation=self._drills_rot.squeeze(0))
-        # self._sim_config.apply_articulation_settings("drill", get_prim_at_path(self._drill.prim_path), self._sim_config.parse_actor_config("drill"))
+        self._sim_config.apply_articulation_settings("drill", get_prim_at_path(self._drill.prim_path), self._sim_config.parse_actor_config("drill"))
         
  
     def get_cube(self):
@@ -259,9 +259,9 @@ class DianaTekkenTask(RLTask):
             ref_cube_pos = dof_pos
             q = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0))
             rot = torch.ones((num_indices, 4), device=self._device) * q
-            
+
             ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
-            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.1
+            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.05
 
             self._ref_cubes.set_world_poses(positions=ref_cube_pos, orientations=rot, indices=indices)
 
