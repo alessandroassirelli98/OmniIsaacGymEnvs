@@ -255,7 +255,7 @@ if cfg["pretrain"]:
     plt.show()
 
 
-# agent.policy.reset_std()
+agent.policy.reset_std()
 if not test:
     trainer.train()
 else:
