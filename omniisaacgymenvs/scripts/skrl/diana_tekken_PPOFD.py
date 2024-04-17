@@ -73,7 +73,7 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
 
         self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions),
                                         nn.Tanh())
-        self.log_std_parameter = nn.Parameter(torch.ones(self.num_actions) * (0))
+        self.log_std_parameter = nn.Parameter(torch.ones(self.num_actions) * 0, requires_grad=True)
 
         self.value_layer = nn.Linear(64, 1)
 
@@ -90,7 +90,8 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
             return self.value_layer(self.net(inputs["states"])), {}
         
     def reset_std(self):
-        self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions, device=device))
+        with torch.no_grad():
+            self.log_std_parameter.zero_()
 
 # load and wrap the Omniverse Isaac Gym environment
 env = load_omniverse_isaacgym_env(task_name="DianaTekken")
@@ -141,7 +142,7 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"], 
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC init no reset"], 
                                      "project": "BC_evaluation"}
 
 defined = False
@@ -255,7 +256,7 @@ if cfg["pretrain"]:
     plt.show()
 
 
-agent.policy.reset_std()
+# agent.policy.reset_std()
 if not test:
     trainer.train()
 else:
