@@ -113,7 +113,7 @@ models["value"] = models["policy"]  # same instance: shared model
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 cfg = PPOFD_DEFAULT_CONFIG.copy()
-cfg["pretrain"] = False
+cfg["pretrain"] = True
 cfg["pretrainer_epochs"] = 200
 cfg["pretrainer_lr"] = 1e-3
 
@@ -255,9 +255,9 @@ if cfg["pretrain"]:
     plt.show()
 
 
-agent.policy.reset_std()
+# agent.policy.reset_std()
 if not test:
     trainer.train()
 else:
-    trainer.eval()
+    trainer.eval(replay_actions)
 
