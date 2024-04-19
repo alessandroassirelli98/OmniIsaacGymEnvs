@@ -81,8 +81,8 @@ class DianaTekkenTask(RLTask):
     def get_drill(self):
         self._drill_position = torch.tensor([0.8, 0, 0.52], device=self._device)
         orientation = torch.tensor([0, 0, -torch.pi/2], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.45], device=self._device)
-        self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.7], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.5], device=self._device)
+        self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.55], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
