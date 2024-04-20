@@ -142,7 +142,7 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC", "Separate NN", "Train with 0 loss", "No reset"],
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC", "Separate NN", "Train with both loss", "Reset"],
                                      "project": "PPO + BC analysis"}
 
 defined = False
@@ -229,43 +229,43 @@ if cfg["pretrain"]:
     # plt.show()
 
     pt.train_bc()
-    plt.title("BC loss")
-    plt.plot(pt.log_policy_loss.cpu())
-    plt.show()
+    # plt.title("BC loss")
+    # plt.plot(pt.log_policy_loss.cpu())
+    # plt.show()
 
-    value_loss_cpu = pt.log_std.cpu()
-    plt.title("Value loss")
-    plt.plot(pt.log_value_loss.cpu())
-    plt.ylabel("loss")
-    plt.xlabel("iteration")
-    plt.show()
+    # value_loss_cpu = pt.log_std.cpu()
+    # plt.title("Value loss")
+    # plt.plot(pt.log_value_loss.cpu())
+    # plt.ylabel("loss")
+    # plt.xlabel("iteration")
+    # plt.show()
 
-    replay_actions = pt.test_bc()
-    test_cpu = pt.test_policy_loss.cpu()
-    plt.title("Acion test loss")
-    plt.plot(test_cpu)
-    plt.ylabel("mse")
-    plt.xlabel("timestep")
-    plt.show()
+    # replay_actions = pt.test_bc()
+    # test_cpu = pt.test_policy_loss.cpu()
+    # plt.title("Acion test loss")
+    # plt.plot(test_cpu)
+    # plt.ylabel("mse")
+    # plt.xlabel("timestep")
+    # plt.show()
 
-    std_cpu = pt.log_std.cpu()
-    plt.title("Actions std")
-    for i in range(std_cpu.shape[1]):
-        plt.plot(std_cpu[:,i])
-    plt.ylabel("std")
-    plt.xlabel("Epoch")
-    plt.show()
+    # std_cpu = pt.log_std.cpu()
+    # plt.title("Actions std")
+    # for i in range(std_cpu.shape[1]):
+    #     plt.plot(std_cpu[:,i])
+    # plt.ylabel("std")
+    # plt.xlabel("Epoch")
+    # plt.show()
 
-    mean_cpu = pt.log_mse.cpu()
-    plt.title("Actions mse")
-    for i in range(mean_cpu.shape[1]):
-        plt.plot(mean_cpu[:,i])
-    plt.ylabel("mse")
-    plt.xlabel("Epoch")
-    plt.show()
+    # mean_cpu = pt.log_mse.cpu()
+    # plt.title("Actions mse")
+    # for i in range(mean_cpu.shape[1]):
+    #     plt.plot(mean_cpu[:,i])
+    # plt.ylabel("mse")
+    # plt.xlabel("Epoch")
+    # plt.show()
 
 
-# agent.policy.reset_std()
+agent.policy.reset_std()
 if not test:
     trainer.train()
 else:
