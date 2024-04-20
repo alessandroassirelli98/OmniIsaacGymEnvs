@@ -142,7 +142,7 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC + V init", "Separate NN", "Train P and V", "No reset"],
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC", "Separate NN", "Train with 0 loss", "No reset"],
                                      "project": "PPO + BC analysis"}
 
 defined = False
