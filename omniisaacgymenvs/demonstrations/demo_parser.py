@@ -44,7 +44,7 @@ def parse_json_demo():
 if __name__ == "__main__":
     e = parse_json_demo()
     ep_ret = []
-    for ep in range(1, 3):
+    for ep in range(1, 13):
         r = []
         for i in range(1200 * ep, 1200 * (ep+1)):
             r.append(e[i]["rewards"])
