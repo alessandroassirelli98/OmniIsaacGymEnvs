@@ -146,7 +146,7 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC", "Shared NN", "Train with both loss", "Reset"],
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC", "Shared NN", "Train with both loss", "No Reset"],
                                      "project": "PPO + BC analysis"}
 
 defined = False
@@ -269,7 +269,7 @@ if cfg["pretrain"]:
     # plt.show()
 
 
-agent.policy.reset_std()
+# agent.policy.reset_std()
 if not test:
     trainer.train()
 else:
