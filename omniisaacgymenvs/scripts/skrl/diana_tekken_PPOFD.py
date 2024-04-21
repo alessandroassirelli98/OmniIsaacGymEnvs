@@ -38,6 +38,10 @@ class StochasticActor(GaussianMixin, Model):
     def compute(self, inputs, role):
         return self.mean_layer(self.net(inputs["states"])), self.log_std_parameter, {}
     
+    def reset_std(self):
+        with torch.no_grad():
+            self.log_std_parameter.zero_()
+    
 class Critic(DeterministicMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False):
         Model.__init__(self, observation_space, action_space, device)
