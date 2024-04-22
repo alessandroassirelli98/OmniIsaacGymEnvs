@@ -47,11 +47,11 @@ class DianaTekken(Robot):
             "link_5/joint_6",
             "link_6/joint_7",
 
-            "base_link_hithand/Right_Index_0", 
-            "base_link_hithand/Right_Middle_0",
-            "base_link_hithand/Right_Ring_0",
-            "base_link_hithand/Right_Little_0",
-            "base_link_hithand/Right_Thumb_0",
+            # "base_link_hithand/Right_Index_0", 
+            # "base_link_hithand/Right_Middle_0",
+            # "base_link_hithand/Right_Ring_0",
+            # "base_link_hithand/Right_Little_0",
+            # "base_link_hithand/Right_Thumb_0",
 
             "Right_Index_Basecover/Right_Index_1",
             "Right_Middle_Basecover/Right_Middle_1",
@@ -74,11 +74,11 @@ class DianaTekken(Robot):
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
         drive_type = ["angular"] * 22
-        default_dof_pos = [math.degrees(x) for x in [0.8, -0.7,  -0.9, 2.2, -2.7, -0.1, 0.54]] + [0. for _ in range(15)]
-        stiffness = [1000*np.pi/180] * 7 + [10, 10, 10] * 5
-        damping = [80*np.pi/180] * 7 + [0.009375, 0.0625, 0.0625] * 5
-        max_force = [87, 87, 87, 87, 12, 12, 12] + [10, 1.5, 0.6] * 5
-        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(15)]
+        default_dof_pos = [math.degrees(x) for x in [0.8, -0.7,  -0.9, 2.2, -2.7, -0.1, 0.54]] + [0. for _ in range(10)]
+        stiffness = [1000*np.pi/180] * 7 + [10, 10] * 5
+        damping = [80*np.pi/180] * 7 + [0.0625, 0.0625] * 5
+        max_force = [87, 87, 87, 87, 12, 12, 12] + [1.5, 0.6] * 5
+        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(10)]
 
         # STICK WITH THE URDF DRIVE PARAMETERS
 

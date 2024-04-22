@@ -35,7 +35,7 @@ class DianaTekkenTask(RLTask):
         self.dt = self._task_cfg["sim"]["dt"]
 
         self._num_observations = 68
-        if not hasattr(self, '_num_actions'): self._num_actions = 22 # If the number of actions has been defined from a child
+        if not hasattr(self, '_num_actions'): self._num_actions = 12 # If the number of actions has been defined from a child
 
         RLTask.__init__(self, name, env)
 
@@ -161,8 +161,9 @@ class DianaTekkenTask(RLTask):
 
         # self.push_downward()
         self.actions = actions.clone().to(self._device)
-
         self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
+        self._robot_dof_targets = self._robots.clamp_joint0_joint1(self._robot_dof_targets)
+
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
 
