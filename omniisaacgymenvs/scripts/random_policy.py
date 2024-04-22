@@ -64,7 +64,7 @@ def parse_hydra_configs(cfg: DictConfig):
             t += 1/120
             omega = 2*np.pi/10
             action = np.zeros_like(env.action_space.sample())
-            action[0] = np.sin(omega * t)*0
+            action[7] = np.sin(omega * t)
             # actions = torch.tensor(np.array([env.action_space.sample() for _ in range(env.num_envs)]), device=task.rl_device)
             actions = torch.tensor(np.array([action for _ in range(env.num_envs)]), device=task.rl_device)
             env._task.pre_physics_step(actions)

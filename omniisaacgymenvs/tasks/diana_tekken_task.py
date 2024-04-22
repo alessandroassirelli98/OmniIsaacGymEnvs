@@ -125,7 +125,7 @@ class DianaTekkenTask(RLTask):
         self.num_diana_tekken_dofs = self._robots.num_dof
         self.actuated_dof_indices = self._robots.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
-        self.default_dof_pos = torch.tensor([0.8, -0.7,  -0.9, 2.2, -2.7, -0.1, 0.54] + [0.] * 20, device=self._device)
+        self.default_dof_pos = torch.tensor([0.8694, -0.8775, -0.9930,  2.2817, -2.6929, -0.1896,  0.4355] + [0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos
@@ -166,6 +166,8 @@ class DianaTekkenTask(RLTask):
 
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
+
+        # print(self._robots.get_joint_positions()[:, :7])
 
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 

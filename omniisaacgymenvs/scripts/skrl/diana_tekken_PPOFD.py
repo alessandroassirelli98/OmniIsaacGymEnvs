@@ -145,7 +145,7 @@ cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC", "Shared NN", "Train P and V", "Bc on MSE"],
                                      "project": "BC_evaluation"}
 
@@ -208,7 +208,7 @@ for tstep in episode:
     dict["next_states"] = next_states
     dict["terminated"] = terminated
     transitions.append(dict)
-    demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
+    # demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
 
 # trainer.pre_train(transitions, 10)
 pt = Pretrainer(agent=agent,
