@@ -42,6 +42,10 @@ class StochasticActor(GaussianMixin, Model):
         with torch.no_grad():
             self.log_std_parameter.zero_()
     
+    def make_deterministic(self):
+        with torch.no_grad():
+            self.log_std_parameter.fill_(torch.finfo(torch.float32).min)
+    
 class Critic(DeterministicMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False):
         Model.__init__(self, observation_space, action_space, device)
@@ -117,6 +121,7 @@ models["value"] = Critic(env.observation_space, env.action_space, device)
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
+plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["pretrain"] = True
 cfg["pretrainer_epochs"] = 150
@@ -136,18 +141,18 @@ cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
 cfg["entropy_loss_scale"] = 0.0
 cfg["value_loss_scale"] = 2.0
-cfg["rewards_shaper"] = None#lambda rewards, timestep, timesteps: rewards * 0.01
+cfg["rewards_shaper"] = None# lambda rewards, timestep, timesteps: rewards * 0.01
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
-cfg["value_preprocessor"] = None#RunningStandardScaler
+cfg["value_preprocessor"] = None # RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO + BC", "Shared NN", "Train P and V", "Bc on MSE"],
-                                     "project": "BC_evaluation"}
+cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC", "Separate NN", "Bc on MSE"],
+                                     "project": "simplified model"}
 
 defined = False
 for arg in sys.argv:
@@ -208,7 +213,7 @@ for tstep in episode:
     dict["next_states"] = next_states
     dict["terminated"] = terminated
     transitions.append(dict)
-    # demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
+    demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
 
 # trainer.pre_train(transitions, 10)
 pt = Pretrainer(agent=agent,
@@ -221,56 +226,60 @@ pt = Pretrainer(agent=agent,
 if checkpoint_path:
     agent.load(checkpoint_path)
 
-if cfg["pretrain"]:
+if cfg["pretrain"] and not test:
     import matplotlib.pyplot as plt
 
     replay_actions = pt.test_bc()
-    # test_cpu = pt.test_policy_loss.cpu()
-    # plt.title("timestep error")
-    # plt.plot(test_cpu)
-    # plt.ylabel("error")
-    # plt.xlabel("timestep")
-    # plt.show()
-
     pt.train_bc()
-    # plt.title("BC loss")
-    # plt.plot(pt.log_policy_loss.cpu())
-    # plt.show()
+    
+    if plot:
+        # test_cpu = pt.test_policy_loss.cpu()
+        # plt.title("timestep error")
+        # plt.plot(test_cpu)
+        # plt.ylabel("error")
+        # plt.xlabel("timestep")
+        # plt.show()
 
-    # value_loss_cpu = pt.log_std.cpu()
-    # plt.title("Value loss")
-    # plt.plot(pt.log_value_loss.cpu())
-    # plt.ylabel("loss")
-    # plt.xlabel("iteration")
-    # plt.show()
+        # pt.train_bc()
+        # plt.title("BC loss")
+        # plt.plot(pt.log_policy_loss.cpu())
+        # plt.show()
 
-    # replay_actions = pt.test_bc()
-    # test_cpu = pt.test_policy_loss.cpu()
-    # plt.title("Acion test loss")
-    # plt.plot(test_cpu)
-    # plt.ylabel("mse")
-    # plt.xlabel("timestep")
-    # plt.show()
+        # value_loss_cpu = pt.log_std.cpu()
+        # plt.title("Value loss")
+        # plt.plot(pt.log_value_loss.cpu())
+        # plt.ylabel("loss")
+        # plt.xlabel("iteration")
+        # plt.show()
 
-    # std_cpu = pt.log_std.cpu()
-    # plt.title("Actions std")
-    # for i in range(std_cpu.shape[1]):
-    #     plt.plot(std_cpu[:,i])
-    # plt.ylabel("std")
-    # plt.xlabel("Epoch")
-    # plt.show()
+        # replay_actions = pt.test_bc()
+        # test_cpu = pt.test_policy_loss.cpu()
+        # plt.title("Acion test loss")
+        # plt.plot(test_cpu)
+        # plt.ylabel("mse")
+        # plt.xlabel("timestep")
+        # plt.show()
 
-    # mean_cpu = pt.log_mse.cpu()
-    # plt.title("Actions mse")
-    # for i in range(mean_cpu.shape[1]):
-    #     plt.plot(mean_cpu[:,i])
-    # plt.ylabel("mse")
-    # plt.xlabel("Epoch")
-    # plt.show()
+        # std_cpu = pt.log_std.cpu()
+        # plt.title("Actions std")
+        # for i in range(std_cpu.shape[1]):
+        #     plt.plot(std_cpu[:,i])
+        # plt.ylabel("std")
+        # plt.xlabel("Epoch")
+        # plt.show()
 
+        # mean_cpu = pt.log_mse.cpu()
+        # plt.title("Actions mse")
+        # for i in range(mean_cpu.shape[1]):
+        #     plt.plot(mean_cpu[:,i])
+        # plt.ylabel("mse")
+        # plt.xlabel("Epoch")
+        # plt.show()
+        pass
 
 if not test:
     trainer.train()
 else:
-    trainer.eval(replay_actions)
+    agent.policy.make_deterministic()
+    trainer.eval()
 
