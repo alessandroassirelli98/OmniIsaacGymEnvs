@@ -29,14 +29,21 @@ def parse_json_demo():
     episode = []
     dim = len(states)
     for i, (s, a, r, t) in enumerate(zip(states, actions, rewards, terminated)):
-        if i == 0: continue
         if i == dim-1: break
         timestep = {}
         timestep["states"] = s
         timestep["actions"] = a
         timestep["rewards"] = r
         timestep["terminated"] = t
-        timestep["next_states"] = states[i + 1]
+        # TODO fix unavailable next states
+        if not bool(t[0]):
+            timestep["next_states"] = states[i + 1]
+        else:
+            timestep["next_states"] = s
+            # a = np.empty_like(s)[:]
+            # a[:] = np.nan
+            # timestep["next_states"] = a
+
         episode.append(timestep)
 
     return episode

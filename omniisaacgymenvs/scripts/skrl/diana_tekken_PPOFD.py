@@ -13,6 +13,7 @@ from skrl.resources.schedulers.torch import KLAdaptiveRL
 from skrl.trainers.torch import SequentialTrainer, Pretrainer
 from skrl.utils import set_seed
 from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
+from parse_algo_config import parse_arguments
 
 
 # seed for reproducibility
@@ -109,6 +110,7 @@ device = env.device
 
 # instantiate a memory as rollout buffer (any memory can be used for this)
 memory = RandomMemory(memory_size=16, num_envs=env.num_envs, device=device)
+samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, device=device)
 
 
 # instantiate the agent's models (function approximators).
@@ -124,7 +126,7 @@ models["value"] = Critic(env.observation_space, env.action_space, device)
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["pretrain"] = True
-cfg["pretrainer_epochs"] = 150
+cfg["pretrainer_epochs"] = 100
 cfg["pretrainer_lr"] = 1e-3
 
 cfg["rollouts"] = 16  # memory_size
@@ -136,49 +138,40 @@ cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
-cfg["ratio_clip"] = 0.2
+cfg["ratio_clip"] = 0.5
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.0
+cfg["entropy_loss_scale"] = 0.
 cfg["value_loss_scale"] = 2.0
-cfg["rewards_shaper"] = None# lambda rewards, timestep, timesteps: rewards * 0.01
+cfg["rewards_shaper"] = None #lambda rewards, timestep, timesteps: rewards * 0.01
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
-cfg["value_preprocessor"] = None # RunningStandardScaler
+cfg["value_preprocessor"] = None #RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC", "Separate NN", "Bc on MSE"],
-                                     "project": "simplified model"}
+cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
+                                     "project": "simplified model cut episode"}
 
-defined = False
-for arg in sys.argv:
-    if arg.startswith("test="):
-        defined = True
-        break
-# get wandb usage from command line arguments
-if defined:
-    test = bool(arg.split("test=")[1].split(" ")[0])
-    # if test: cfg["experiment"]["wandb"] = False
-else: 
-    test = False
+ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
+algo_config = parse_arguments(ignore_args)
+for key, value in algo_config.items():
+    if key == "checkpoint":
+        pass
+    elif value == "RunningStandardScaler":
+        value = RunningStandardScaler
+    elif value == 'True' or value == 'False':
+        value = bool(value)
+    elif '.' in value:
+        value = float(value)
+    else:
+        value = int(value)
+    cfg[str(key)] = value
+    print(f"Setting {key} to {value} of type {type(value)}")
 
-cfg["test"] = test
-
-defined = False
-for arg in sys.argv:
-    if arg.startswith("checkpoint="):
-        defined = True
-        break
-# get wandb usage from command line arguments
-if defined:
-    checkpoint_path = (arg.split("checkpoint=")[1].split(" ")[0])
-else: 
-    checkpoint_path = None
-        
 
 # Buffer prefill
 episode = parse_json_demo()
@@ -188,6 +181,7 @@ demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=de
 agent = PPOFD(models=models,
             memory=memory,
             demonstration_memory=demonstration_memory,
+            sampling_demo_memory=samppling_demo_memory,
             cfg=cfg,
             observation_space=env.observation_space,
             action_space=env.action_space,
@@ -195,7 +189,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 100000, "headless": False}
+cfg_trainer = {"timesteps": 70000, "headless": False}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection
@@ -223,61 +217,59 @@ pt = Pretrainer(agent=agent,
                batch_size=128)
 
 # start training
-if checkpoint_path:
-    agent.load(checkpoint_path)
+if cfg["checkpoint"]:
+    agent.load(cfg["checkpoint"])
 
-if cfg["pretrain"] and not test:
+if cfg["pretrain"] and not cfg["test"]:
     import matplotlib.pyplot as plt
 
     replay_actions = pt.test_bc()
     pt.train_bc()
     
     if plot:
-        # test_cpu = pt.test_policy_loss.cpu()
-        # plt.title("timestep error")
-        # plt.plot(test_cpu)
-        # plt.ylabel("error")
-        # plt.xlabel("timestep")
-        # plt.show()
+        test_cpu = pt.test_policy_loss.cpu()
+        plt.title("timestep error")
+        plt.plot(test_cpu)
+        plt.ylabel("error")
+        plt.xlabel("timestep")
+        plt.show()
 
-        # pt.train_bc()
-        # plt.title("BC loss")
-        # plt.plot(pt.log_policy_loss.cpu())
-        # plt.show()
+        plt.title("BC loss")
+        plt.plot(pt.log_policy_loss.cpu())
+        plt.show()
 
-        # value_loss_cpu = pt.log_std.cpu()
-        # plt.title("Value loss")
-        # plt.plot(pt.log_value_loss.cpu())
-        # plt.ylabel("loss")
-        # plt.xlabel("iteration")
-        # plt.show()
+        value_loss_cpu = pt.log_std.cpu()
+        plt.title("Value loss")
+        plt.plot(pt.log_value_loss.cpu())
+        plt.ylabel("loss")
+        plt.xlabel("iteration")
+        plt.show()
 
-        # replay_actions = pt.test_bc()
-        # test_cpu = pt.test_policy_loss.cpu()
-        # plt.title("Acion test loss")
-        # plt.plot(test_cpu)
-        # plt.ylabel("mse")
-        # plt.xlabel("timestep")
-        # plt.show()
+        replay_actions = pt.test_bc()
+        test_cpu = pt.test_policy_loss.cpu()
+        plt.title("Acion test loss")
+        plt.plot(test_cpu)
+        plt.ylabel("mse")
+        plt.xlabel("timestep")
+        plt.show()
 
-        # std_cpu = pt.log_std.cpu()
-        # plt.title("Actions std")
-        # for i in range(std_cpu.shape[1]):
-        #     plt.plot(std_cpu[:,i])
-        # plt.ylabel("std")
-        # plt.xlabel("Epoch")
-        # plt.show()
+        std_cpu = pt.log_std.cpu()
+        plt.title("Actions std")
+        for i in range(std_cpu.shape[1]):
+            plt.plot(std_cpu[:,i])
+        plt.ylabel("std")
+        plt.xlabel("Epoch")
+        plt.show()
 
-        # mean_cpu = pt.log_mse.cpu()
-        # plt.title("Actions mse")
-        # for i in range(mean_cpu.shape[1]):
-        #     plt.plot(mean_cpu[:,i])
-        # plt.ylabel("mse")
-        # plt.xlabel("Epoch")
-        # plt.show()
-        pass
+        mean_cpu = pt.log_mse.cpu()
+        plt.title("Actions mse")
+        for i in range(mean_cpu.shape[1]):
+            plt.plot(mean_cpu[:,i])
+        plt.ylabel("mse")
+        plt.xlabel("Epoch")
+        plt.show()
 
-if not test:
+if not cfg["test"]:
     trainer.train()
 else:
     agent.policy.make_deterministic()
