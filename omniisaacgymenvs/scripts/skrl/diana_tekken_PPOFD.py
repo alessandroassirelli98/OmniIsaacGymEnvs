@@ -63,44 +63,6 @@ class Critic(DeterministicMixin, Model):
 
     def compute(self, inputs, role):
         return self.value_layer(self.net(inputs["states"])), {}   
-    
-# define shared model (stochastic and deterministic models) using mixins
-# class Shared(GaussianMixin, DeterministicMixin, Model):
-#     def __init__(self, observation_space, action_space, device, clip_actions=False,
-#                  clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
-#         Model.__init__(self, observation_space, action_space, device)
-#         GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction)
-#         DeterministicMixin.__init__(self, clip_actions)
-
-#         self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
-#                                  nn.ELU(),
-#                                  nn.Linear(256, 128),
-#                                  nn.ELU(),
-#                                  nn.Linear(128, 64),
-#                                  nn.ELU(),
-#                                  )
-
-#         self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions),
-#                                         nn.Tanh())
-#         self.log_std_parameter = nn.Parameter(torch.ones(self.num_actions) * 0, requires_grad=True)
-
-#         self.value_layer = nn.Linear(64, 1)
-
-#     def act(self, inputs, role):
-#         if role == "policy":
-#             return GaussianMixin.act(self, inputs, role)
-#         elif role == "value":
-#             return DeterministicMixin.act(self, inputs, role)
-
-#     def compute(self, inputs, role):
-#         if role == "policy":
-#             return self.mean_layer(self.net(inputs["states"])), self.log_std_parameter, {}
-#         elif role == "value":
-#             return self.value_layer(self.net(inputs["states"])), {}
-        
-#     def reset_std(self):
-#         with torch.no_grad():
-#             self.log_std_parameter.zero_()
 
 # load and wrap the Omniverse Isaac Gym environment
 env = load_omniverse_isaacgym_env(task_name="DianaTekken")
@@ -125,8 +87,8 @@ models["value"] = Critic(env.observation_space, env.action_space, device)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
-cfg["pretrain"] = True
-cfg["pretrainer_epochs"] = 100
+cfg["pretrain"] = False
+cfg["pretrainer_epochs"] = 150
 cfg["pretrainer_lr"] = 1e-3
 
 cfg["rollouts"] = 16  # memory_size
@@ -138,7 +100,7 @@ cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
-cfg["ratio_clip"] = 0.5
+cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
 cfg["entropy_loss_scale"] = 0.
@@ -152,19 +114,22 @@ cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
-                                     "project": "simplified model cut episode"}
+                                     "project": "simplified model"}
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
 for key, value in algo_config.items():
+    print(key, value)
     if key == "checkpoint":
         pass
     elif value == "RunningStandardScaler":
         value = RunningStandardScaler
-    elif value == 'True' or value == 'False':
-        value = bool(value)
+    elif value == 'True':
+        value = True
+    elif value == 'False':
+        value = False
     elif '.' in value:
         value = float(value)
     else:
