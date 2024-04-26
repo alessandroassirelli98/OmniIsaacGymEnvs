@@ -280,16 +280,24 @@ class DianaTekkenTask(RLTask):
 
 
     def calculate_metrics(self) -> None:
+        fail_penalty = 100
+        goal_achieved = 100
         # implement logic to compute rewards
         # Distance to target
         d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
-        reward = torch.where(self.target_pos[:, 2] > 0.6, reward + 10, reward)
+        reward = torch.where(self.target_pos[:, 2] > 0.6, reward + goal_achieved, reward)
 
-        reward = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - 10, reward)
-        reward = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), reward - 10, reward)
+        # If the drill is out of bound
+        reward = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - fail_penalty, reward)
+        reward = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), reward - fail_penalty, reward)
+
+        # If the hand is out of bound
+        reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - fail_penalty, reward)
+        reward = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), reward - fail_penalty, reward)
+
 
         self.rew_buf[:] = reward
         # pass
@@ -307,6 +315,8 @@ class DianaTekkenTask(RLTask):
         self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
         self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
+        # Task achieved
+        self.reset_buf = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self.reset_buf), self.reset_buf)
         # If the resultant contact force between table and hand is more than a threshold
         # self.reset_buf = torch.where(torch.sqrt(torch.sum(self._cubes.get_contact_force_matrix()[:, 0, :]**2, dim=1 )) >= 0.5, 
         #                              torch.ones_like(self.reset_buf), self.reset_buf) #Doesn't work on gpu
