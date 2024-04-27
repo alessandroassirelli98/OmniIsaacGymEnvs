@@ -9,11 +9,22 @@ configurations:
       value_preprocessor: RunningStandardScaler
 
   - run3:
-      pretrain: False
+      pretrain: True
       mini_batches: 4
 
   - run4:
-      pretrain: False
+      pretrain: True
       mini_batches: 4
       value_preprocessor: RunningStandardScaler
+
+  - run5:
+      pretrain: True
+      mini_batches: 4
+      lambda_0: 1.
+
+  - run6:
+      pretrain: True
+      mini_batches: 4
+      value_preprocessor: RunningStandardScaler
+      lambda_0: 1.
 

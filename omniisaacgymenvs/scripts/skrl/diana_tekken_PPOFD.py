@@ -13,7 +13,7 @@ from skrl.resources.schedulers.torch import KLAdaptiveRL
 from skrl.trainers.torch import SequentialTrainer, Pretrainer
 from skrl.utils import set_seed
 from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
-from parse_algo_config import parse_arguments
+from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 
 
 # seed for reproducibility
@@ -116,7 +116,7 @@ cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
-                                     "project": "simplified model"}
+                                     "project": "simplified model comparison"}
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
