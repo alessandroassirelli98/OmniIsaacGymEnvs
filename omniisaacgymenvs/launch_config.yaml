@@ -1,20 +1,17 @@
 configurations:
+ 
 
-  - run1:
-      pretrain: False
+  - run10:
+      pretrain: True
       mini_batches: 4
-
-  - run2:
-      pretrain: False
-      mini_batches: 4
+      ratio_clip: 0.2
+      learning_rate_scheduler: KLAdaptiveRL
       value_preprocessor: RunningStandardScaler
 
-  - run3:
-      pretrain: False
+  - run11:
+      pretrain: True
       mini_batches: 4
-
-  - run4:
-      pretrain: False
-      mini_batches: 4
+      ratio_clip: 0.5
+      learning_rate_scheduler: KLAdaptiveRL
       value_preprocessor: RunningStandardScaler
 
