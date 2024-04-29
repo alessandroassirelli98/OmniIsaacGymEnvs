@@ -88,7 +88,7 @@ models["value"] = Critic(env.observation_space, env.action_space, device)
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["pretrain"] = False
-cfg["pretrainer_epochs"] = 10
+cfg["pretrainer_epochs"] = 150
 cfg["pretrainer_lr"] = 1e-3
 
 cfg["rollouts"] = 16  # memory_size
@@ -114,7 +114,7 @@ cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
                                      "project": "simplified model sparse rew no cut"}
 
@@ -156,7 +156,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 35}
+cfg_trainer = {"timesteps": 35000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection
