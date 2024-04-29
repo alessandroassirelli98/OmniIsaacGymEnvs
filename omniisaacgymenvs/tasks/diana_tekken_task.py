@@ -288,7 +288,7 @@ class DianaTekkenTask(RLTask):
         d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-        d = torch.norm(self.target_pos[:, 2] - self.reach_target[2], p=2, dim=1)
+        d = torch.abs(self.target_pos[:, 2] - self.reach_target[2])
         reward += torch.log(1 / (1.0 + d ** 2))
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
