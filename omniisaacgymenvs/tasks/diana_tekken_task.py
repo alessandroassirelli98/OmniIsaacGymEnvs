@@ -288,8 +288,8 @@ class DianaTekkenTask(RLTask):
         d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-        # d = torch.norm(self.target_pos[:, 2] - self.reach_target[2], p=2, dim=1)
-        # reward += torch.log(1 / (1.0 + d ** 2))
+        d = torch.norm(self.target_pos[:, 2] - self.reach_target[2], p=2, dim=1)
+        reward += torch.log(1 / (1.0 + d ** 2))
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         reward = torch.where(self.target_pos[:, 2] > 0.6, reward + 10, reward)
@@ -329,8 +329,8 @@ class DianaTekkenTask(RLTask):
         self.reset_buf = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
         # # If the hand is out of bound
-        # self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
-        # self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
+        self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
+        self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
         # # Task achieved
         # self.reset_buf = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self.reset_buf), self.reset_buf)
