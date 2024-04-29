@@ -116,7 +116,7 @@ cfg["experiment"]["checkpoint_interval"] = 4000
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
-                                     "project": "simplified model dense rew"}
+                                     "project": "simplified model sparse rew no cut"}
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
@@ -126,6 +126,8 @@ for key, value in algo_config.items():
         pass
     elif value == "RunningStandardScaler":
         value = RunningStandardScaler
+    elif value == "KLAdaptiveRL":
+        value = KLAdaptiveRL
     elif value == 'True':
         value = True
     elif value == 'False':
@@ -154,7 +156,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 35000, "headless": True}
+cfg_trainer = {"timesteps": 35000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection
