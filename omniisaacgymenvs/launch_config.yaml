@@ -21,6 +21,7 @@ configurations:
 ### PPO + BC
   - run1:
       pretrain: True
+      nn_type: SharedNetworks
       mini_batches: 4
 
   - run2:
