@@ -30,51 +30,49 @@ else:
 
 # seed for reproducibility
 set_seed(42)  # e.g. `set_seed(42)` for fixed seed
-# class StochasticActor(GaussianMixin, Model):
-#     def __init__(self, observation_space, action_space, device, clip_actions=False,
-#                  clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
-#         Model.__init__(self, observation_space, action_space, device)
-#         GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction)
+class StochasticActor(GaussianMixin, Model):
+    def __init__(self, observation_space, action_space, device, clip_actions=True,
+                 clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
+        Model.__init__(self, observation_space, action_space, device)
+        GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction)
 
-#         self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
-#                                  nn.ELU(),
-#                                  nn.Linear(256, 128),
-#                                  nn.ELU(),
-#                                  nn.Linear(128, 64),
-#                                  nn.ELU())
+        self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
+                                 nn.ELU(),
+                                 nn.Linear(256, 128),
+                                 nn.ELU(),
+                                 nn.Linear(128, 64),
+                                 nn.ELU())
                                  
-#         self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions),
-#                                         nn.Tanh())
+        self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions))
+        self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions))
 
-#         self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions))
-
-#     def compute(self, inputs, role):
-#         return self.mean_layer(self.net(inputs["states"])), self.log_std_parameter, {}
+    def compute(self, inputs, role):
+        return self.mean_layer(self.net(inputs["states"])), self.log_std_parameter, {}
     
-#     def reset_std(self):
-#         with torch.no_grad():
-#             self.log_std_parameter.zero_()
+    def reset_std(self):
+        with torch.no_grad():
+            self.log_std_parameter.zero_()
     
-#     def make_deterministic(self):
-#         with torch.no_grad():
-#             self.log_std_parameter.fill_(torch.finfo(torch.float32).min)
+    def make_deterministic(self):
+        with torch.no_grad():
+            self.log_std_parameter.fill_(torch.finfo(torch.float32).min)
     
-# class Critic(DeterministicMixin, Model):
-#     def __init__(self, observation_space, action_space, device, clip_actions=False):
-#         Model.__init__(self, observation_space, action_space, device)
-#         DeterministicMixin.__init__(self, clip_actions)
+class Critic(DeterministicMixin, Model):
+    def __init__(self, observation_space, action_space, device, clip_actions=False):
+        Model.__init__(self, observation_space, action_space, device)
+        DeterministicMixin.__init__(self, clip_actions)
 
-#         self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
-#                                  nn.ELU(),
-#                                  nn.Linear(256, 128),
-#                                  nn.ELU(),
-#                                  nn.Linear(128, 64),
-#                                  nn.ELU()
-#                                  )
-#         self.value_layer = nn.Linear(64, 1)
+        self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
+                                 nn.ELU(),
+                                 nn.Linear(256, 128),
+                                 nn.ELU(),
+                                 nn.Linear(128, 64),
+                                 nn.ELU()
+                                 )
+        self.value_layer = nn.Linear(64, 1)
 
-#     def compute(self, inputs, role):
-#         return self.value_layer(self.net(inputs["states"])), {}   
+    def compute(self, inputs, role):
+        return self.value_layer(self.net(inputs["states"])), {}   
 
 class Shared(GaussianMixin, DeterministicMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False,
@@ -123,8 +121,8 @@ samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, devi
 # PPO requires 2 models, visit its documentation for more details
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#models
 models = {}
-models["policy"] = Shared(env.observation_space, env.action_space, device)
-models["value"] = models["policy"]  # same instance: shared model
+models["policy"] = StochasticActor(env.observation_space, env.action_space, device)
+models["value"] = Critic(env.observation_space, env.action_space, device)
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
