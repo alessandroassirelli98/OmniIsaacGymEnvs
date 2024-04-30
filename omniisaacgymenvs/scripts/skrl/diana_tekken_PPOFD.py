@@ -152,7 +152,11 @@ cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
 cfg["state_preprocessor"] = RunningStandardScaler
+cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
+
 cfg["value_preprocessor"] = RunningStandardScaler
+cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
+
 
 cfg["learning_rate_scheduler"] = KLAdaptiveRL
 cfg["kl_threshold"] = 0.008
