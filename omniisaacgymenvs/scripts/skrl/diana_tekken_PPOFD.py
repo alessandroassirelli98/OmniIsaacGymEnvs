@@ -77,10 +77,10 @@ set_seed(42)  # e.g. `set_seed(42)` for fixed seed
 #         return self.value_layer(self.net(inputs["states"])), {}   
 
 class Shared(GaussianMixin, DeterministicMixin, Model):
-    def __init__(self, observation_space, action_space, device, clip_actions=True,
+    def __init__(self, observation_space, action_space, device, clip_actions=False,
                  clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
         Model.__init__(self, observation_space, action_space, device)
-        GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction)
+        GaussianMixin.__init__(self, True, clip_log_std, min_log_std, max_log_std, reduction)
         DeterministicMixin.__init__(self, clip_actions)
 
         self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
@@ -156,7 +156,6 @@ cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": dev
 
 cfg["value_preprocessor"] = RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
-
 
 cfg["learning_rate_scheduler"] = KLAdaptiveRL
 cfg["kl_threshold"] = 0.008
