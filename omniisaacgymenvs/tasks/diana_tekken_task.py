@@ -85,18 +85,18 @@ class DianaTekkenTask(RLTask):
 
 
     def get_drill(self):
-        self._drill_position = torch.tensor([0.8, 0, 0.52], device=self._device)
-        orientation = torch.tensor([0, 0, -torch.pi/2], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.51], device=self._device)
-        self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.55], device=self._device)
+        self._drill_position = torch.tensor([0.8, 0, 0.5], device=self._device)
+        orientation = torch.tensor([0, 0, 0], device=self._device).unsqueeze(0)
+        self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.483], device=self._device)
+        self._drill_reset_lower_bound = torch.tensor([0.5, -0.5, 0.46], device=self._device)
+        self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.5], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
                               name="drill",
-                              translation=self._drill_position,
+                              position=self._drill_position,
                               orientation=self._drills_rot.squeeze(0))
         self._sim_config.apply_articulation_settings("drill", get_prim_at_path(self._drill.prim_path), self._sim_config.parse_actor_config("drill"))
-        
  
     def get_cube(self):
         self.translation = torch.tensor([0.0, 0.0, 0.0])
@@ -168,7 +168,6 @@ class DianaTekkenTask(RLTask):
             # pass
             self.reset_idx(reset_env_ids, False)
 
-        # self.push_downward()
         self.actions = actions.clone().to(self._device)
         self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
         self._robot_dof_targets = self._robots.clamp_joint0_joint1(self._robot_dof_targets)
@@ -259,11 +258,12 @@ class DianaTekkenTask(RLTask):
 
         dof_pos = torch.zeros((num_indices, 3), device=self._device)
         dof_pos[:, :] = pos + self._env_pos[env_ids]
+
         
         rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
 
-        self._drills.set_world_poses(positions=dof_pos, orientations=rot, indices=indices)
         self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
+        self._drills.set_world_poses(positions=dof_pos, orientations=rot, indices=indices)
 
         if hasattr(self, "_ref_cubes"):
             ref_cube_pos = dof_pos
@@ -313,13 +313,13 @@ class DianaTekkenTask(RLTask):
 
         # If the drill is out of bound
         self.reset_buf = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
-        self.reset_buf = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
+        self.reset_buf = torch.where(torch.any(self.target_pos <= self._drill_reset_lower_bound, dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
-        # # If the hand is out of bound
+        # # # If the hand is out of bound
         self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
         self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
-        # # Task achieved
+        # # # Task achieved
         self.reset_buf = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self.reset_buf), self.reset_buf)
 
         # If the resultant contact force between table and hand is more than a threshold
