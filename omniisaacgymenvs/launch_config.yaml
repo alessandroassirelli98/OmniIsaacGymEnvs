@@ -20,25 +20,25 @@ configurations:
 
 ### PPO + BC
   - run1:
-      pretrain: True
+      pretrain: False
       nn_type: SharedNetworks
-      mini_batches: 4
 
   - run2:
-      pretrain: True
-      mini_batches: 4
+      pretrain: False
+      nn_type: SeparateNetworks
+    
 
-  - run3:
-      pretrain: True
-      mini_batches: 4
-      entropy_loss_scale: 0.0
-      value_preprocessor: RunningStandardScaler
+#   - run3:
+#       pretrain: True
+#       mini_batches: 4
+#       entropy_loss_scale: 0.0
+#       value_preprocessor: RunningStandardScaler
 
-  - run4:
-      pretrain: True
-      mini_batches: 4
-      entropy_loss_scale: 0.0
-      value_preprocessor: RunningStandardScaler
+#   - run4:
+#       pretrain: True
+#       mini_batches: 4
+#       entropy_loss_scale: 0.0
+#       value_preprocessor: RunningStandardScaler
 
 #   - run9:
 #       pretrain: True
