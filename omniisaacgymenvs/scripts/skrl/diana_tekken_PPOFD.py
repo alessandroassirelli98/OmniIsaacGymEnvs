@@ -163,7 +163,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC (rl_games match)"],
                                      "project": "simplified model sparse rew no cut"}
 
@@ -178,7 +178,7 @@ for key, value in algo_config.items():
         models["policy"] = Shared(env.observation_space, env.action_space, device)
         models["value"] = models["policy"]
         cfg["nn_type"] = "shared"
-        
+
     elif value == "SeparateNetworks":
         models["policy"] = StochasticActor(env.observation_space, env.action_space, device)
         models["value"] = Critic(env.observation_space, env.action_space, device)
