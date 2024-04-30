@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import sys
+import git
 
 # import the skrl components to build the RL system
 from skrl.agents.torch.ppofd import PPOFD, PPOFD_DEFAULT_CONFIG
@@ -15,6 +16,17 @@ from skrl.utils import set_seed
 from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
 from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 
+
+# Check git commit
+repo = git.Repo(search_parent_directories=True)
+commit_hash = repo.head.object.hexsha
+
+if repo.is_dirty():
+    print("There are unstaged changes, please commit before run\n")
+    exit()
+
+else:
+    print("Repo is clean, proceeeding to run \n")
 
 # seed for reproducibility
 set_seed(42)  # e.g. `set_seed(42)` for fixed seed
@@ -82,15 +94,15 @@ models = {}
 models["policy"] = StochasticActor(env.observation_space, env.action_space, device)
 models["value"] = Critic(env.observation_space, env.action_space, device)
 
-
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
+cfg["commit_hash"] = commit_hash
+
 cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 150
 cfg["pretrainer_lr"] = 1e-3
-
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 5
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768

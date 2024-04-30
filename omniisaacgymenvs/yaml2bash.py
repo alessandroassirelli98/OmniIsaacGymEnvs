@@ -12,7 +12,7 @@ def create_bash_script(script, configurations):
     script_content = "#!/bin/bash\n\n"
     for idx, run in enumerate(configurations, start=1):
         run_name, params = list(run.items())[0]
-        script_content += f"echo '\n\n ------ Running {run_name} -------\n\n' "
+        script_content += f"echo '\n\n ------ Running {run_name} -------\n\n'\n"
         arguments = " ".join([f"+{key}={value}" for key, value in params.items()])
         script_content += f"python {script} {arguments}\n"
     return script_content
