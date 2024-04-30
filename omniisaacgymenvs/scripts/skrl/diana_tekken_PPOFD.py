@@ -121,14 +121,15 @@ samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, devi
 # PPO requires 2 models, visit its documentation for more details
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#models
 models = {}
-models["policy"] = StochasticActor(env.observation_space, env.action_space, device)
-models["value"] = Critic(env.observation_space, env.action_space, device)
-
+models["policy"] = Shared(env.observation_space, env.action_space, device)
+models["value"] = models["policy"]
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
+
+cfg["nn_type"] = "shared"
 
 cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 150
@@ -172,6 +173,17 @@ for key, value in algo_config.items():
     print(key, value)
     if key == "checkpoint":
         pass
+    elif value == "SharedNetworks":
+        models = {}
+        models["policy"] = Shared(env.observation_space, env.action_space, device)
+        models["value"] = models["policy"]
+        cfg["nn_type"] = "shared"
+        
+    elif value == "SeparateNetworks":
+        models["policy"] = StochasticActor(env.observation_space, env.action_space, device)
+        models["value"] = Critic(env.observation_space, env.action_space, device)
+        cfg["nn_type"] = "separate"
+
     elif value == "RunningStandardScaler":
         value = RunningStandardScaler
     elif value == "KLAdaptiveRL":
