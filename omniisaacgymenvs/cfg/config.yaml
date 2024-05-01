@@ -45,11 +45,11 @@ enable_livestream: False
 # timeout for MT script
 mt_timeout: 30
 
-wandb_activate: False
+wandb_activate: True
 wandb_group: ''
 wandb_name: ${train.params.config.name}
 wandb_entity: 'alessandroassirelli98'
-wandb_project: 'omniisaacgymenvs'
+wandb_project: 'simplified model dense rew with cut'
 
 # set default task and default training config based on task
 defaults:

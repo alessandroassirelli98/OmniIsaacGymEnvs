@@ -10,7 +10,7 @@ from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.prims import GeometryPrimView, RigidPrimView
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
 from omni.isaac.core.utils.stage import add_reference_to_stage
-from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad, euler_angles_to_quats
+from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad, euler_angles_to_quats, quat_conjugate, quat_mul, quat_diff_rad
 from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, FixedSphere, DynamicCuboid
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
 from omniisaacgymenvs.robots.articulations.drill import Drill
@@ -283,21 +283,31 @@ class DianaTekkenTask(RLTask):
 
     def calculate_metrics(self) -> None:
         fail_penalty = 10
-        goal_achieved = 10
+        goal_achieved = 150
         # implement logic to compute rewards
-        # Distance to target
-        d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
-        reward = torch.log(1 / (1.0 + d ** 2))
 
+        # Distance hand to drill
+        d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
+        reward = 1.0 / (1.0 + d ** 2)
+
+        # Drill to target distance
         d = torch.abs(self.target_pos[:, 2] - self.reach_target[2])
-        reward += torch.log(1 / (1.0 + d ** 2))
+        reward += 1.0 / (1.0 + d ** 2)
+
+        # rotation difference
+        # v = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, 0], device=self._device).unsqueeze(0))
+        # rot = quat_mul(self.hand_rot, v)
+        # d = quat_diff_rad(rot, self.target_rot)
+
+        # # print(f'Hand: {get_euler_xyz(self.hand_rot)}, Drill: {get_euler_xyz(self.target_rot)}')
+        # print(d)
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         reward = torch.where(self.target_pos[:, 2] > 0.6, reward + goal_achieved, reward)
 
         # If the drill is out of bound
         reward = torch.where(torch.any(self.target_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - fail_penalty, reward)
-        reward = torch.where(torch.any(self.target_pos <= self._drill_lower_bound, dim=1), reward - fail_penalty, reward)
+        reward = torch.where(torch.any(self.target_pos <= self._drill_reset_lower_bound, dim=1), reward - fail_penalty, reward)
 
         # If the hand is out of bound
         reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - fail_penalty, reward)
