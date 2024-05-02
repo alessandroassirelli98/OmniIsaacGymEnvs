@@ -3,6 +3,7 @@ import numpy as np
 import math
 import torch
 from omni.isaac.core.robots.robot import Robot
+from omni.isaac.core.prims import RigidPrimView, XFormPrim
 from omni.isaac.core.utils.nucleus import get_assets_root_path
 from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.utils.stage import add_reference_to_stage
@@ -12,13 +13,14 @@ import carb
 from pxr import PhysxSchema
 
 
-class Drill(Robot):
+class Drill(XFormPrim):
 
     def __init__(
         self,
         prim_path: str,
         name: Optional[str] = "Drill",
         usd_path: Optional[str] = None,
+        position: Optional[np.ndarray] = None,
         translation: Optional[np.ndarray] = None,
         orientation: Optional[np.ndarray] = None,
     ) -> None:
@@ -33,9 +35,9 @@ class Drill(Robot):
         super().__init__(
             prim_path=prim_path,
             name=name,
+            position=position,
             translation=translation,
             orientation=orientation,
-            articulation_controller=None,
         )
 
 

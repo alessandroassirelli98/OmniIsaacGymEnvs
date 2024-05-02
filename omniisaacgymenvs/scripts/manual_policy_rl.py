@@ -33,7 +33,7 @@ from omegaconf import DictConfig
 import os
 import time
 
-import numpy as np
+# import numpy as np
 import torch
 
 import omniisaacgymenvs
@@ -64,7 +64,7 @@ def parse_hydra_configs(cfg: DictConfig):
     )
 
 
-    action = np.zeros(5, dtype=np.int16)
+    action = torch.zeros(5, dtype=torch.int16)
 
     input_manager = KeyboardManager(action)
 
@@ -98,28 +98,36 @@ def parse_hydra_configs(cfg: DictConfig):
     cfg_dict["seed"] = cfg.seed
     task = initialize_task(cfg_dict, env)
 
-    num_frames = 0
-    first_frame = True
-    prev_time = time.time()
+    # Saving path
+    for i in range(15):
+        dire = f'{os.getcwd()}{"/demonstrations/data"}'
+        file_path = f'{dire}{"/"}{str(i)}{".json"}'
+        if not os.path.isfile(file_path):
+            print("Saving demonstration in: " + file_path)
+            break
+        if i == 14:
+            print("Directory busy")
+            exit()
+    env.start_logging(file_path)
+    
     while env.simulation_app.is_running():
         if env.world.is_playing():
-            if first_frame:
-                env.reset()
-                prev_time = time.time()
-                first_frame = False
+            if env._world.current_time_step_index == 0:
+                env.reset(soft=True)
+            env._task.pre_physics_step(action)
+            env._world.step(render=render)
+            env.sim_frame_count += 1
+            env._task.post_physics_step()
+            env.logging_step()
 
-            if time.time() - prev_time >= 1:
-                print("FPS:", num_frames, "FPS * num_envs:", env.num_envs * num_frames)
-                num_frames = 0
-                prev_time = time.time()
-            else:
-                num_frames += 1
+            if input_manager.kill: 
+                env.save_log()
+                env._simulation_app.close()
 
-            env.step(action)
         else:
-            env.world.step(render=render)
+            env._world.step(render=render)
 
-    env.simulation_app.close()
+    env._simulation_app.close()
 
 
 if __name__ == "__main__":
