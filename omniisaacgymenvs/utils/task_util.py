@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def import_tasks():
+def import_tasks(cfg):
     from omniisaacgymenvs.tasks.allegro_hand import AllegroHandTask
     from omniisaacgymenvs.tasks.ant import AntLocomotionTask
     from omniisaacgymenvs.tasks.anymal import AnymalTask
@@ -46,11 +46,12 @@ def import_tasks():
     from omniisaacgymenvs.tasks.quadcopter import QuadcopterTask
     from omniisaacgymenvs.tasks.shadow_hand import ShadowHandTask
     from omniisaacgymenvs.tasks.diana_tekken_task import DianaTekkenTask
-    from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
-
     from omniisaacgymenvs.tasks.warp.ant import AntLocomotionTask as AntLocomotionTaskWarp
     from omniisaacgymenvs.tasks.warp.cartpole import CartpoleTask as CartpoleTaskWarp
     from omniisaacgymenvs.tasks.warp.humanoid import HumanoidLocomotionTask as HumanoidLocomotionTaskWarp
+
+    if (cfg["task_name"] == "DianaTekkenManualControl"):
+        from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
 
     # Mappings from strings to environments
     task_map = {
@@ -74,8 +75,10 @@ def import_tasks():
         "ShadowHandOpenAI_FF": ShadowHandTask,
         "ShadowHandOpenAI_LSTM": ShadowHandTask,
         "DianaTekken": DianaTekkenTask,
-        "DianaTekkenManualControl": DianaTekkenManualControlTask
     }
+    if (cfg["task_name"] == "DianaTekkenManualControl"):
+        task_map["DianaTekkenManualControl"] = DianaTekkenManualControlTask
+    
 
     task_map_warp = {
         "Cartpole": CartpoleTaskWarp,
@@ -90,7 +93,7 @@ def initialize_task(config, env, init_sim=True):
     from omniisaacgymenvs.utils.config_utils.sim_config import SimConfig
 
     sim_config = SimConfig(config)
-    task_map, task_map_warp = import_tasks()
+    task_map, task_map_warp = import_tasks(sim_config.config)
 
     cfg = sim_config.config
     if cfg["warp"]:

@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
+        "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked",
         "~/.local/share/ov/pkg/isaac_sim-2023.1.1/exts/omni.exporter.urdf",
         "~/.local/share/ov/pkg/isaac_sim-2023.1.1/exts/omni.exporter.urdf/pip_prebundle",
         "~/.local/share/ov/pkg/isaac_sim-2023.1.1/exts/omni.isaac.app.selector",

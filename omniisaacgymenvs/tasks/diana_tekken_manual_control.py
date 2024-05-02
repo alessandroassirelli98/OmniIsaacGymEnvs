@@ -52,14 +52,13 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
                                   color= torch.tensor([1, 0, 0], device=self._device))
 
     def post_reset(self):
-        self.cloned_robot_actions = torch.tensor((1, 12), device=self._device)
+        self.cloned_robot_actions = np.zeros((22))
         super().post_reset()
     
     
     def pre_physics_step(self, actions: np.array) -> None:
         # Move target position and orientation
         target_pos, target_rot = self._ref_cubes.get_local_poses()
-        print(target_pos)
         rpy_target = torch.tensor(get_euler_xyz(target_rot)).unsqueeze(0)
         target_pos[0, :3] += actions[:3] * 0.001
         rpy_target[0, 1] += actions[3] * 0.001
@@ -67,21 +66,18 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
 
         self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
 
-
         robot_actions, succ = self._ik.compute_inverse_kinematics(
             target_position=np.array(target_pos.squeeze(0)),
             target_orientation=np.array(target_rot.squeeze(0)))
         
-        self.cloned_robot_actions = robot_actions.clone()
-        
         if actions[-1] == 1:
-            self.cloned_robot_actions.joint_positions[self._robots.actuated_finger_dof_indices] = np.ones(len(self._robots.actuated_finger_dof_indices)) * np.pi/3
+            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = np.ones(len(self._robots.actuated_finger_dof_indices)) * np.pi/3
         else:
-            self.cloned_robot_actions.joint_positions[self._robots.actuated_finger_dof_indices] = np.zeros(len(self._robots.actuated_finger_dof_indices))
+            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = np.zeros(len(self._robots.actuated_finger_dof_indices))
 
         if succ:
-            self.cloned_robot_actions.joint_positions[robot_actions.joint_positions == None] = 0.
-            robots_actions = torch.tensor((self.cloned_robot_actions.joint_positions.reshape(1,-1)).astype(np.float32))
+            self.cloned_robot_actions[self._robots.actuated_diana_dof_indices] = robot_actions.joint_positions
+            robots_actions = torch.tensor((self.cloned_robot_actions.reshape(1,-1)).astype(np.float32))
             robots_actions[:, self.actuated_dof_indices] = (robots_actions[:, self.actuated_dof_indices] - self._robots.get_applied_actions().joint_positions[:, self.actuated_dof_indices])/(self.dt * self.action_scale)
             robots_actions[:, self.actuated_dof_indices] = tensor_clamp(robots_actions[:, self.actuated_dof_indices], -1. * torch.ones(1, self.num_actuated_dofs), 1. * torch.ones(1, self.num_actuated_dofs))
             super().pre_physics_step(robots_actions[:, self.actuated_dof_indices])
