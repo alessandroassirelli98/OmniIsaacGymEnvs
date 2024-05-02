@@ -23,8 +23,8 @@ class DianaTekken(Robot):
         orientation: Optional[np.ndarray] = None,
     ) -> None:
 
-        if usd_path is None:
-            print("Need to reference a usd Tekken file !")
+
+        usd_path='/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd'
 
         self._usd_path = usd_path
         self._name = name
@@ -47,11 +47,11 @@ class DianaTekken(Robot):
             "link_5/joint_6",
             "link_6/joint_7",
 
-            "base_link_hithand/Right_Index_0", 
-            "base_link_hithand/Right_Middle_0",
-            "base_link_hithand/Right_Ring_0",
-            "base_link_hithand/Right_Little_0",
-            "base_link_hithand/Right_Thumb_0",
+            # "base_link_hithand/Right_Index_0", 
+            # "base_link_hithand/Right_Middle_0",
+            # "base_link_hithand/Right_Ring_0",
+            # "base_link_hithand/Right_Little_0",
+            # "base_link_hithand/Right_Thumb_0",
 
             "Right_Index_Basecover/Right_Index_1",
             "Right_Middle_Basecover/Right_Middle_1",
@@ -74,11 +74,11 @@ class DianaTekken(Robot):
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
         drive_type = ["angular"] * 22
-        default_dof_pos = [math.degrees(x) for x in [    0., -0.4,  0., 1.3, 0., -1.3, 0.]] + [0. for _ in range(15)]
-        stiffness = [400*np.pi/180] * 7 + [0.05, 0.05, 0.05] * 5
-        damping = [80*np.pi/180] * 7 + [0.0009375, 0.000625, 0.000625] * 5
-        max_force = [87, 87, 87, 87, 12, 12, 12] + [10, 1.5, 0.6] * 5
-        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(15)]
+        default_dof_pos = [math.degrees(x) for x in [0.8694, -0.8775, -0.9930,  2.2817, -2.6929, -0.1896,  0.4355]] + [0. for _ in range(10)]
+        stiffness = [1000*np.pi/180] * 7 + [10, 10] * 5
+        damping = [80*np.pi/180] * 7 + [0.0625, 0.0625] * 5
+        max_force = [87, 87, 87, 87, 12, 12, 12] + [1.5, 0.6] * 5
+        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(10)]
 
         # STICK WITH THE URDF DRIVE PARAMETERS
 
@@ -93,9 +93,9 @@ class DianaTekken(Robot):
                 max_force=max_force[i]
             )
         
-        # PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
+        PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
 
-        self._setup_tendons()
+        # self._setup_tendons()
     
     def _setup_tendons(self, use_limits=False):
         tendon_root_paths = [
@@ -112,28 +112,27 @@ class DianaTekken(Robot):
             "Right_Thumb_Phamed/Right_Thumb_3"]
     
         tendon_gearing = [1, -1]
-        tendon_force_coeff = [0, -1]  
+        tendon_force_coeff = [1, -1]  
         tendon_names =["Index_tendon", "Middle_tendon", "Ring_tendon", "Little_tenodn", "Thumb_tendon"]
 
         for i, (root, driven) in enumerate(zip(tendon_root_paths, tendon_driven_paths)):
             root_joint_prim = get_prim_at_path(self.prim_path + "/" + root)
             driven_joint_prim = get_prim_at_path(self.prim_path + "/" + driven)
-
             # setup drive joint
             rootApi = PhysxSchema.PhysxTendonAxisRootAPI.Apply(root_joint_prim, tendon_names[i])
-            rootAxisApi = PhysxSchema.PhysxTendonAxisAPI(rootApi, tendon_names[i])
-
-            rootApi.CreateStiffnessAttr().Set(0.05)
-            rootApi.CreateDampingAttr().Set(0.0000925)
-            rootApi.CreateLimitStiffnessAttr().Set(0)
-            rootAxisApi.CreateGearingAttr().Set([tendon_gearing[0]])
-            rootAxisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
-
+            if use_limits:
+                rootApi.CreateLimitStiffnessAttr().Set(0.05)
+                # rootApi.CreateDampingAttr().Set(0.000625)
+                # limit is +/- 1 deg
+                rootApi.CreateLowerLimitAttr().Set(-self._symmetric_limit)
+                rootApi.CreateUpperLimitAttr().Set(self._symmetric_limit)
+            else:
+                rootApi.CreateStiffnessAttr().Set(0.5)
+                rootApi.CreateDampingAttr().Set(0.000625)
+            rootApi.CreateGearingAttr().Set([tendon_gearing[0]])
+            rootApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
             # setup second joint
             axisApi = PhysxSchema.PhysxTendonAxisAPI.Apply(driven_joint_prim, tendon_names[i])
             axisApi.CreateGearingAttr().Set([tendon_gearing[1]])
             axisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[1]])
-        
-        
-
 

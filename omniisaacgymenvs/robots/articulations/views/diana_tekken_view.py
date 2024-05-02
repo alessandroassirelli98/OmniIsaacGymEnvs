@@ -64,13 +64,12 @@ class DianaTekkenView(ArticulationView):
     @property
     def actuated_finger_dof_indices(self):
         return self._actuated_finger_dof_indices
+    @property
+    def clamped_finger_dof_indices(self):
+        return self._clamped_finger_dof_indices
 
     def initialize(self, physics_sim_view):
         super().initialize(physics_sim_view)
-
-        # limit_stiffness = torch.tensor([30.0] * self.num_fixed_tendons, device=self._device)
-        # damping = torch.tensor([0.1] * self.num_fixed_tendons, device=self._device)
-        # self.set_fixed_tendon_properties(dampings=damping, limit_stiffnesses=limit_stiffness)
 
         self.actuated_joint_names = [
             "joint_1",
@@ -81,11 +80,11 @@ class DianaTekkenView(ArticulationView):
             "joint_6",
             "joint_7",
 
-            "Right_Index_0", 
-            "Right_Middle_0",
-            "Right_Ring_0",
-            "Right_Little_0",
-            "Right_Thumb_0",
+            # "Right_Index_0", 
+            # "Right_Middle_0",
+            # "Right_Ring_0",
+            # "Right_Little_0",
+            # "Right_Thumb_0",
 
             "Right_Index_1",
             "Right_Middle_1",
@@ -93,11 +92,11 @@ class DianaTekkenView(ArticulationView):
             "Right_Little_1",
             "Right_Thumb_1",
 
-            "Right_Index_2",
-            "Right_Middle_2",
-            "Right_Ring_2",
-            "Right_Little_2",
-            "Right_Thumb_2"
+            # "Right_Index_2",
+            # "Right_Middle_2",
+            # "Right_Ring_2",
+            # "Right_Little_2",
+            # "Right_Thumb_2"
             ]
         self.actuated_diana_joint_names = [
             "joint_1",
@@ -114,25 +113,34 @@ class DianaTekkenView(ArticulationView):
             "Right_Ring_1",
             "Right_Little_1",
             "Right_Thumb_1",
-
+            ]
+        self.clamped_finger_joint_names = [            
             "Right_Index_2",
             "Right_Middle_2",
             "Right_Ring_2",
             "Right_Little_2",
-            "Right_Thumb_2"
-            ]
+            "Right_Thumb_2"]
         
         self._actuated_dof_indices = list()
         self._actuated_diana_dof_indices = list()
         self._actuated_finger_dof_indices = list()
+        self._clamped_finger_dof_indices = list()
         for joint_name in self.actuated_joint_names:
             self._actuated_dof_indices.append(self.get_dof_index(joint_name))
         for joint_name in self.actuated_diana_joint_names:
             self._actuated_diana_dof_indices.append(self.get_dof_index(joint_name))
         for joint_name in self.actuated_finger_joint_names:
             self._actuated_finger_dof_indices.append(self.get_dof_index(joint_name))
+        for joint_name in self.clamped_finger_joint_names:
+            self._clamped_finger_dof_indices.append(self.get_dof_index(joint_name))
 
         self._actuated_dof_indices.sort()
         self._actuated_diana_dof_indices.sort()
         self._actuated_finger_dof_indices.sort()
+        self._clamped_finger_dof_indices.sort()
+
+    def clamp_joint0_joint1(self, actions):
+        actions[:, self.clamped_finger_dof_indices] = actions[:, self.actuated_finger_dof_indices]
+        return actions
+
 

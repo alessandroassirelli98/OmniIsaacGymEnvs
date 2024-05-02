@@ -63,9 +63,11 @@ def parse_hydra_configs(cfg: DictConfig):
         experience=f'{os.environ["EXP_PATH"]}/omni.isaac.sim.python.kit' #This is to load the omni.isaac.motion_generation for IK
     )
 
-    action = torch.zeros((1,5))
+
+    action = np.zeros(5, dtype=np.int16)
 
     input_manager = KeyboardManager(action)
+
 
     # parse experiment directory
     module_path = os.path.abspath(os.path.join(os.path.dirname(omniisaacgymenvs.__file__)))

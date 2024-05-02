@@ -46,7 +46,7 @@ def import_tasks():
     from omniisaacgymenvs.tasks.quadcopter import QuadcopterTask
     from omniisaacgymenvs.tasks.shadow_hand import ShadowHandTask
     from omniisaacgymenvs.tasks.diana_tekken_task import DianaTekkenTask
-    from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
+    # from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
 
     from omniisaacgymenvs.tasks.warp.ant import AntLocomotionTask as AntLocomotionTaskWarp
     from omniisaacgymenvs.tasks.warp.cartpole import CartpoleTask as CartpoleTaskWarp
@@ -74,7 +74,7 @@ def import_tasks():
         "ShadowHandOpenAI_FF": ShadowHandTask,
         "ShadowHandOpenAI_LSTM": ShadowHandTask,
         "DianaTekken": DianaTekkenTask,
-        "DianaTekkenManualControl": DianaTekkenManualControlTask
+        # "DianaTekkenManualControl": DianaTekkenManualControlTask
     }
 
     task_map_warp = {
