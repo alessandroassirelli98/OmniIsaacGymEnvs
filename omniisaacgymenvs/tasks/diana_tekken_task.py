@@ -174,18 +174,18 @@ class DianaTekkenTask(RLTask):
 
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
-
+        # print(f'thumb: {self._robot_dof_targets[:, 21]}, index:{self._robot_dof_targets[:, 17]}')
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-    def push_downward(self):
-        self._cubes_to_pull = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self._cubes_to_pull), self._cubes_to_pull)
-        pull_env_ids = self._cubes_to_pull.nonzero(as_tuple=False).squeeze(-1)
+    # def push_downward(self):
+    #     self._cubes_to_pull = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self._cubes_to_pull), self._cubes_to_pull)
+    #     pull_env_ids = self._cubes_to_pull.nonzero(as_tuple=False).squeeze(-1)
 
-        if len(pull_env_ids) > 0:
-            indices = pull_env_ids.to(dtype=torch.int32)
-            self._pick_up_cubes.apply_forces(self.applied_ext_forces, indices=indices)
+    #     if len(pull_env_ids) > 0:
+    #         indices = pull_env_ids.to(dtype=torch.int32)
+    #         self._pick_up_cubes.apply_forces(self.applied_ext_forces, indices=indices)
 
-            self._cubes_to_pull[pull_env_ids] = 0.
+    #         self._cubes_to_pull[pull_env_ids] = 0.
 
     def get_observations(self) -> dict:
         dof_pos = self._robots.get_joint_positions(clone=False)

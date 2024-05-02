@@ -71,7 +71,7 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
             target_orientation=np.array(target_rot.squeeze(0)))
         
         if actions[-1] == 1:
-            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = np.ones(len(self._robots.actuated_finger_dof_indices)) * np.pi/3
+            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = np.ones(len(self._robots.actuated_finger_dof_indices)) * np.pi/2
         else:
             self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = np.zeros(len(self._robots.actuated_finger_dof_indices))
 

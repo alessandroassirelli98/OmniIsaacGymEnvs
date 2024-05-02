@@ -73,10 +73,10 @@ class DianaTekken(Robot):
             # "Right_Little_Phamed/Right_Little_3",
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
-        drive_type = ["angular"] * 22
+        drive_type = ["angular"] * 17
         default_dof_pos = [math.degrees(x) for x in [0.9, -0.58, -1.,  2., 2.6, -0.2,  1.75]] + [0. for _ in range(10)]
         stiffness = [2000*np.pi/180] * 7 + [10, 10] * 5
-        damping = [80*np.pi/180] * 7 + [0.0625, 0.0625] * 5
+        damping = [80*np.pi/180] * 7 + [0.5, 0.5] * 5
         max_force = [87, 87, 87, 87, 12, 12, 12] + [1.5, 0.6] * 5
         max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(10)]
 
@@ -93,9 +93,9 @@ class DianaTekken(Robot):
                 max_force=max_force[i]
             )
         
-        PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
+            # PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
 
-        # self._setup_tendons()
+        self._setup_tendons()
     
     def _setup_tendons(self, use_limits=False):
         tendon_root_paths = [
@@ -111,8 +111,8 @@ class DianaTekken(Robot):
             "Right_Little_Phamed/Right_Little_3",
             "Right_Thumb_Phamed/Right_Thumb_3"]
     
-        tendon_gearing = [1, -1]
-        tendon_force_coeff = [0, -1]  
+        tendon_gearing = [-0.00805, 0.00805]
+        tendon_force_coeff = [1, 1]  
         tendon_names =["Index_tendon", "Middle_tendon", "Ring_tendon", "Little_tenodn", "Thumb_tendon"]
 
         for i, (root, driven) in enumerate(zip(tendon_root_paths, tendon_driven_paths)):
@@ -123,9 +123,9 @@ class DianaTekken(Robot):
             rootApi = PhysxSchema.PhysxTendonAxisRootAPI.Apply(root_joint_prim, tendon_names[i])
             rootAxisApi = PhysxSchema.PhysxTendonAxisAPI(rootApi, tendon_names[i])
 
-            rootApi.CreateStiffnessAttr().Set(0.05)
-            rootApi.CreateDampingAttr().Set(0.0000925)
-            rootApi.CreateLimitStiffnessAttr().Set(0)
+            rootApi.CreateStiffnessAttr().Set(100)
+            rootApi.CreateDampingAttr().Set(0.5)
+            # rootApi.CreateLimitStiffnessAttr().Set(0.5)
             rootAxisApi.CreateGearingAttr().Set([tendon_gearing[0]])
             rootAxisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
 
