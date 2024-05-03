@@ -22,9 +22,10 @@ configurations:
   - run1:
       pretrain: False
       nn_type: SharedNetworks
+
   - run2:
-    pretrain: True
-    nn_type: SharedNetworks
+      pretrain: True
+      nn_type: SharedNetworks
 
 #   - run2:
 #       pretrain: False
