@@ -288,12 +288,11 @@ class DianaTekkenTask(RLTask):
 
         # Distance hand to drill
         d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
-        reward = 1.0 / (1.0 + d ** 2) * 2
+        reward = - (d ** 2) * 2
 
         # Drill to target distance
         d = torch.abs(self.target_pos[:, 2] - self.reach_target[2])
-        reward += 1.0 / (1.0 + d ** 2)
-
+        reward -= d**2
         # rotation difference
         # v = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, 0], device=self._device).unsqueeze(0))
         # rot = quat_mul(self.hand_rot, v)
