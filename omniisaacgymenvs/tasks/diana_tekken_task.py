@@ -156,7 +156,7 @@ class DianaTekkenTask(RLTask):
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
-        self.reset_idx(indices, False)
+        self.reset_idx(indices, True)
         
     def pre_physics_step(self, actions: torch.Tensor) -> None:
         # implement logic to be performed before physics steps
@@ -166,7 +166,7 @@ class DianaTekkenTask(RLTask):
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
         if len(reset_env_ids) > 0:
             # pass
-            self.reset_idx(reset_env_ids, False)
+            self.reset_idx(reset_env_ids, True)
 
         self.actions = actions.clone().to(self._device)
         self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
