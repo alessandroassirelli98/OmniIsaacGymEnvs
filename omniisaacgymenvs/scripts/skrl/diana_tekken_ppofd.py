@@ -157,10 +157,10 @@ cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
 
-cfg["value_preprocessor"] = RunningStandardScaler
+cfg["value_preprocessor"] = None
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 
-cfg["learning_rate_scheduler"] = KLAdaptiveRL
+cfg["learning_rate_scheduler"] = None
 cfg["kl_threshold"] = 0.008
 
 # logging to TensorBoard and write checkpoints (in timesteps)
@@ -177,6 +177,10 @@ for key, value in algo_config.items():
     print(key, value)
     if key == "checkpoint":
         pass
+    elif key == "reward_shaper" and value == True:
+        value = lambda rewards, timestep, timesteps: rewards * 0.01
+    elif key == "reward_shaper" and value == False:
+        value = None
     elif value == "SharedNetworks":
         models = {}
         models["policy"] = Shared(env.observation_space, env.action_space, device)
@@ -220,7 +224,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 35000}
+cfg_trainer = {"timesteps": 75000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection
