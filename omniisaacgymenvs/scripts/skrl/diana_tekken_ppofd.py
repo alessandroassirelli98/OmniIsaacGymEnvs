@@ -104,6 +104,10 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
             return self.mean_layer(self.net(inputs["states"])), self.log_std_parameter, {}
         elif role == "value":
             return self.value_layer(self.net(inputs["states"])), {}
+        
+    def make_deterministic(self):
+        with torch.no_grad():
+            self.log_std_parameter.fill_(torch.finfo(torch.float32).min)
 
 
 # load and wrap the Omniverse Isaac Gym environment
