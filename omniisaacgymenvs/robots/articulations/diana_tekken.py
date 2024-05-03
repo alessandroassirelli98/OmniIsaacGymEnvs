@@ -74,7 +74,7 @@ class DianaTekken(Robot):
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
         drive_type = ["angular"] * 17
-        default_dof_pos = [math.degrees(x) for x in [0.9, -0.58, -1.,  2., 2.6, -0.2,  1.75]] + [0. for _ in range(10)]
+        default_dof_pos = [math.degrees(x) for x in [ 0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300]] + [0. for _ in range(10)]
         stiffness = [2000*np.pi/180] * 7 + [0.5, 0.5] * 5
         damping = [80*np.pi/180] * 7 + [0.05, 0.05] * 5
         max_force = [87, 87, 87, 87, 12, 12, 12] + [1.5, 0.6] * 5
