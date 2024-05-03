@@ -1,0 +1,62 @@
+configurations:
+### PPO
+#   - run1:
+#       pretrain: False
+#       mini_batches: 4
+
+#   - run2:
+#       pretrain: False
+#       mini_batches: 4
+#       value_preprocessor: RunningStandardScaler
+
+#   - run3:
+#       pretrain: False
+#       mini_batches: 4
+
+#   - run4:
+#       pretrain: False
+#       mini_batches: 4
+#       value_preprocessor: RunningStandardScaler
+
+### PPO + BC
+  - run1:
+      pretrain: False
+      nn_type: SharedNetworks
+
+#   - run2:
+#       pretrain: False
+#       nn_type: SeparateNetworks
+    
+
+#   - run3:
+#       pretrain: True
+#       mini_batches: 4
+#       entropy_loss_scale: 0.0
+#       value_preprocessor: RunningStandardScaler
+
+#   - run4:
+#       pretrain: True
+#       mini_batches: 4
+#       entropy_loss_scale: 0.0
+#       value_preprocessor: RunningStandardScaler
+
+#   - run9:
+#       pretrain: True
+#       mini_batches: 4
+#       entropy_loss_scale: 0.05
+#       value_preprocessor: RunningStandardScaler
+ 
+
+#   - run10:
+#       pretrain: True
+#       mini_batches: 4
+#       ratio_clip: 0.2
+#       learning_rate_scheduler: KLAdaptiveRL
+#       value_preprocessor: RunningStandardScaler
+
+#   - run11:
+#       pretrain: True
+#       mini_batches: 4
+#       ratio_clip: 0.5
+#       learning_rate_scheduler: KLAdaptiveRL
+#       value_preprocessor: RunningStandardScaler
