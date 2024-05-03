@@ -75,8 +75,8 @@ class DianaTekken(Robot):
 
         drive_type = ["angular"] * 17
         default_dof_pos = [math.degrees(x) for x in [0.9, -0.58, -1.,  2., 2.6, -0.2,  1.75]] + [0. for _ in range(10)]
-        stiffness = [2000*np.pi/180] * 7 + [10, 10] * 5
-        damping = [80*np.pi/180] * 7 + [0.5, 0.5] * 5
+        stiffness = [2000*np.pi/180] * 7 + [0.5, 0.5] * 5
+        damping = [80*np.pi/180] * 7 + [0.05, 0.05] * 5
         max_force = [87, 87, 87, 87, 12, 12, 12] + [1.5, 0.6] * 5
         max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(10)]
 
@@ -123,8 +123,8 @@ class DianaTekken(Robot):
             rootApi = PhysxSchema.PhysxTendonAxisRootAPI.Apply(root_joint_prim, tendon_names[i])
             rootAxisApi = PhysxSchema.PhysxTendonAxisAPI(rootApi, tendon_names[i])
 
-            rootApi.CreateStiffnessAttr().Set(100)
-            rootApi.CreateDampingAttr().Set(0.5)
+            rootApi.CreateStiffnessAttr().Set(0.5)
+            rootApi.CreateDampingAttr().Set(0.05)
             # rootApi.CreateLimitStiffnessAttr().Set(0.5)
             rootAxisApi.CreateGearingAttr().Set([tendon_gearing[0]])
             rootAxisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])

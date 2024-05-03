@@ -283,7 +283,7 @@ class DianaTekkenTask(RLTask):
 
     def calculate_metrics(self) -> None:
         fail_penalty = 10
-        goal_achieved = 150
+        goal_achieved = 250
         # implement logic to compute rewards
 
         # Distance hand to drill
