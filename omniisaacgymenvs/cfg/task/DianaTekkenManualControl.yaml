@@ -39,23 +39,22 @@ sim:
     worker_thread_count: ${....num_threads}
     solver_type: ${....solver_type}
     use_gpu: False # set to False to run on CPU
-    solver_position_iteration_count: 12
+    solver_position_iteration_count: 8
     solver_velocity_iteration_count: 1
     contact_offset: 0.005
     rest_offset: 0.0
-    bounce_threshold_velocity: 0.2
+    # bounce_threshold_velocity: 0.02
     friction_offset_threshold: 0.04
     friction_correlation_distance: 0.025
     enable_sleeping: False
     enable_stabilization: True
     max_depenetration_velocity: 1
-
     # GPU buffers
-    gpu_max_rigid_contact_count: 524288
-    gpu_max_rigid_patch_count: 33554432
-    gpu_found_lost_pairs_capacity: 524288
-    gpu_found_lost_aggregate_pairs_capacity: 262144
-    gpu_total_aggregate_pairs_capacity: 1048576
+    gpu_max_rigid_contact_count: 3048576
+    gpu_max_rigid_patch_count: 63554432
+    gpu_found_lost_pairs_capacity: 20971520
+    gpu_found_lost_aggregate_pairs_capacity: 20971520
+    gpu_total_aggregate_pairs_capacity: 20971520
     gpu_max_soft_body_contacts: 1048576
     gpu_max_particle_contacts: 1048576
     gpu_heap_capacity: 33554432
@@ -77,7 +76,6 @@ sim:
     # per-body
     density: -1
     max_depenetration_velocity: 1000.0
-
   
 
 
