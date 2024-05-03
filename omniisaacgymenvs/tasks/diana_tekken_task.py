@@ -283,7 +283,7 @@ class DianaTekkenTask(RLTask):
 
     def calculate_metrics(self) -> None:
         fail_penalty = 10
-        goal_achieved = 250
+        goal_achieved = 1
         # implement logic to compute rewards
 
         # Distance hand to drill
@@ -329,7 +329,7 @@ class DianaTekkenTask(RLTask):
         self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
         # # # Task achieved
-        self.reset_buf = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self.reset_buf), self.reset_buf)
+        # self.reset_buf = torch.where(self.target_pos[:, 2] > 0.6, torch.ones_like(self.reset_buf), self.reset_buf)
 
         # If the resultant contact force between table and hand is more than a threshold
         # self.reset_buf = torch.where(torch.sqrt(torch.sum(self._cubes.get_contact_force_matrix()[:, 0, :]**2, dim=1 )) >= 0.5, 
