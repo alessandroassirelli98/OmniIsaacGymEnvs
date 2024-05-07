@@ -34,7 +34,7 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 68
+        self._num_observations = 42
         if not hasattr(self, '_num_actions'): self._num_actions = 12 # If the number of actions has been defined from a child
 
 
@@ -182,7 +182,7 @@ class DianaTekkenTask(RLTask):
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
-        self.reset_idx(indices, True)
+        self.reset_idx(indices, False)
         
     def pre_physics_step(self, actions: torch.Tensor) -> None:
         # implement logic to be performed before physics steps
@@ -192,7 +192,7 @@ class DianaTekkenTask(RLTask):
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
         if len(reset_env_ids) > 0:
             # pass
-            self.reset_idx(reset_env_ids, True)
+            self.reset_idx(reset_env_ids, False)
 
         self.actions = actions.clone().to(self._device)
         self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
@@ -239,7 +239,7 @@ class DianaTekkenTask(RLTask):
         self.obs_buf[:, 30:34] = self.hand_rot
         self.obs_buf[:, 34:37] = self.target_pos
         self.obs_buf[:, 37:41] = self.target_rot
-        self.obs_buf[:, 41:68] = dof_vel
+        # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
         observations = {self._robots.name: {"obs_buf": self.obs_buf}}
         return observations
