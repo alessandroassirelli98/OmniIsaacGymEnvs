@@ -37,6 +37,7 @@ class DianaTekkenTask(RLTask):
         self._num_observations = 68
         if not hasattr(self, '_num_actions'): self._num_actions = 12 # If the number of actions has been defined from a child
 
+
         RLTask.__init__(self, name, env)
 
 
@@ -150,6 +151,9 @@ class DianaTekkenTask(RLTask):
 
     def post_reset(self):
         # implement any logic required for simulation on-start here
+        self.manipulability = torch.zeros((self.num_envs, 1), dtype=torch.bool, device = self._device)
+        self.bool_contacts = torch.zeros((self.num_envs, 15), dtype=torch.bool, device=self._device)
+    
         self.num_diana_tekken_dofs = self._robots.num_dof
         self.actuated_dof_indices = self._robots.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
@@ -306,25 +310,24 @@ class DianaTekkenTask(RLTask):
     def calculate_metrics(self) -> None:
         fail_penalty = 10
         goal_achieved = 1
-        manipulability_prize = 0.2
+        manipulability_prize = 0.3
         # implement logic to compute rewards
 
         # Distance hand to drill
         d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
-        reward = - (d ** 2)
+        reward = - (d ** 2) * 0.5
 
         # Drill to target distance
         d = torch.abs(self.target_pos[:, 2] - self.reach_target[2])
-        reward -= d**2
+        reward -= d**2 * 0.5
 
         # rotation difference
         d = quat_diff_rad(self.hand_rot, self.target_rot)
-        reward -= d**2 * 2
+        reward -= d**2 
 
         cm = self._drills.get_contact_force_matrix()
-        cm_bool = self._contact_matrix_to_bool(cm)
-        man = self.cm_bool_to_manipulability(cm_bool)
-        reward = torch.where(man, reward + manipulability_prize, reward)
+        self.cm_bool_to_manipulability(cm)
+        reward = torch.where(self.manipulability, reward + manipulability_prize, reward)
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         reward = torch.where(self.target_pos[:, 2] > 0.6, reward + goal_achieved, reward)
@@ -359,19 +362,11 @@ class DianaTekkenTask(RLTask):
         # self.reset_buf = torch.where(torch.sqrt(torch.sum(self._cubes.get_contact_force_matrix()[:, 0, :]**2, dim=1 )) >= 0.5, 
         #                              torch.ones_like(self.reset_buf), self.reset_buf) #Doesn't work on gpu
 
-    def _contact_matrix_to_bool(self, cm, TOL=1e-3):
-        cm_bool = torch.zeros((self.num_envs, cm.shape[1]), dtype=torch.bool)
+    def cm_bool_to_manipulability(self, cm, TOL=1e-3):
+        thumb_contact_idxs = [0, 1, 2]
         for env_id in range(self.num_envs):
             for contact_id in range(cm.shape[1]):
                 res = torch.norm(cm[env_id, contact_id, :])
-                if res > TOL:
-                    cm_bool[env_id, contact_id] = 1
-        return cm_bool
-    
-    def cm_bool_to_manipulability(self, cm_bool):
-        manipulability = torch.zeros((self.num_envs, 1), dtype=torch.bool)
-        thumb_contact_idxs = [0, 1, 2]
-        for env_id in range(self.num_envs):
+                self.bool_contacts[env_id, contact_id] = 1 if res > TOL else 0
             # Check for a contact with any link of the thumb and any other finger link
-            manipulability[env_id] = torch.any(cm_bool[env_id, thumb_contact_idxs]) and torch.any(cm_bool[env_id, 3:]) 
-        return manipulability
+            self.manipulability[env_id] = torch.any(self.bool_contacts[env_id, thumb_contact_idxs]) and torch.any(self.bool_contacts[env_id, 3:]) 
