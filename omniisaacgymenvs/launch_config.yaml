@@ -3,6 +3,7 @@ configurations:
   - run1:
       pretrain: False
       mini_batches: 4
+      reward_shaper: False
       nn_type: SharedNetworks
 
   - run2:
@@ -12,228 +13,43 @@ configurations:
       nn_type: SharedNetworks
 
   - run3:
-      pretrain: False
+      pretrain: True
       mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
+      reward_shaper: False
       nn_type: SharedNetworks
 
   - run4:
-      pretrain: False
+      pretrain: True
       mini_batches: 4
       value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
       nn_type: SharedNetworks
 
   - run5:
-      pretrain: False
+      pretrain: True
       mini_batches: 4
-      nn_type: SeparateNetworks
+      nn_type: SharedNetworks
+      value_preprocessor: RunningStandardScaler
+      learning_rate: 0.001
 
   - run6:
-      pretrain: False
+      pretrain: True
       mini_batches: 4
       value_preprocessor: RunningStandardScaler
-      nn_type: SeparateNetworks
-      
+      nn_type: SharedNetworks
+      learning_rate: 0.0005
+
   - run7:
-      pretrain: False
+      pretrain: True
       mini_batches: 4
       value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      nn_type: SeparateNetworks
+      nn_type: SharedNetworks
+      learning_rate: 0.0001
 
   - run8:
-      pretrain: False
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
-      nn_type: SeparateNetworks
-
-  - run9:
-      pretrain: True
-      mini_batches: 4
-      nn_type: SharedNetworks
-
-  - run10:
       pretrain: True
       mini_batches: 4
       value_preprocessor: RunningStandardScaler
       nn_type: SharedNetworks
-
-  - run11:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      nn_type: SharedNetworks
-
-  - run12:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
-      nn_type: SharedNetworks
-
-  - run13:
-      pretrain: True
-      mini_batches: 4
-      nn_type: SeparateNetworks
-
-  - run14:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      nn_type: SeparateNetworks
-      
-  - run15:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      nn_type: SeparateNetworks
-
-  - run16:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
-      nn_type: SeparateNetworks
-
-  - run17:
-      pretrain: False
-      mini_batches: 4
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
-
-  - run18:
-      pretrain: False
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
+      learning_rate: 0.00005
 
 
-  - run19:
-      pretrain: False
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run20:
-      pretrain: False
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run21:
-      pretrain: False
-      mini_batches: 4
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run22:
-      pretrain: False
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
-
-      
-  - run23:
-      pretrain: False
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run24:
-      pretrain: False
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run25:
-      pretrain: True
-      mini_batches: 4
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run26:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run27:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run28:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
-      nn_type: SharedNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run29:
-      pretrain: True
-      mini_batches: 4
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run30:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
-
-      
-  - run31:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
-
-
-  - run32:
-      pretrain: True
-      mini_batches: 4
-      value_preprocessor: RunningStandardScaler
-      reward_shaper: True
-      learning_rate_scheduler: KLAdaptiveRL
-      nn_type: SeparateNetworks
-      entropy_loss_scale: 0.1
