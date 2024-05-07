@@ -365,9 +365,6 @@ class DianaTekkenTask(RLTask):
 
     def cm_bool_to_manipulability(self, cm, TOL=1e-3):
         thumb_contact_idxs = [0, 1, 2]
-        for env_id in range(self.num_envs):
-            for contact_id in range(cm.shape[1]):
-                res = torch.norm(cm[env_id, contact_id, :])
-                self.bool_contacts[env_id, contact_id] = 1 if res > TOL else 0
-            # Check for a contact with any link of the thumb and any other finger link
-            self.manipulability[env_id] = torch.any(self.bool_contacts[env_id, thumb_contact_idxs]) and torch.any(self.bool_contacts[env_id, 3:]) 
+        res = torch.norm(cm, dim=2) > TOL
+        self.manipulability = torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, 3:], dim=1) )
+
