@@ -297,7 +297,7 @@ class DianaTekkenTask(RLTask):
             rot = torch.ones((num_indices, 4), device=self._device) * q
 
             ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
-            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.05
+            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.04
 
             self._ref_cubes.set_world_poses(positions=ref_cube_pos, orientations=rot, indices=indices)
 
@@ -309,8 +309,8 @@ class DianaTekkenTask(RLTask):
 
     def calculate_metrics(self) -> None:
         fail_penalty = 10
-        goal_achieved = 1
-        manipulability_prize = 0.3
+        goal_achieved = 10
+        manipulability_prize = 0.1
         # implement logic to compute rewards
 
         # Distance hand to drill

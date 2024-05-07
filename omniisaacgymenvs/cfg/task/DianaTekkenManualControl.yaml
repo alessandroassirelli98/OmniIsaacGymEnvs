@@ -7,14 +7,14 @@ physics_engine: ${..physics_engine}
 env:
   numEnvs: ${resolve_default:1,${...num_envs}}
   envSpacing: 3.0
-  episodeLength: 1200
+  episodeLength: 800
 
   enableDebugVis: False
 
   clipObservations: 5.0
   clipActions: 1.0
 
-  controlFrequencyInv: 1 # 60 Hz
+  controlFrequencyInv: 2 # 60 Hz
 
   actionScale: 2.5
 
