@@ -58,7 +58,7 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
     
     def pre_physics_step(self, actions: np.array) -> None:
         # Move target position and orientation
-        target_pos, target_rot = self._ref_cubes.get_local_poses()
+        target_pos, target_rot = self._ref_cubes.get_world_poses()
         rpy_target = torch.tensor(get_euler_xyz(target_rot)).unsqueeze(0)
         target_pos[0, :3] += actions[:3] * 0.001
         rpy_target[0, 1] += actions[3] * 0.001

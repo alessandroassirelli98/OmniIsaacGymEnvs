@@ -54,7 +54,6 @@ class DianaTekkenTask(RLTask):
         scene.add(self._robots)  # add view to scene for initialization
 
         scene.add(self._robots._palm_centers)
-        # scene.add(self._robots._hand_covers)
         scene.add(self._robots._index_fingers)
         scene.add(self._robots._middle_fingers)
         scene.add(self._robots._ring_fingers)
@@ -70,7 +69,29 @@ class DianaTekkenTask(RLTask):
                                        )
         scene.add(self._cubes)
 
-        self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False)
+        self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
+                                       prepare_contact_sensors=True,
+                                       track_contact_forces=True,
+                                       contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Thumb_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Thumb_Phadist",
+
+                                                                       "/World/envs/.*/diana/Right_Index_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Index_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Index_Phadist",
+
+                                                                       "/World/envs/.*/diana/Right_Middle_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phadist",
+
+                                                                       "/World/envs/.*/diana/Right_Ring_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phadist",
+
+                                                                       "/World/envs/.*/diana/Right_Little_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Little_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Little_Phadist",
+                                                                       ])
         scene.add(self._drills)
 
 
@@ -132,6 +153,7 @@ class DianaTekkenTask(RLTask):
         self.num_diana_tekken_dofs = self._robots.num_dof
         self.actuated_dof_indices = self._robots.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
+        #
         self.default_dof_pos = torch.tensor([ 0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300] + [0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
@@ -284,22 +306,25 @@ class DianaTekkenTask(RLTask):
     def calculate_metrics(self) -> None:
         fail_penalty = 10
         goal_achieved = 1
+        manipulability_prize = 0.2
         # implement logic to compute rewards
 
         # Distance hand to drill
         d = torch.norm(self.hand_pos - self.target_pos, p=2, dim=1)
-        reward = - (d ** 2) * 2
+        reward = - (d ** 2)
 
         # Drill to target distance
         d = torch.abs(self.target_pos[:, 2] - self.reach_target[2])
         reward -= d**2
-        # rotation difference
-        # v = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, 0], device=self._device).unsqueeze(0))
-        # rot = quat_mul(self.hand_rot, v)
-        # d = quat_diff_rad(rot, self.target_rot)
 
-        # # print(f'Hand: {get_euler_xyz(self.hand_rot)}, Drill: {get_euler_xyz(self.target_rot)}')
-        # print(d)
+        # rotation difference
+        d = quat_diff_rad(self.hand_rot, self.target_rot)
+        reward -= d**2 * 2
+
+        cm = self._drills.get_contact_force_matrix()
+        cm_bool = self._contact_matrix_to_bool(cm)
+        man = self.cm_bool_to_manipulability(cm_bool)
+        reward = torch.where(man, reward + manipulability_prize, reward)
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         reward = torch.where(self.target_pos[:, 2] > 0.6, reward + goal_achieved, reward)
@@ -311,7 +336,6 @@ class DianaTekkenTask(RLTask):
         # If the hand is out of bound
         reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - fail_penalty, reward)
         reward = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), reward - fail_penalty, reward)
-
 
         self.rew_buf[:] = reward
 
@@ -334,3 +358,20 @@ class DianaTekkenTask(RLTask):
         # If the resultant contact force between table and hand is more than a threshold
         # self.reset_buf = torch.where(torch.sqrt(torch.sum(self._cubes.get_contact_force_matrix()[:, 0, :]**2, dim=1 )) >= 0.5, 
         #                              torch.ones_like(self.reset_buf), self.reset_buf) #Doesn't work on gpu
+
+    def _contact_matrix_to_bool(self, cm, TOL=1e-3):
+        cm_bool = torch.zeros((self.num_envs, cm.shape[1]), dtype=torch.bool)
+        for env_id in range(self.num_envs):
+            for contact_id in range(cm.shape[1]):
+                res = torch.norm(cm[env_id, contact_id, :])
+                if res > TOL:
+                    cm_bool[env_id, contact_id] = 1
+        return cm_bool
+    
+    def cm_bool_to_manipulability(self, cm_bool):
+        manipulability = torch.zeros((self.num_envs, 1), dtype=torch.bool)
+        thumb_contact_idxs = [0, 1, 2]
+        for env_id in range(self.num_envs):
+            # Check for a contact with any link of the thumb and any other finger link
+            manipulability[env_id] = torch.any(cm_bool[env_id, thumb_contact_idxs]) and torch.any(cm_bool[env_id, 3:]) 
+        return manipulability
