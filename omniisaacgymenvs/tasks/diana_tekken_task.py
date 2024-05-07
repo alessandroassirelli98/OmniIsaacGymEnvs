@@ -151,7 +151,7 @@ class DianaTekkenTask(RLTask):
 
     def post_reset(self):
         # implement any logic required for simulation on-start here
-        self.manipulability = torch.zeros((self.num_envs, 1), dtype=torch.bool, device = self._device)
+        self.manipulability = torch.zeros((self.num_envs), dtype=torch.bool, device = self._device)
         self.bool_contacts = torch.zeros((self.num_envs, 15), dtype=torch.bool, device=self._device)
     
         self.num_diana_tekken_dofs = self._robots.num_dof
@@ -328,6 +328,7 @@ class DianaTekkenTask(RLTask):
         cm = self._drills.get_contact_force_matrix()
         self.cm_bool_to_manipulability(cm)
         reward = torch.where(self.manipulability, reward + manipulability_prize, reward)
+        # print(reward)
 
         # reward = torch.where(torch.norm(self.hand_pos - self.target_pos, p=2, dim=1) < 0.05, reward + 1, reward)
         reward = torch.where(self.target_pos[:, 2] > 0.6, reward + goal_achieved, reward)
