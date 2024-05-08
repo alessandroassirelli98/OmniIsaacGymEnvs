@@ -58,11 +58,11 @@ recording_fps: 30
 # directory to save recordings in
 recording_dir: ''
 
-wandb_activate: False
+wandb_activate: True
 wandb_group: ''
 wandb_name: ${train.params.config.name}
 wandb_entity: 'alessandroassirelli98'
-wandb_project: 'simplified model dense rew with cut'
+wandb_project: 'simplified model dense rew 8 dof'
 
 # path to a kit app file
 kit_app: ''
