@@ -87,10 +87,10 @@ class DianaTekkenView(ArticulationView):
             # "Right_Thumb_0",
 
             "Right_Index_1",
-            "Right_Middle_1",
-            "Right_Ring_1",
-            "Right_Little_1",
-            "Right_Thumb_1",
+            # "Right_Middle_1",
+            # "Right_Ring_1",
+            # "Right_Little_1",
+            # "Right_Thumb_1",
 
             # "Right_Index_2",
             # "Right_Middle_2",
@@ -109,12 +109,18 @@ class DianaTekkenView(ArticulationView):
             ]
         self.actuated_finger_joint_names = [
             "Right_Index_1",
+            # "Right_Middle_1",
+            # "Right_Ring_1",
+            # "Right_Little_1",
+            # "Right_Thumb_1",
+            ]
+        self.clamped_finger_joint_names = [     
+            # "Right_Index_1",
             "Right_Middle_1",
             "Right_Ring_1",
             "Right_Little_1",
             "Right_Thumb_1",
-            ]
-        self.clamped_finger_joint_names = [            
+
             "Right_Index_2",
             "Right_Middle_2",
             "Right_Ring_2",

@@ -35,7 +35,7 @@ class DianaTekkenTask(RLTask):
         self.dt = self._task_cfg["sim"]["dt"]
 
         self._num_observations = 42
-        if not hasattr(self, '_num_actions'): self._num_actions = 12 # If the number of actions has been defined from a child
+        if not hasattr(self, '_num_actions'): self._num_actions = 8 # If the number of actions has been defined from a child
 
 
         RLTask.__init__(self, name, env)
