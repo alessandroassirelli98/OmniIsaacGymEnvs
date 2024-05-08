@@ -43,7 +43,7 @@ class StochasticActor(GaussianMixin, Model):
                                  nn.Linear(128, 64),
                                  nn.ELU())
                                  
-        self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions))
+        self.mean_layer = nn.Linear(64, self.num_actions)
         self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions))
 
     def compute(self, inputs, role):
@@ -78,8 +78,8 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False,
                  clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
         Model.__init__(self, observation_space, action_space, device)
-        GaussianMixin.__init__(self, True, clip_log_std, min_log_std, max_log_std, reduction)
-        DeterministicMixin.__init__(self, clip_actions)
+        GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction) # here we clip inside
+        DeterministicMixin.__init__(self, clip_actions=clip_actions)
 
         self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
                                  nn.ELU(),
@@ -125,8 +125,9 @@ samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, devi
 # PPO requires 2 models, visit its documentation for more details
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#models
 models = {}
-models["policy"] = Shared(env.observation_space, env.action_space, device)
-models["value"] = models["policy"]
+models["policy"] = StochasticActor(env.observation_space, env.action_space, device, True)
+models["value"] = Critic(env.observation_space, env.action_space, device, False)
+
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 plot=False
@@ -167,7 +168,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
                                      "project": "simplified model dense ep 800steps"}
 
