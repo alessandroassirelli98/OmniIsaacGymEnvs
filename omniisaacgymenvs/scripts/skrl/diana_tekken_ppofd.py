@@ -21,12 +21,12 @@ from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 repo = git.Repo(search_parent_directories=True)
 commit_hash = repo.head.object.hexsha
 
-if repo.is_dirty():
-    print("There are unstaged changes, please commit before run\n")
-    exit()
+# if repo.is_dirty():
+#     print("There are unstaged changes, please commit before run\n")
+#     exit()
 
-else:
-    print("Repo is clean, proceeeding to run \n")
+# else:
+#     print("Repo is clean, proceeeding to run \n")
 
 # seed for reproducibility
 set_seed(42)  # e.g. `set_seed(42)` for fixed seed
@@ -158,7 +158,7 @@ cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
 
-cfg["value_preprocessor"] = None
+cfg["value_preprocessor"] = RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 
 cfg["learning_rate_scheduler"] = None
@@ -168,9 +168,9 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
-                                     "project": "simplified model dense ep 800steps"}
+                                     "project": "target reaching"}
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
@@ -229,28 +229,29 @@ cfg_trainer = {"timesteps": 75000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection
-transitions = []
-for tstep in episode:
-    states = torch.tensor(tstep["states"], device=device)
-    actions = torch.tensor(tstep["actions"], device=device)
-    rewards = torch.tensor(tstep["rewards"], device=device)
-    terminated = torch.tensor(tstep["terminated"], device=device)
-    next_states = torch.tensor(tstep["next_states"], device=device)
-    dict = {}
-    dict["states"] = states
-    dict["actions"] = actions
-    dict["reward"] = rewards
-    dict["next_states"] = next_states
-    dict["terminated"] = terminated
-    transitions.append(dict)
-    demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
+if cfg["pretrain"]:
+    transitions = []
+    for tstep in episode:
+        states = torch.tensor(tstep["states"], device=device)
+        actions = torch.tensor(tstep["actions"], device=device)
+        rewards = torch.tensor(tstep["rewards"], device=device)
+        terminated = torch.tensor(tstep["terminated"], device=device)
+        next_states = torch.tensor(tstep["next_states"], device=device)
+        dict = {}
+        dict["states"] = states
+        dict["actions"] = actions
+        dict["reward"] = rewards
+        dict["next_states"] = next_states
+        dict["terminated"] = terminated
+        transitions.append(dict)
+        demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
 
-# trainer.pre_train(transitions, 10)
-pt = Pretrainer(agent=agent,
-                transitions=transitions,
-                lr=cfg["pretrainer_lr"],
-               epochs=cfg["pretrainer_epochs"],
-               batch_size=128)
+    # trainer.pre_train(transitions, 10)
+    pt = Pretrainer(agent=agent,
+                    transitions=transitions,
+                    lr=cfg["pretrainer_lr"],
+                epochs=cfg["pretrainer_epochs"],
+                batch_size=128)
 
 # start training
 if cfg["checkpoint"]:

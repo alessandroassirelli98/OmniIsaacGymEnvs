@@ -74,11 +74,11 @@ class DianaTekken(Robot):
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
         drive_type = ["angular"] * 17
-        default_dof_pos = [math.degrees(x) for x in [ 0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300]] + [0. for _ in range(10)]
-        stiffness = [2000*np.pi/180] * 7 + [0.5, 0.5] * 5
+        default_dof_pos = [math.degrees(x) for x in [0., -0.4,  0., 1.3, 0., -1.3, 0.]] + [0. for _ in range(10)]
+        stiffness = [400*np.pi/180] * 7 + [0.5, 0.5] * 5
         damping = [80*np.pi/180] * 7 + [0.05, 0.05] * 5
         max_force = [87, 87, 87, 87, 12, 12, 12] + [1.5, 0.6] * 5
-        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [3.14 for _ in range(10)]
+        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [100 for _ in range(10)]
 
         # STICK WITH THE URDF DRIVE PARAMETERS
 
@@ -93,7 +93,9 @@ class DianaTekken(Robot):
                 max_force=max_force[i]
             )
         
-            # PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
+            PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(
+                max_velocity[i]
+            )
 
         self._setup_tendons()
     
