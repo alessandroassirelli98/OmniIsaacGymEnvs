@@ -67,7 +67,7 @@ sim:
     override_usd_defaults: False
     enable_self_collisions: False
     enable_gyroscopic_forces: True
-    make_kinematic: False
+    make_kinematic: True
     # also in stage params
     # per-actor
     solver_position_iteration_count: 12

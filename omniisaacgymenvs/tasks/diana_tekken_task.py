@@ -34,7 +34,7 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 64
+        self._num_observations = 68
         if not hasattr(self, '_num_actions'): self._num_actions = 8 # If the number of actions has been defined from a child
 
 
@@ -45,9 +45,9 @@ class DianaTekkenTask(RLTask):
         # implement environment setup here
         self.get_robot(name="diana",
                         translation=self._robot_translation)
-        self.get_cube()
+        # self.get_cube()
         self.get_drill()
-        self.get_target_sphere()
+        # self.get_target_sphere()
 
         super().set_up_scene(scene)
 
@@ -55,22 +55,22 @@ class DianaTekkenTask(RLTask):
         self.robots_to_log.append(self._robots) # Robot that gets logged by the logger
         scene.add(self._robots)  # add view to scene for initialization
 
-        scene.add(self._robots._tool_centers)
-        # scene.add(self._robots._palm_centers)
+        # scene.add(self._robots._tool_centers)
+        scene.add(self._robots._palm_centers)
         # scene.add(self._robots._index_fingers)
         # scene.add(self._robots._middle_fingers)
         # scene.add(self._robots._ring_fingers)
         # scene.add(self._robots._little_fingers)
         # scene.add(self._robots._thumb_fingers)
         
-        self._cubes = GeometryPrimView(prim_paths_expr="/World/envs/.*/cube", name="cube_view", 
-                                       reset_xform_properties=False, 
-                                    #    collisions = torch.ones(self.num_envs, dtype=torch.bool),
-                                    #    prepare_contact_sensors=True,
-                                    #    track_contact_forces=True,
-                                    #    contact_filter_prim_paths_expr=["/World/envs/.*/diana/.*"]
-                                       )
-        scene.add(self._cubes)
+        # self._cubes = GeometryPrimView(prim_paths_expr="/World/envs/.*/cube", name="cube_view", 
+        #                                reset_xform_properties=False, 
+        #                             #    collisions = torch.ones(self.num_envs, dtype=torch.bool),
+        #                             #    prepare_contact_sensors=True,
+        #                             #    track_contact_forces=True,
+        #                             #    contact_filter_prim_paths_expr=["/World/envs/.*/diana/.*"]
+        #                                )
+        # scene.add(self._cubes)
 
         self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
                                        prepare_contact_sensors=True,
@@ -96,12 +96,11 @@ class DianaTekkenTask(RLTask):
                                     #                                    "/World/envs/.*/diana/Right_Little_Phadist",
                                     #                                    ]
                                                                        )
-
         scene.add(self._drills)
 
-        self._target_spheres = RigidPrimView(prim_paths_expr="/World/envs/.*/target_sphere", name="target_view", 
-                                reset_xform_properties=False)
-        scene.add(self._target_spheres)
+        # self._target_spheres = RigidPrimView(prim_paths_expr="/World/envs/.*/target_sphere", name="target_view", 
+        #                         reset_xform_properties=False)
+        # scene.add(self._target_spheres)
 
 
         
@@ -115,23 +114,22 @@ class DianaTekkenTask(RLTask):
 
 
     def get_drill(self):
-        self._drill_position = torch.tensor([0.8, 0, 0.5], device=self._device)
+        self._drill_position = torch.tensor([0.6, 0, 0.55], device=self._device)
         orientation = torch.tensor([0, 0, 0], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.5, -0.5, 0.483], device=self._device)
-        self._drill_reset_lower_bound = torch.tensor([0.5, -0.5, 0.46], device=self._device)
-        self._drill_upper_bound = torch.tensor([1.1, 0.5, 0.5], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.3, -0.5, 0.55], device=self._device)
+        self._drill_reset_lower_bound = torch.tensor([0.3, -0.5, 0.51], device=self._device)
+        self._drill_upper_bound = torch.tensor([0.65, 0.5, 0.55], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
                               name="drill",
                               position=self._drill_position,
-                              orientation=self._drills_rot.squeeze(0))
+                              )
         self._sim_config.apply_articulation_settings("drill", get_prim_at_path(self._drill.prim_path), self._sim_config.parse_actor_config("drill"))
  
     def get_cube(self):
-        self.translation = torch.tensor([0.0, 0.0, 0.0])
-        self.cube_position = torch.tensor([0.8, 0., 0.2])
-        self.cube_dimension = torch.tensor([0.6, 1, 0.4])
+        self.cube_position = torch.tensor([0.6, 0., 0.25])
+        self.cube_dimension = torch.tensor([0.6, 1, 0.5])
         self.cube_color = torch.tensor([0.22, 0.22, 0.22])
         cube = FixedCuboid(prim_path= self.default_zero_env_path + "/cube",
                                   name="cube",
@@ -143,9 +141,9 @@ class DianaTekkenTask(RLTask):
 
     def get_target_sphere(self):
         self._target_sphere_color = torch.tensor([0.1, 0.9, 0.1], device=self._device)
-        self._target_sphere_position = torch.tensor([0.8, 0., 0.7], device=self._device)
-        self._target_sphere_lower_bound = torch.tensor([0.5, -0.5, 0.5], device=self._device)
-        self._target_sphere_upper_bound = torch.tensor([1.1, 0.5, 1.], device=self._device)
+        self._target_sphere_position = torch.tensor([0.6, 0., 0.7], device=self._device)
+        self._target_sphere_lower_bound = torch.tensor([0.3, -0.5, 0.5], device=self._device)
+        self._target_sphere_upper_bound = torch.tensor([0.9, 0.5, 1.], device=self._device)
 
         self._target_sphere = DynamicSphere(prim_path= self.default_zero_env_path + "/target_sphere",
                                   name="target_sphere",
@@ -165,7 +163,7 @@ class DianaTekkenTask(RLTask):
         self.actuated_dof_indices = self._robots.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
         # 0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300
-        self.default_dof_pos = torch.tensor([0., -0.4,  0., 1.3, 0., -1.3, 0.]  + [0.] * 20, device=self._device)
+        self.default_dof_pos = torch.tensor([0.] * 7  + [0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos
@@ -183,7 +181,7 @@ class DianaTekkenTask(RLTask):
         self.drill_pos = torch.ones((self._num_envs, 3), device=self._device) * self._drill_position  - self._env_pos
         self.drill_rot = torch.ones((self._num_envs, 4), device=self._device) * self._drills_rot
 
-        self.target_sphere_pos = torch.ones((self._num_envs, 3), device=self._device) * self._target_sphere_position
+        # self.target_sphere_pos = torch.ones((self._num_envs, 3), device=self._device) * self._target_sphere_position
 
         self._cubes_to_pull = torch.zeros(self.num_envs, device = self._device)
         self.applied_ext_forces = torch.tensor([1., 1., -1.], device=self._device)
@@ -209,6 +207,7 @@ class DianaTekkenTask(RLTask):
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
+
         # print(self._robots.get_joint_positions()[:, :7])
 
     # def push_downward(self):
@@ -224,20 +223,20 @@ class DianaTekkenTask(RLTask):
     def get_observations(self) -> dict:
         dof_pos = self._robots.get_joint_positions(clone=False)
         dof_vel = self._robots.get_joint_velocities(clone=False)
-        hand_pos_world,  self.hand_rot = self._robots._tool_centers.get_world_poses(clone=False)
-        sphere_pos, _ = self._target_spheres.get_world_poses(clone=False)
+        hand_pos_world,  self.hand_rot = self._robots._palm_centers.get_world_poses(clone=False)
+        # sphere_pos, _ = self._target_spheres.get_world_poses(clone=False)
         # index_pos_world, _ = self._robots._index_fingers.get_world_poses(clone=False)
         # middle_pos_world, _ = self._robots._middle_fingers.get_world_poses(clone=False)
         # ring_pos_world, _ = self._robots._ring_fingers.get_world_poses(clone=False)
         # little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
         # thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
 
-        drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=False)
+        drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=True)
 
         self.hand_pos = hand_pos_world - self._env_pos
         self.drill_pos = drill_pos_world - self._env_pos
 
-        self.target_sphere_pos = sphere_pos - self._env_pos
+        # self.target_sphere_pos = sphere_pos - self._env_pos
 
         # self.index_pose = index_pos_world - self._env_pos
         # self.middle_pose = middle_pos_world - self._env_pos
@@ -248,10 +247,10 @@ class DianaTekkenTask(RLTask):
         self.obs_buf[:, :27] = dof_pos
         self.obs_buf[:, 27:30] = self.hand_pos
         self.obs_buf[:, 30:34] = self.hand_rot
-        # self.obs_buf[:, 34:37] = self.drill_pos
-        # self.obs_buf[:, 37:41] = self.drill_rot
-        self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 37:64] = dof_vel
+        self.obs_buf[:, 34:37] = self.drill_pos
+        self.obs_buf[:, 37:41] = self.drill_rot
+        # self.obs_buf[:, 34:37] = self.target_sphere_pos
+        self.obs_buf[:, 41:68] = dof_vel
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -286,15 +285,15 @@ class DianaTekkenTask(RLTask):
         self._robots.set_joint_position_targets(self._robot_dof_targets[env_ids], indices=indices)
 
         # Reset target positions
-        pos = tensor_clamp(
-            self._target_sphere_position.unsqueeze(0)
-            + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
-            self._target_sphere_lower_bound,
-            self._target_sphere_upper_bound,
-        )
-        dof_pos = torch.zeros((num_indices, 3), device=self._device)
-        dof_pos[:, :] = pos + self._env_pos[env_ids]
-        self._target_spheres.set_world_poses(positions=dof_pos, indices=indices)
+        # pos = tensor_clamp(
+        #     self._target_sphere_position.unsqueeze(0)
+        #     + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
+        #     self._target_sphere_lower_bound,
+        #     self._target_sphere_upper_bound,
+        # )
+        # dof_pos = torch.zeros((num_indices, 3), device=self._device)
+        # dof_pos[:, :] = pos + self._env_pos[env_ids]
+        # self._target_spheres.set_world_poses(positions=dof_pos, indices=indices)
 
 
         # Reset drill positions
@@ -314,7 +313,7 @@ class DianaTekkenTask(RLTask):
         
         rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
 
-        self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
+        # self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
         self._drills.set_world_poses(positions=dof_pos, orientations=rot, indices=indices)
 
         if hasattr(self, "_ref_cubes"):
@@ -323,7 +322,7 @@ class DianaTekkenTask(RLTask):
             rot = torch.ones((num_indices, 4), device=self._device) * q
 
             ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
-            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.04
+            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.05
 
             self._ref_cubes.set_world_poses(positions=ref_cube_pos, orientations=rot, indices=indices)
 
@@ -340,18 +339,19 @@ class DianaTekkenTask(RLTask):
         # implement logic to compute rewards
 
         # Distance hand to drill
-        d = torch.norm(self.hand_pos - self.target_sphere_pos, p=2, dim=1)
+        d = torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-        reward = torch.where(torch.norm(self.hand_pos - self.target_sphere_pos, p=2, dim=1) < 0.05, reward + 1, reward)
-
+        reward = torch.where(torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1) < 0.07, reward + 1, reward)
+        # print(f'{d},  {reward}')
         # Drill to target distance
         # d = torch.abs(self.drill_pos[:, 2] - self.reach_target[2])
         # reward -= d**2 * 0.5
 
         # rotation difference
-        # d = quat_diff_rad(self.hand_rot, self.drill_rot)
-        # reward -= d**2 
+        d = quat_diff_rad(self.hand_rot, self.drill_rot)
+        reward += torch.log(1 / (1.0 + d ** 2)) * 2
+        # print(d)
 
         # cm = self._drills.get_contact_force_matrix()
         # self.cm_bool_to_manipulability(cm)

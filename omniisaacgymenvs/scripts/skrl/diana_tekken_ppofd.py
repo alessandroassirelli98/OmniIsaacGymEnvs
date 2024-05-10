@@ -21,12 +21,12 @@ from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 repo = git.Repo(search_parent_directories=True)
 commit_hash = repo.head.object.hexsha
 
-# if repo.is_dirty():
-#     print("There are unstaged changes, please commit before run\n")
-#     exit()
+if repo.is_dirty():
+    print("There are unstaged changes, please commit before run\n")
+    exit()
 
-# else:
-#     print("Repo is clean, proceeeding to run \n")
+else:
+    print("Repo is clean, proceeeding to run \n")
 
 # seed for reproducibility
 set_seed(42)  # e.g. `set_seed(42)` for fixed seed
@@ -88,7 +88,7 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
                                  nn.Linear(128, 64),
                                  nn.ELU())
 
-        self.mean_layer = nn.Linear(64, self.num_actions)
+        self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions), nn.Tanh())
         self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions))
 
         self.value_layer = nn.Linear(64, 1)
@@ -125,8 +125,10 @@ samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, devi
 # PPO requires 2 models, visit its documentation for more details
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#models
 models = {}
-models["policy"] = StochasticActor(env.observation_space, env.action_space, device, True)
-models["value"] = Critic(env.observation_space, env.action_space, device, False)
+# models["policy"] = StochasticActor(env.observation_space, env.action_space, device, True)
+# models["value"] = Critic(env.observation_space, env.action_space, device, False)
+models["policy"] = Shared(env.observation_space, env.action_space, device)
+models["value"] = models["policy"]
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
@@ -161,14 +163,14 @@ cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": dev
 cfg["value_preprocessor"] = RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 
-cfg["learning_rate_scheduler"] = None
+cfg["learning_rate_scheduler"] = KLAdaptiveRL
 cfg["kl_threshold"] = 0.008
 
 # logging to TensorBoard and write checkpoints (in timesteps)
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
                                      "project": "target reaching"}
 

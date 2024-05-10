@@ -74,10 +74,10 @@ class DianaTekken(Robot):
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
         drive_type = ["angular"] * 17
-        default_dof_pos = [math.degrees(x) for x in [0., -0.4,  0., 1.3, 0., -1.3, 0.]] + [0. for _ in range(10)]
-        stiffness = [400*np.pi/180] * 7 + [0.5, 0.5] * 5
-        damping = [80*np.pi/180] * 7 + [0.05, 0.05] * 5
-        max_force = [87, 87, 87, 87, 12, 12, 12] + [1.5, 0.6] * 5
+        default_dof_pos = [math.degrees(x) for x in [-0.4882, -0.5160,  0.1176,  2.5050,  2.3009, -0.5262,  2.4023]] + [0. for _ in range(10)]
+        stiffness = [600*np.pi/180] * 7 + [0.5, 0.5] * 5
+        damping = [90*np.pi/180] * 7 + [0.05, 0.05] * 5
+        max_force = [110] * 7 + [1.5, 0.6] * 5
         max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [100 for _ in range(10)]
 
         # STICK WITH THE URDF DRIVE PARAMETERS
@@ -126,7 +126,7 @@ class DianaTekken(Robot):
             rootAxisApi = PhysxSchema.PhysxTendonAxisAPI(rootApi, tendon_names[i])
 
             rootApi.CreateStiffnessAttr().Set(0.5)
-            rootApi.CreateDampingAttr().Set(0.05)
+            rootApi.CreateDampingAttr().Set(0.5)
             # rootApi.CreateLimitStiffnessAttr().Set(0.5)
             rootAxisApi.CreateGearingAttr().Set([tendon_gearing[0]])
             rootAxisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
