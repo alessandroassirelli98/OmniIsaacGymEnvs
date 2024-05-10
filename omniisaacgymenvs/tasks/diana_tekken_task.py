@@ -349,8 +349,8 @@ class DianaTekkenTask(RLTask):
         # reward -= d**2 * 0.5
 
         # rotation difference
-        d = quat_diff_rad(self.hand_rot, self.drill_rot)
-        reward += torch.log(1 / (1.0 + d ** 2)) * 2
+        # d = quat_diff_rad(self.hand_rot, self.drill_rot)
+        # reward += torch.log(1 / (1.0 + d ** 2)) * 2
         # print(d)
 
         # cm = self._drills.get_contact_force_matrix()
