@@ -45,7 +45,7 @@ class DianaTekkenTask(RLTask):
         # implement environment setup here
         self.get_robot(name="diana",
                         translation=self._robot_translation)
-        # self.get_cube()
+        self.get_cube()
         self.get_drill()
         # self.get_target_sphere()
 
@@ -63,14 +63,14 @@ class DianaTekkenTask(RLTask):
         # scene.add(self._robots._little_fingers)
         # scene.add(self._robots._thumb_fingers)
         
-        # self._cubes = GeometryPrimView(prim_paths_expr="/World/envs/.*/cube", name="cube_view", 
-        #                                reset_xform_properties=False, 
-        #                             #    collisions = torch.ones(self.num_envs, dtype=torch.bool),
-        #                             #    prepare_contact_sensors=True,
-        #                             #    track_contact_forces=True,
-        #                             #    contact_filter_prim_paths_expr=["/World/envs/.*/diana/.*"]
-        #                                )
-        # scene.add(self._cubes)
+        self._cubes = GeometryPrimView(prim_paths_expr="/World/envs/.*/cube", name="cube_view", 
+                                       reset_xform_properties=False, 
+                                    #    collisions = torch.ones(self.num_envs, dtype=torch.bool),
+                                    #    prepare_contact_sensors=True,
+                                    #    track_contact_forces=True,
+                                    #    contact_filter_prim_paths_expr=["/World/envs/.*/diana/.*"]
+                                       )
+        scene.add(self._cubes)
 
         self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
                                        prepare_contact_sensors=True,
