@@ -343,14 +343,15 @@ class DianaTekkenTask(RLTask):
         reward = torch.log(1 / (1.0 + d ** 2))
 
         reward = torch.where(torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1) < 0.07, reward + 1, reward)
+        # reward = torch.where(torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1) < 0.07, reward + 1, reward)
         # print(f'{d},  {reward}')
         # Drill to target distance
         # d = torch.abs(self.drill_pos[:, 2] - self.reach_target[2])
         # reward -= d**2 * 0.5
 
         # rotation difference
-        # d = quat_diff_rad(self.hand_rot, self.drill_rot)
-        # reward += torch.log(1 / (1.0 + d ** 2)) * 2
+        d = quat_diff_rad(self.hand_rot, self.drill_rot)
+        reward += torch.log(1 / (1.0 + d ** 2))
         # print(d)
 
         # cm = self._drills.get_contact_force_matrix()
