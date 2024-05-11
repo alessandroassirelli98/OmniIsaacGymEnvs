@@ -128,8 +128,8 @@ class DianaTekkenTask(RLTask):
         self._sim_config.apply_articulation_settings("drill", get_prim_at_path(self._drill.prim_path), self._sim_config.parse_actor_config("drill"))
  
     def get_cube(self):
-        self.cube_position = torch.tensor([0.6, 0., 0.25])
-        self.cube_dimension = torch.tensor([0.6, 1, 0.5])
+        self.cube_position = torch.tensor([0.6, 0., 0.2])
+        self.cube_dimension = torch.tensor([0.6, 1, 0.4])
         self.cube_color = torch.tensor([0.22, 0.22, 0.22])
         cube = FixedCuboid(prim_path= self.default_zero_env_path + "/cube",
                                   name="cube",
