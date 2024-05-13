@@ -37,7 +37,7 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 68
+        self._num_observations = 75
         if not hasattr(self, '_num_actions'): self._num_actions = 8 # If the number of actions has been defined from a child
 
 
@@ -118,7 +118,7 @@ class DianaTekkenTask(RLTask):
 
     def get_drill(self):
         self._drill_position = torch.tensor([0.6, 0, 0.52], device=self._device)
-        orientation = torch.tensor([0, 0, torch.pi/2], device=self._device).unsqueeze(0)
+        orientation = torch.tensor([0, 0, 0], device=self._device).unsqueeze(0)
         self._drill_lower_bound = torch.tensor([0.3, -0.5, 0.52], device=self._device)
         self._drill_reset_lower_bound = torch.tensor([0.3, -0.5, 0.45], device=self._device)
         self._drill_upper_bound = torch.tensor([0.8, 0.5, 0.52], device=self._device)
@@ -170,6 +170,9 @@ class DianaTekkenTask(RLTask):
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos
+        self._joint_targets = torch.tensor([1.5964e-01, -1.2053e-02,  3.3447e-01,  4.5422e-01,  3.6467e-02,
+                                            4.4977e-01,  9.6558e-02,  1.1339e+00,  7.1909e-01,  8.8237e-01], 
+                                            device=self._device)
 
         self.reach_target = torch.tensor([0.8, 0., 0.6], device=self._device)
 
@@ -211,7 +214,7 @@ class DianaTekkenTask(RLTask):
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-        # print(self._robots.get_joint_positions()[:, :7])
+        # print(self._robots.get_joint_positions()[:, 7:])
 
     # def push_downward(self):
     #     self._cubes_to_pull = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self._cubes_to_pull), self._cubes_to_pull)
@@ -255,7 +258,7 @@ class DianaTekkenTask(RLTask):
             return p_prime, q_prime
         
 
-        dof_pos = self._robots.get_joint_positions(clone=False)
+        self.dof_pos = self._robots.get_joint_positions(clone=False)
         dof_vel = self._robots.get_joint_velocities(clone=False)
         hand_pos_world,  self.hand_rot = self._robots._palm_centers.get_world_poses(clone=False)
         # sphere_pos, _ = self._target_spheres.get_world_poses(clone=False)
@@ -279,7 +282,7 @@ class DianaTekkenTask(RLTask):
         # self.little_pos = little_pos_world - self._env_pos
         # self.thumb_pos = thumb_pos_world - self._env_pos
 
-        self.obs_buf[:, :27] = dof_pos
+        self.obs_buf[:, :27] = self.dof_pos
         self.obs_buf[:, 27:30] = self.hand_pos
         self.obs_buf[:, 30:34] = self.hand_rot
         self.obs_buf[:, 34:37] = self.drill_pos
@@ -287,7 +290,7 @@ class DianaTekkenTask(RLTask):
         self.obs_buf[:, 41:44] = self.hand_in_drill_pos
         self.obs_buf[:, 44:48] = self.hand_in_drill_pose
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 41:75] = dof_vel
+        self.obs_buf[:, 48:75] = dof_vel
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -350,7 +353,7 @@ class DianaTekkenTask(RLTask):
         
         rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
 
-        self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
+        # self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
         self._drills.set_world_poses(positions=dof_pos, orientations=rot, indices=indices)
 
         if hasattr(self, "_ref_cubes"):
@@ -379,14 +382,19 @@ class DianaTekkenTask(RLTask):
         d = torch.norm(self.hand_in_drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-        reward = torch.where(torch.norm(self.hand_in_drill_pos, p=2, dim=1) < 0.05, reward + 1, reward)
-
         # rotation difference
         d = 2.0 * torch.asin(torch.clamp(torch.norm(self.hand_in_drill_pose[:, 1:], p=2, dim=-1), max=1.0))
         reward += torch.log(1 / (1.0 + d ** 2))
+
+        # Joint targets
+        d = torch.norm(self._joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
+        reward = torch.log(1 / (1.0 + d ** 2)) * 0.5
+
+        reward = torch.where(torch.norm(self.hand_in_drill_pos, p=2, dim=1) < 0.05, reward + 1, reward)
+
         # print(d)
 
-        reward = torch.where(self.drill_pos[:, 2] > 0.6, reward + goal_achieved, reward)
+        # reward = torch.where(self.drill_pos[:, 2] > 0.6, reward + goal_achieved, reward)
 
         # cm = self._drills.get_contact_force_matrix()
         # self.cm_bool_to_manipulability(cm)
