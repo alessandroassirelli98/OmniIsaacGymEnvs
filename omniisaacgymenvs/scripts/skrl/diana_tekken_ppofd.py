@@ -132,13 +132,13 @@ models["value"] = models["policy"]
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
-plot=False
+plot=True
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "shared"
 
-cfg["pretrain"] = False
+cfg["pretrain"] = True
 cfg["pretrainer_epochs"] = 150
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
@@ -153,7 +153,7 @@ cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.
+cfg["entropy_loss_scale"] = 0.1
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 

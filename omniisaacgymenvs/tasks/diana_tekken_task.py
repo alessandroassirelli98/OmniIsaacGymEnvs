@@ -321,8 +321,8 @@ class DianaTekkenTask(RLTask):
             q = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0))
             rot = torch.ones((num_indices, 4), device=self._device) * q
 
-            ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
-            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.05
+            # ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
+            # ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) * 0.05
 
             self._ref_cubes.set_world_poses(positions=ref_cube_pos, orientations=rot, indices=indices)
 
@@ -342,7 +342,7 @@ class DianaTekkenTask(RLTask):
         d = torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-        reward = torch.where(torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1) < 0.07, reward + 1, reward)
+        reward = torch.where(torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1) < 0.03, reward + 1, reward)
         # reward = torch.where(torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1) < 0.07, reward + 1, reward)
         # print(f'{d},  {reward}')
         # Drill to target distance
