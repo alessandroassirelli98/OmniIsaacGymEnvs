@@ -50,8 +50,8 @@ sim:
     enable_stabilization: True
     max_depenetration_velocity: 1
     # GPU buffers
-    gpu_max_rigid_contact_count: 3048576
-    gpu_max_rigid_patch_count: 63554432
+    gpu_max_rigid_contact_count: 1048576
+    gpu_max_rigid_patch_count: 33554432
     gpu_found_lost_pairs_capacity: 20971520
     gpu_found_lost_aggregate_pairs_capacity: 20971520
     gpu_total_aggregate_pairs_capacity: 20971520
@@ -66,11 +66,9 @@ sim:
     override_usd_defaults: False
     enable_self_collisions: False
     enable_gyroscopic_forces: True
-    make_kinematic: True
+    make_kinematic: False
     # also in stage params
     # per-actor
-    solver_position_iteration_count: 12
-    solver_velocity_iteration_count: 1
     sleep_threshold: 0.005
     stabilization_threshold: 0.001
     # per-body

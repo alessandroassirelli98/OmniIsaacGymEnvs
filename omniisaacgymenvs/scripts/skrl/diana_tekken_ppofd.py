@@ -171,8 +171,8 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD + BC"],
-                                     "project": "target reaching"}
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
+                                     "project": "pick up trial"}
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
