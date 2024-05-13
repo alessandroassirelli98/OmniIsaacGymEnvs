@@ -262,11 +262,11 @@ class DianaTekkenTask(RLTask):
         dof_vel = self._robots.get_joint_velocities(clone=False)
         hand_pos_world,  self.hand_rot = self._robots._palm_centers.get_world_poses(clone=False)
         # sphere_pos, _ = self._target_spheres.get_world_poses(clone=False)
-        index_pos_world, _ = self._robots._index_fingers.get_world_poses(clone=False)
-        middle_pos_world, _ = self._robots._middle_fingers.get_world_poses(clone=False)
-        ring_pos_world, _ = self._robots._ring_fingers.get_world_poses(clone=False)
-        little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
-        thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
+        # index_pos_world, _ = self._robots._index_fingers.get_world_poses(clone=False)
+        # middle_pos_world, _ = self._robots._middle_fingers.get_world_poses(clone=False)
+        # ring_pos_world, _ = self._robots._ring_fingers.get_world_poses(clone=False)
+        # little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
+        # thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
 
         drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=False)
 
