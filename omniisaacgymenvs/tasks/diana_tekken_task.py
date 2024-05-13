@@ -387,14 +387,15 @@ class DianaTekkenTask(RLTask):
         reward += torch.log(1 / (1.0 + d ** 2))
 
         # Joint targets
-        # d = torch.norm(self._joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
-        # reward += torch.log(1 / (1.0 + d ** 2)) * 0.5
+        d = torch.norm(self._joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
+        reward += torch.log(1 / (1.0 + d ** 2)) * 0.5
 
         reward = torch.where(torch.norm(self.hand_in_drill_pos, p=2, dim=1) < 0.05, reward + 1, reward)
 
         # print(d)
 
-        # reward = torch.where(self.drill_pos[:, 2] > 0.6, reward + goal_achieved, reward)
+        reward = torch.where(self.drill_pos[:, 2] > 0.6, reward + goal_achieved, reward)
+        # print(reward)
 
         # cm = self._drills.get_contact_force_matrix()
         # self.cm_bool_to_manipulability(cm)

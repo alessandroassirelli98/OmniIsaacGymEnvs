@@ -66,7 +66,7 @@ sim:
     override_usd_defaults: False
     enable_self_collisions: False
     enable_gyroscopic_forces: True
-    make_kinematic: True
+    make_kinematic: False
     
     # also in stage params
     # per-actor
