@@ -353,7 +353,7 @@ class DianaTekkenTask(RLTask):
         
         rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
 
-        # self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
+        self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
         self._drills.set_world_poses(positions=dof_pos, orientations=rot, indices=indices)
 
         if hasattr(self, "_ref_cubes"):
