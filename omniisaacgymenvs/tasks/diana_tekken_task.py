@@ -15,6 +15,9 @@ from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, Fi
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
 from omniisaacgymenvs.robots.articulations.drill import Drill
 from omniisaacgymenvs.robots.articulations.views.diana_tekken_view import DianaTekkenView
+from pxr import Usd, UsdGeom
+from omni.isaac.core.utils.stage import get_current_stage
+
 
 
 class DianaTekkenTask(RLTask):
@@ -115,7 +118,7 @@ class DianaTekkenTask(RLTask):
 
     def get_drill(self):
         self._drill_position = torch.tensor([0.6, 0, 0.52], device=self._device)
-        orientation = torch.tensor([0, 0, 0], device=self._device).unsqueeze(0)
+        orientation = torch.tensor([0, 0, torch.pi/2], device=self._device).unsqueeze(0)
         self._drill_lower_bound = torch.tensor([0.3, -0.5, 0.52], device=self._device)
         self._drill_reset_lower_bound = torch.tensor([0.3, -0.5, 0.45], device=self._device)
         self._drill_upper_bound = torch.tensor([0.8, 0.5, 0.52], device=self._device)
@@ -221,36 +224,70 @@ class DianaTekkenTask(RLTask):
     #         self._cubes_to_pull[pull_env_ids] = 0.
 
     def get_observations(self) -> dict:
+        def get_in_object_pose(local_pos1, local_pos2, world_pose1, world_pose2):
+            """
+            Compute pose in coordinate in local frame.
+
+            Args:
+                local_pos1 (torch.Tensor): Local position 1.
+                local_pos2 (torch.Tensor): Local position 2.
+                world_pose1 (torch.Tensor): World pose 1 as a quaternion.
+                world_pose2 (torch.Tensor): World pose 2 as a quaternion.
+
+            Returns:
+                Tuple[torch.Tensor, torch.Tensor]: Tuple containing the transformed
+                position and quaternion representing the pose in the local frame.
+            """
+            # Compute relative position in the local frame
+            delta_pos = local_pos2 - local_pos1
+
+            # Initialize quaternion representation of relative position
+            p = torch.zeros((local_pos1.shape[0], 4), device=self._device)
+            p[:, 1:4] = delta_pos
+
+            # Convert relative position to the local frame
+            q_world2loc = quat_conjugate(world_pose1)
+            p_prime = quat_mul(quat_mul(q_world2loc, p), quat_conjugate(q_world2loc))[:, 1:4]
+
+            # Convert world_pose2 to the local frame
+            q_prime = quat_mul(q_world2loc, world_pose2)
+
+            return p_prime, q_prime
+        
+
         dof_pos = self._robots.get_joint_positions(clone=False)
         dof_vel = self._robots.get_joint_velocities(clone=False)
         hand_pos_world,  self.hand_rot = self._robots._palm_centers.get_world_poses(clone=False)
         # sphere_pos, _ = self._target_spheres.get_world_poses(clone=False)
-        # index_pos_world, _ = self._robots._index_fingers.get_world_poses(clone=False)
-        # middle_pos_world, _ = self._robots._middle_fingers.get_world_poses(clone=False)
-        # ring_pos_world, _ = self._robots._ring_fingers.get_world_poses(clone=False)
-        # little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
-        # thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
+        index_pos_world, _ = self._robots._index_fingers.get_world_poses(clone=False)
+        middle_pos_world, _ = self._robots._middle_fingers.get_world_poses(clone=False)
+        ring_pos_world, _ = self._robots._ring_fingers.get_world_poses(clone=False)
+        little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
+        thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
 
-        drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=True)
+        drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=False)
 
         self.hand_pos = hand_pos_world - self._env_pos
         self.drill_pos = drill_pos_world - self._env_pos
 
-        # self.target_sphere_pos = sphere_pos - self._env_pos
+        self.hand_in_drill_pos, self.hand_in_drill_pose = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
+        # print(f'pos: {hand_in_drill_pos} rot:{get_euler_xyz(hand_in_drill_pose)}')
 
-        # self.index_pose = index_pos_world - self._env_pos
-        # self.middle_pose = middle_pos_world - self._env_pos
-        # self.ring_pose = ring_pos_world - self._env_pos
-        # self.little_pose = little_pos_world - self._env_pos
-        # self.thumb_pose = thumb_pos_world - self._env_pos
+        # self.index_pos = index_pos_world - self._env_pos
+        # self.middle_pos = middle_pos_world - self._env_pos
+        # self.ring_pos = ring_pos_world - self._env_pos
+        # self.little_pos = little_pos_world - self._env_pos
+        # self.thumb_pos = thumb_pos_world - self._env_pos
 
         self.obs_buf[:, :27] = dof_pos
         self.obs_buf[:, 27:30] = self.hand_pos
         self.obs_buf[:, 30:34] = self.hand_rot
         self.obs_buf[:, 34:37] = self.drill_pos
         self.obs_buf[:, 37:41] = self.drill_rot
+        self.obs_buf[:, 41:44] = self.hand_in_drill_pos
+        self.obs_buf[:, 44:48] = self.hand_in_drill_pose
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 41:68] = dof_vel
+        self.obs_buf[:, 41:75] = dof_vel
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -339,13 +376,13 @@ class DianaTekkenTask(RLTask):
         # implement logic to compute rewards
 
         # Distance hand to drill
-        d = torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1)
+        d = torch.norm(self.hand_in_drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
-        reward = torch.where(torch.norm(self.hand_pos - self.drill_pos, p=2, dim=1) < 0.05, reward + 1, reward)
+        reward = torch.where(torch.norm(self.hand_in_drill_pos, p=2, dim=1) < 0.05, reward + 1, reward)
 
         # rotation difference
-        d = quat_diff_rad(self.hand_rot, self.drill_rot)
+        d = 2.0 * torch.asin(torch.clamp(torch.norm(self.hand_in_drill_pose[:, 1:], p=2, dim=-1), max=1.0))
         reward += torch.log(1 / (1.0 + d ** 2))
         # print(d)
 
