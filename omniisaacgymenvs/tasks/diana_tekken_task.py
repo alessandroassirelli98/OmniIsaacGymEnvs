@@ -170,9 +170,19 @@ class DianaTekkenTask(RLTask):
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos
-        self._joint_targets = torch.tensor([1.5964e-01, -1.2053e-02,  3.3447e-01,  4.5422e-01,  3.6467e-02,
-                                            4.4977e-01,  9.6558e-02,  1.1339e+00,  7.1909e-01,  8.8237e-01], 
+        self._ref_joint_targets = torch.tensor([2.1851e-01,  3.3276e-02,  8.0705e-01,  4.9647e-01,  2.3982e-01,
+                                                8.9000e-01,  1.1345e+00,  1.1345e+00,  6.9859e-01,  1.0972e+00], 
                                             device=self._device)
+        self._ref_joint_targets = self._ref_joint_targets * torch.ones((self._num_envs, 10), device=self._device)
+
+        self._ref_grasp_in_drill_pos = torch.tensor([-0.0349, -0.0224, -0.0089], 
+                                            device=self._device)
+        self._ref_grasp_in_drill_pos = self._ref_grasp_in_drill_pos * torch.ones((self._num_envs, 3), device=self._device)
+
+        self._ref_grasp_in_drill_rot = torch.tensor([-0.9746,  0.2027,  0.0099,  0.0942], 
+                                            device=self._device)
+        self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
+        
 
         self.reach_target = torch.tensor([0.8, 0., 0.6], device=self._device)
 
@@ -273,8 +283,9 @@ class DianaTekkenTask(RLTask):
         self.hand_pos = hand_pos_world - self._env_pos
         self.drill_pos = drill_pos_world - self._env_pos
 
-        self.hand_in_drill_pos, self.hand_in_drill_pose = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
-        # print(f'pos: {hand_in_drill_pos} rot:{get_euler_xyz(hand_in_drill_pose)}')
+        self.hand_in_drill_pos, self.hand_in_drill_rot = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
+        # print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
+        # print(f'Joints: {self.dof_pos[:, 7:]}')
 
         # self.index_pos = index_pos_world - self._env_pos
         # self.middle_pos = middle_pos_world - self._env_pos
@@ -288,7 +299,7 @@ class DianaTekkenTask(RLTask):
         self.obs_buf[:, 34:37] = self.drill_pos
         self.obs_buf[:, 37:41] = self.drill_rot
         self.obs_buf[:, 41:44] = self.hand_in_drill_pos
-        self.obs_buf[:, 44:48] = self.hand_in_drill_pose
+        self.obs_buf[:, 44:48] = self.hand_in_drill_rot
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
         self.obs_buf[:, 48:75] = dof_vel
 
@@ -378,16 +389,16 @@ class DianaTekkenTask(RLTask):
         manipulability_prize = 0.1
         # implement logic to compute rewards
 
-        # Distance hand to drill
-        d = torch.norm(self.hand_in_drill_pos, p=2, dim=1)
+        # Distance hand to drill grasp pos
+        d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
 
         # rotation difference
-        d = 2.0 * torch.asin(torch.clamp(torch.norm(self.hand_in_drill_pose[:, 1:], p=2, dim=-1), max=1.0))
+        d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
         reward += torch.log(1 / (1.0 + d ** 2))
 
         # Joint targets
-        d = torch.norm(self._joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
+        d = torch.norm(self._ref_joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
         reward += torch.log(1 / (1.0 + d ** 2)) * 0.5
 
         reward = torch.where(torch.norm(self.hand_in_drill_pos, p=2, dim=1) < 0.05, reward + 1, reward)
