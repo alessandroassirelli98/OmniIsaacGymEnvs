@@ -285,7 +285,7 @@ class DianaTekkenTask(RLTask):
 
         self.hand_in_drill_pos, self.hand_in_drill_rot = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
         
-        print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
+        # print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
         # print(f'Joints: {self.dof_pos[:, 7:]}')
 
         # self.index_pos = index_pos_world - self._env_pos
