@@ -138,7 +138,7 @@ cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "shared"
 
-cfg["pretrain"] = True
+cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 150
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
@@ -153,7 +153,7 @@ cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.1
+cfg["entropy_loss_scale"] = 0.0
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 

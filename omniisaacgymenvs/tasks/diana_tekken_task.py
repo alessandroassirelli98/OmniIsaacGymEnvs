@@ -175,11 +175,11 @@ class DianaTekkenTask(RLTask):
                                             device=self._device)
         self._ref_joint_targets = self._ref_joint_targets * torch.ones((self._num_envs, 10), device=self._device)
 
-        self._ref_grasp_in_drill_pos = torch.tensor([-0.0349, -0.0224, -0.0089], 
+        self._ref_grasp_in_drill_pos = torch.tensor([-0.0314, -0.0205, -0.0065], 
                                             device=self._device)
         self._ref_grasp_in_drill_pos = self._ref_grasp_in_drill_pos * torch.ones((self._num_envs, 3), device=self._device)
 
-        self._ref_grasp_in_drill_rot = torch.tensor([-0.9746,  0.2027,  0.0099,  0.0942], 
+        self._ref_grasp_in_drill_rot = torch.tensor([-0.9951,  0.0695,  0.0026,  0.0699], 
                                             device=self._device)
         self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
         
@@ -237,7 +237,7 @@ class DianaTekkenTask(RLTask):
     #         self._cubes_to_pull[pull_env_ids] = 0.
 
     def get_observations(self) -> dict:
-        def get_in_object_pose(local_pos1, local_pos2, world_pose1, world_pose2):
+        def get_in_object_pose(p1, p2, q1, q2):
             """
             Compute pose in coordinate in local frame.
 
@@ -252,18 +252,18 @@ class DianaTekkenTask(RLTask):
                 position and quaternion representing the pose in the local frame.
             """
             # Compute relative position in the local frame
-            delta_pos = local_pos2 - local_pos1
+            delta_pos = p2 - p1
 
             # Initialize quaternion representation of relative position
-            p = torch.zeros((local_pos1.shape[0], 4), device=self._device)
+            p = torch.zeros((p1.shape[0], 4), device=self._device)
             p[:, 1:4] = delta_pos
 
             # Convert relative position to the local frame
-            q_world2loc = quat_conjugate(world_pose1)
-            p_prime = quat_mul(quat_mul(q_world2loc, p), quat_conjugate(q_world2loc))[:, 1:4]
+            q1I = quat_conjugate(q1)
+            p_prime = quat_mul(quat_mul(q1I, p), q1)[:, 1:4]
 
             # Convert world_pose2 to the local frame
-            q_prime = quat_mul(q_world2loc, world_pose2)
+            q_prime = quat_mul(q1I, q2)
 
             return p_prime, q_prime
         
@@ -284,7 +284,8 @@ class DianaTekkenTask(RLTask):
         self.drill_pos = drill_pos_world - self._env_pos
 
         self.hand_in_drill_pos, self.hand_in_drill_rot = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
-        # print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
+        
+        print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
         # print(f'Joints: {self.dof_pos[:, 7:]}')
 
         # self.index_pos = index_pos_world - self._env_pos
