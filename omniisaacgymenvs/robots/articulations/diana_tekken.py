@@ -125,7 +125,7 @@ class DianaTekken(Robot):
             rootApi = PhysxSchema.PhysxTendonAxisRootAPI.Apply(root_joint_prim, tendon_names[i])
             rootAxisApi = PhysxSchema.PhysxTendonAxisAPI(rootApi, tendon_names[i])
 
-            rootApi.CreateStiffnessAttr().Set(0.5)
+            rootApi.CreateStiffnessAttr().Set(5)
             rootApi.CreateDampingAttr().Set(0.5)
             # rootApi.CreateLimitStiffnessAttr().Set(0.5)
             rootAxisApi.CreateGearingAttr().Set([tendon_gearing[0]])

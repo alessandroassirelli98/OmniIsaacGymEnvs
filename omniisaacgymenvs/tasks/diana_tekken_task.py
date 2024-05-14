@@ -77,27 +77,27 @@ class DianaTekkenTask(RLTask):
 
         self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
                                        prepare_contact_sensors=True,
-                                    #    track_contact_forces=True,
-                                    #    contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Thumb_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Thumb_Phadist",
+                                       track_contact_forces=True,
+                                       contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Thumb_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Thumb_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Index_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Index_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Index_Phadist",
+                                                                       "/World/envs/.*/diana/Right_Index_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Index_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Index_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Middle_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Middle_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Middle_Phadist",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Ring_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Ring_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Ring_Phadist",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Little_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Little_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Little_Phadist",
-                                    #                                    ]
+                                                                       "/World/envs/.*/diana/Right_Little_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Little_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Little_Phadist",
+                                                                       ]
                                                                        )
         scene.add(self._drills)
 
@@ -385,32 +385,32 @@ class DianaTekkenTask(RLTask):
 
     def calculate_metrics(self) -> None:
         fail_penalty = 10
-        goal_achieved = 10
+        goal_achieved = 1
         manipulability_prize = 0.1
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
+        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.5, reward)
+
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
         reward += torch.log(1 / (1.0 + d ** 2))
-
-        # Joint targets
-        d = torch.norm(self._ref_joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
-        reward += torch.log(1 / (1.0 + d ** 2)) * 0.5
-
-        reward = torch.where(torch.norm(self.hand_in_drill_pos, p=2, dim=1) < 0.05, reward + 1, reward)
-
         # print(d)
 
-        reward = torch.where(self.drill_pos[:, 2] > 0.6, reward + goal_achieved, reward)
+        # Joint targets
+        # d = torch.norm(self._ref_joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
+        # reward += torch.log(1 / (1.0 + d ** 2)) * 0.5
+
+        reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
         # print(reward)
 
-        # cm = self._drills.get_contact_force_matrix()
-        # self.cm_bool_to_manipulability(cm)
-        # reward = torch.where(self.manipulability, reward + manipulability_prize, reward)
+        cm = self._drills.get_contact_force_matrix()
+        self.cm_bool_to_manipulability(cm)
+        reward += self.manipulability * manipulability_prize
+        # print(max(self.manipulability * manipulability_prize))
         # print(reward)
 
 
@@ -448,5 +448,6 @@ class DianaTekkenTask(RLTask):
     def cm_bool_to_manipulability(self, cm, TOL=1e-3):
         thumb_contact_idxs = [0, 1, 2]
         res = torch.norm(cm, dim=2) > TOL
-        self.manipulability = torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, 3:], dim=1) )
+        self.manipulability = torch.where(torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, 3:], dim=1)),
+                                           torch.count_nonzero(res, dim=1), 0.)
 

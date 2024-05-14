@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": "${command:pickArgs} task=DianaTekkenManualControl num_envs=1 headless=False",
+            "args": "${command:pickArgs} task=DianaTekken num_envs=16 headless=False checkpoint='/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-05-14_09-27-57-560413_PPOFD/checkpoints/best_agent.pt'",
             "justMyCode": false
         }
     ]
