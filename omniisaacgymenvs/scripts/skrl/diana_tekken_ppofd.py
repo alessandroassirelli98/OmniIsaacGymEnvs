@@ -146,7 +146,7 @@ cfg["learning_epochs"] = 8
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768
 cfg["discount_factor"] = 0.99
 cfg["lambda"] = 0.95
-cfg["learning_rate"] = 5e-4
+cfg["learning_rate"] = 1e-3
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
@@ -227,7 +227,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 75000}
+cfg_trainer = {"timesteps": 25000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection

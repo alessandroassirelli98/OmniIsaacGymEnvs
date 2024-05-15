@@ -77,7 +77,7 @@ class DianaTekkenTask(RLTask):
 
         self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
                                        prepare_contact_sensors=True,
-                                       track_contact_forces=True,
+                                    #    track_contact_forces=True,
                                        contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
                                                                        "/World/envs/.*/diana/Right_Thumb_Phamed",
                                                                        "/World/envs/.*/diana/Right_Thumb_Phadist",
@@ -407,9 +407,9 @@ class DianaTekkenTask(RLTask):
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
         # print(reward)
 
-        # cm = self._drills.get_contact_force_matrix()
-        # self.cm_bool_to_manipulability(cm)
-        # reward += self.manipulability * manipulability_prize
+        cm = self._drills.get_contact_force_matrix()
+        self.cm_bool_to_manipulability(cm)
+        reward += self.manipulability * manipulability_prize
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)
 
