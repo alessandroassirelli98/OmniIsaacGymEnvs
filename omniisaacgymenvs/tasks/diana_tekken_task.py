@@ -407,9 +407,9 @@ class DianaTekkenTask(RLTask):
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
         # print(reward)
 
-        cm = self._drills.get_contact_force_matrix()
-        self.cm_bool_to_manipulability(cm)
-        reward += self.manipulability * manipulability_prize
+        # cm = self._drills.get_contact_force_matrix()
+        # self.cm_bool_to_manipulability(cm)
+        # reward += self.manipulability * manipulability_prize
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)
 
