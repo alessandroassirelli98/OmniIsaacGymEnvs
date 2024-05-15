@@ -117,11 +117,11 @@ class DianaTekkenTask(RLTask):
 
 
     def get_drill(self):
-        self._drill_position = torch.tensor([0.6, 0, 0.52], device=self._device)
+        self._drill_position = torch.tensor([0.6, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, 0], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.3, -0.5, 0.52], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.3, -0.5, 0.53], device=self._device)
         self._drill_reset_lower_bound = torch.tensor([0.3, -0.5, 0.45], device=self._device)
-        self._drill_upper_bound = torch.tensor([0.8, 0.5, 0.52], device=self._device)
+        self._drill_upper_bound = torch.tensor([0.8, 0.5, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
@@ -175,11 +175,11 @@ class DianaTekkenTask(RLTask):
                                             device=self._device)
         self._ref_joint_targets = self._ref_joint_targets * torch.ones((self._num_envs, 10), device=self._device)
 
-        self._ref_grasp_in_drill_pos = torch.tensor([-0.0314, -0.0205, -0.0065], 
+        self._ref_grasp_in_drill_pos = torch.tensor([-0.0269, -0.0307, -0.0138], 
                                             device=self._device)
         self._ref_grasp_in_drill_pos = self._ref_grasp_in_drill_pos * torch.ones((self._num_envs, 3), device=self._device)
 
-        self._ref_grasp_in_drill_rot = torch.tensor([-0.9951,  0.0695,  0.0026,  0.0699], 
+        self._ref_grasp_in_drill_rot = torch.tensor([-0.9926,  0.1128,  0.0436, -0.0108], 
                                             device=self._device)
         self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
         
@@ -285,7 +285,7 @@ class DianaTekkenTask(RLTask):
 
         self.hand_in_drill_pos, self.hand_in_drill_rot = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
         
-        # print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
+        print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
         # print(f'Joints: {self.dof_pos[:, 7:]}')
 
         # self.index_pos = index_pos_world - self._env_pos

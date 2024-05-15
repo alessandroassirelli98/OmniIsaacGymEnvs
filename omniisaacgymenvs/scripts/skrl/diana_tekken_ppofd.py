@@ -21,12 +21,12 @@ from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 repo = git.Repo(search_parent_directories=True)
 commit_hash = repo.head.object.hexsha
 
-if repo.is_dirty():
-    print("There are unstaged changes, please commit before run\n")
-    exit()
+# if repo.is_dirty():
+#     print("There are unstaged changes, please commit before run\n")
+#     exit()
 
-else:
-    print("Repo is clean, proceeeding to run \n")
+# else:
+#     print("Repo is clean, proceeeding to run \n")
 
 # seed for reproducibility
 set_seed(42)  # e.g. `set_seed(42)` for fixed seed
@@ -170,7 +170,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
                                      "project": "pick up trial"}
 
