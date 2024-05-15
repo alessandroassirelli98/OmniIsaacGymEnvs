@@ -392,7 +392,7 @@ class DianaTekkenTask(RLTask):
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
-        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
+        # reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
 
 
         # rotation difference
