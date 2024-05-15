@@ -115,7 +115,6 @@ class DianaTekkenTask(RLTask):
                               translation=translation)
         self._sim_config.apply_articulation_settings(name, get_prim_at_path(self._robot.prim_path), self._sim_config.parse_actor_config(name))
 
-
     def get_drill(self):
         self._drill_position = torch.tensor([0.6, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, 0], device=self._device).unsqueeze(0)
@@ -285,7 +284,7 @@ class DianaTekkenTask(RLTask):
 
         self.hand_in_drill_pos, self.hand_in_drill_rot = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
         
-        print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
+        # print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
         # print(f'Joints: {self.dof_pos[:, 7:]}')
 
         # self.index_pos = index_pos_world - self._env_pos
@@ -387,13 +386,13 @@ class DianaTekkenTask(RLTask):
     def calculate_metrics(self) -> None:
         fail_penalty = 10
         goal_achieved = 1
-        manipulability_prize = 0.1
+        manipulability_prize = 0.05
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = torch.log(1 / (1.0 + d ** 2))
-        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.5, reward)
+        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
 
 
         # rotation difference

@@ -62,7 +62,7 @@ wandb_activate: True
 wandb_group: ''
 wandb_name: ${train.params.config.name}
 wandb_entity: 'alessandroassirelli98'
-wandb_project: 'simplified model dense rew 8 dof'
+wandb_project: 'ant'
 
 # path to a kit app file
 kit_app: ''
