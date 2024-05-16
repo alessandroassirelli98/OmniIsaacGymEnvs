@@ -15,6 +15,7 @@ from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, Fi
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
 from omniisaacgymenvs.robots.articulations.drill import Drill
 from omniisaacgymenvs.robots.articulations.views.diana_tekken_view import DianaTekkenView
+from omni.isaac.core.prims import RigidPrimView, XFormPrim
 from pxr import Usd, UsdGeom
 from omni.isaac.core.utils.stage import get_current_stage
 
@@ -105,7 +106,7 @@ class DianaTekkenTask(RLTask):
         scene.add(self._drills_finger_targets)
 
 
-        # self._target_spheres = RigidPrimView(prim_paths_expr="/World/envs/.*/target_sphere", name="target_view", 
+        # self._target_spheres = XFormPrimView(prim_paths_expr="/World/envs/.*/target_sphere", name="target_view", 
         #                         reset_xform_properties=False)
         # scene.add(self._target_spheres)
 
@@ -151,10 +152,10 @@ class DianaTekkenTask(RLTask):
         self._target_sphere_lower_bound = torch.tensor([0.3, -0.5, 0.5], device=self._device)
         self._target_sphere_upper_bound = torch.tensor([0.9, 0.5, 1.], device=self._device)
 
-        self._target_sphere = DynamicSphere(prim_path= self.default_zero_env_path + "/target_sphere",
+        self._target_sphere = VisualSphere(prim_path= self.default_zero_env_path + "/target_sphere",
                                   name="target_sphere",
                                   translation= self._target_sphere_position,
-                                  radius=0.05,
+                                  radius=0.01,
                                   color=self._target_sphere_color)
         
         self._target_sphere.set_collision_enabled(False)
@@ -312,6 +313,8 @@ class DianaTekkenTask(RLTask):
         self.little_pos = little_pos_world - self._env_pos
         self.thumb_pos = thumb_pos_world - self._env_pos
 
+        # self._target_spheres.set_world_poses(positions=self.drill_finger_targets_pos)
+
 
         self.obs_buf[:, :27] = self.dof_pos
         self.obs_buf[:, 27:30] = self.hand_pos
@@ -406,13 +409,13 @@ class DianaTekkenTask(RLTask):
     def calculate_metrics(self) -> None:
         reward = torch.zeros(self._num_envs, device=self._device)
         fail_penalty = 10
-        goal_achieved = 1
+        goal_achieved = 2
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = self.add_reward_term(d, reward)
-        # reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
+        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)

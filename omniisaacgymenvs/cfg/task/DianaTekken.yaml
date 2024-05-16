@@ -90,7 +90,7 @@ sim:
     max_depenetration_velocity: 1000.0
   
   target_sphere:
-    make_kinematic: True
+    make_kinematic: False
   
 
 
