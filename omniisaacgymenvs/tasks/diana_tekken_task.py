@@ -204,6 +204,8 @@ class DianaTekkenTask(RLTask):
 
         self.drill_pos = torch.ones((self._num_envs, 3), device=self._device) * self._drill_position  - self._env_pos
         self.drill_rot = torch.ones((self._num_envs, 4), device=self._device) * self._drills_rot
+        
+        self.drill_zero_rot = torch.ones((self._num_envs, 4), device=self._device) * self._drills_rot
 
         # self.target_sphere_pos = torch.ones((self._num_envs, 3), device=self._device) * self._target_sphere_position
 
@@ -409,7 +411,7 @@ class DianaTekkenTask(RLTask):
     def calculate_metrics(self) -> None:
         reward = torch.zeros(self._num_envs, device=self._device)
         fail_penalty = 10
-        goal_achieved = 2
+        goal_achieved = 1
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
@@ -422,20 +424,20 @@ class DianaTekkenTask(RLTask):
         reward = self.add_reward_term(d, reward)
         # print(d)
 
-        # Joint targets
-        # d = torch.norm(self._ref_joint_targets - self.dof_pos[:, 12:22], p=2, dim=1)
-        # reward += torch.log(1 / (1.0 + d ** 2)) * 0.5
-
+        # Distance to target height
         d = torch.abs(0.7 - self.drill_pos[:, 2])
-        reward = self.add_reward_term(d, reward)
-        # print(reward)
+        reward = self.add_reward_term(d, reward, 0.5)
+
+        # Orientation cost
+        d = quat_diff_rad(self.drill_zero_rot, self.drill_rot)
+        reward = self.add_reward_term(d, reward, 0.2)
 
         # Fingertip distance from reference
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.1)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.1)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.1)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.1)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.1)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.05)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.05)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.05)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.05)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.05)
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
@@ -448,6 +450,7 @@ class DianaTekkenTask(RLTask):
         reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - fail_penalty, reward)
         reward = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), reward - fail_penalty, reward)
         # print(reward)
+        
 
         self.rew_buf[:] = reward
 

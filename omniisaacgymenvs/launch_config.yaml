@@ -2,9 +2,24 @@ configurations:
 ### PPO
   - run1:
       entropy_loss_scale: 0.0
+      learning_rate: 0.001
 
   - run2:
-      entropy_loss_scale: 0.05
+      entropy_loss_scale: 0.001
+      learning_rate: 0.001
 
   - run3:
-      entropy_loss_scale: 0.1
+      entropy_loss_scale: 0.01
+      learning_rate: 0.001
+
+  - run4:
+      entropy_loss_scale: 0.
+      learning_rate: 0.0005
+
+  - run5:
+      entropy_loss_scale: 0.001
+      learning_rate: 0.0005
+
+  - run6:
+      entropy_loss_scale: 0.01
+      learning_rate: 0.0005
