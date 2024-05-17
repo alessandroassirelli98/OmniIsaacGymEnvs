@@ -138,7 +138,7 @@ cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "shared"
 
-cfg["pretrain"] = True
+cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 50
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size

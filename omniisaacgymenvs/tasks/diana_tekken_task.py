@@ -209,8 +209,10 @@ class DianaTekkenTask(RLTask):
 
         # self.target_sphere_pos = torch.ones((self._num_envs, 3), device=self._device) * self._target_sphere_position
 
-        self._cubes_to_pull = torch.zeros(self.num_envs, device = self._device)
+        self._drills_to_pull = torch.zeros(self.num_envs, device = self._device, dtype=torch.bool)
+        self.pull_env_ids = torch.zeros(self._num_envs, device=self._device, dtype=torch.int32)
         self.applied_ext_forces = torch.tensor([1., 1., -1.], device=self._device)
+        self.applied_ext_torques = torch.tensor([1., 1., -1.], device=self._device)
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
@@ -234,20 +236,23 @@ class DianaTekkenTask(RLTask):
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
+        self.push_downward()
+
         # print(self._robots.get_measured_joint_forces()[:, 12, 3])
 
         # print(self._robots.get_joint_positions()[:, 7:])
 
-    # def push_downward(self):
-    #     self._cubes_to_pull = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self._cubes_to_pull), self._cubes_to_pull)
-    #     pull_env_ids = self._cubes_to_pull.nonzero(as_tuple=False).squeeze(-1)
+    def push_downward(self):
+        self._drills_to_pull = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self._drills_to_pull), self._drills_to_pull)
+        self.pull_env_ids = self._drills_to_pull.nonzero(as_tuple=False).squeeze(-1)
 
-    #     if len(pull_env_ids) > 0:
-    #         indices = pull_env_ids.to(dtype=torch.int32)
-    #         self._pick_up_cubes.apply_forces(self.applied_ext_forces, indices=indices)
-
-    #         self._cubes_to_pull[pull_env_ids] = 0.
-
+        if len(self.pull_env_ids) > 0:
+            indices = self.pull_env_ids.to(dtype=torch.int32)
+            self._drills.apply_forces_and_torques_at_pos(forces=self.applied_ext_forces,
+                                                         torques=self.applied_ext_torques,
+                                                        indices=indices)
+        self._drills_to_pull[self.pull_env_ids] = 0
+        
     def get_observations(self) -> dict:
         def get_in_object_pose(p1, p2, q1, q2):
             """
@@ -416,12 +421,12 @@ class DianaTekkenTask(RLTask):
 
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
-        reward = self.add_reward_term(d, reward)
+        reward = self.add_reward_term(d, reward, 0.2)
         reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
-        reward = self.add_reward_term(d, reward)
+        reward = self.add_reward_term(d, reward, 0.2)
         # print(d)
 
         # Distance to target height
@@ -431,6 +436,7 @@ class DianaTekkenTask(RLTask):
         # Orientation cost
         d = quat_diff_rad(self.drill_zero_rot, self.drill_rot)
         reward = self.add_reward_term(d, reward, 0.2)
+        reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + 0.5, reward)
 
         # Fingertip distance from reference
         reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.5)
