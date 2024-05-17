@@ -79,7 +79,7 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
             self.cloned_robot_actions[self._robots.actuated_diana_dof_indices] = robot_actions.joint_positions
             robots_actions = torch.tensor((self.cloned_robot_actions.reshape(1,-1)).astype(np.float32))
             robots_actions[:, self.actuated_dof_indices] = (robots_actions[:, self.actuated_dof_indices] - self._robots.get_applied_actions().joint_positions[:, self.actuated_dof_indices])/(self.dt * self.action_scale)
-            robots_actions[:, self.actuated_dof_indices] = tensor_clamp(robots_actions[:, self.actuated_dof_indices], -1. * torch.ones(1, self.num_actuated_dofs), 1. * torch.ones(1, self.num_actuated_dofs))
+            robots_actions[:, self.actuated_dof_indices] = tensor_clamp(robots_actions[:, self.actuated_dof_indices], -0.8. * torch.ones(1, self.num_actuated_dofs), 0.8. * torch.ones(1, self.num_actuated_dofs))
             super().pre_physics_step(robots_actions[:, self.actuated_dof_indices])
         else:
             carb.log_warn("IK did not converge to a solution.  No action is being taken.")

@@ -21,12 +21,12 @@ from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 repo = git.Repo(search_parent_directories=True)
 commit_hash = repo.head.object.hexsha
 
-if repo.is_dirty():
-    print("There are unstaged changes, please commit before run\n")
-    exit()
+# if repo.is_dirty():
+#     print("There are unstaged changes, please commit before run\n")
+#     exit()
 
-else:
-    print("Repo is clean, proceeeding to run \n")
+# else:
+#     print("Repo is clean, proceeeding to run \n")
 
 # seed for reproducibility
 set_seed(42)  # e.g. `set_seed(42)` for fixed seed
@@ -146,7 +146,7 @@ cfg["learning_epochs"] = 8
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768
 cfg["discount_factor"] = 0.99
 cfg["lambda"] = 0.95
-cfg["learning_rate"] = 1e-3
+cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
