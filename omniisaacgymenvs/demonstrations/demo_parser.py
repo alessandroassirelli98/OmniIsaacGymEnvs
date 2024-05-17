@@ -50,13 +50,22 @@ def parse_json_demo():
 
 if __name__ == "__main__":
     e = parse_json_demo()
+    which_episode = 2
+    ep_length = 800
     ep_ret = []
-    for ep in range(1, 13):
-        r = []
-        for i in range(1200 * ep, 1200 * (ep+1)):
-            r.append(e[i]["rewards"])
+    r = []
+    actions = np.zeros((8, ep_length))
+    for t in range(ep_length):
+        r.append(e[(ep_length * which_episode + t)]["rewards"])
+        actions[:, t] = np.array(e[(ep_length * which_episode + t)]["actions"])
         ep_ret.append(r)
     print("Average Return: ", np.mean(ep_ret))
     print("DEmonstrations length: ", len(e))
     plt.plot(np.array(r))
+    plt.show()
+
+    for i in range(8):
+        plt.subplot(2,4, i+1)
+        plt.title(f'action {i}')
+        plt.plot(actions[i, :])
     plt.show()

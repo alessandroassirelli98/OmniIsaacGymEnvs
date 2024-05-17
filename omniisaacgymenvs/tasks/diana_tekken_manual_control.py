@@ -10,7 +10,7 @@ from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.prims import GeometryPrimView, RigidPrimView
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
 from omni.isaac.core.utils.stage import add_reference_to_stage
-from omni.isaac.core.utils.torch.rotations import  euler_angles_to_quats, get_euler_xyz
+from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad, euler_angles_to_quats, quat_conjugate, quat_mul, quat_diff_rad
 from omni.isaac.core.objects import FixedCuboid, DynamicSphere, DynamicCuboid, VisualCuboid, FixedSphere
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
 from omniisaacgymenvs.robots.articulations.views.diana_tekken_view import DianaTekkenView
@@ -24,8 +24,10 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
     def __init__(self, name: str, sim_config, env, offset=None) -> None:
         self._num_actions = 4
 
+        self.ee_idx = 7 #Index of link 7 (tool)
+
         DianaTekkenTask.__init__(self, name=name, sim_config=sim_config, env=env, offset=None)
-        self.obs_buf = np.zeros(self._num_observations)
+        self.obs_buf = torch.zeros(self._num_observations)
 
 
     def set_up_scene(self, scene) -> None:
@@ -38,58 +40,67 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         
         scene.add(self._robot)
         
-        self._ik = KinematicsSolver(self._robot)
-        self._articulation_controller = self._robot.get_articulation_controller()
-        robot_base_translation,robot_base_orientation = self._robot.get_world_pose()
-        self._ik._kinematics_solver.set_robot_base_pose(np.array(robot_base_translation), np.array(robot_base_orientation))
+
 
     def get_reference_cube(self):
         self._ref_cube = VisualCuboid(prim_path= self.default_zero_env_path + "/ref_cube",
                                   name="ref_cube",
                                   translation= torch.tensor([0.4, 0., 0.8], device=self._device),
-                                  orientation= euler_angles_to_quats(torch.tensor([0., -np.pi/6, 0.], device=self._device).unsqueeze(0)).squeeze(0),
+                                  orientation= euler_angles_to_quats(torch.tensor([0., -torch.pi/6, 0.], device=self._device).unsqueeze(0)).squeeze(0),
                                   scale = torch.tensor([0.02, 0.02, 0.02], device=self._device),
                                   color= torch.tensor([1, 0, 0], device=self._device))
 
     def post_reset(self):
         self.cloned_robot_actions = np.zeros((22))
+        self.eef_pos = torch.tensor([ 0.3296, -0.0548,  0.5363], device=self._device).unsqueeze(0)
+        self.eef_rot = torch.tensor([ -0.4995, -0.4341,  0.4329,  0.6121], device=self._device).unsqueeze(0)
         super().post_reset()
     
     
     def pre_physics_step(self, actions: np.array) -> None:
         # Move target position and orientation
         target_pos, target_rot = self._ref_cubes.get_world_poses()
-        rpy_target = torch.tensor(get_euler_xyz(target_rot)).unsqueeze(0)
+        rpy_target = torch.tensor(get_euler_xyz(target_rot), device=self._device).unsqueeze(0)
         target_pos[0, :3] += actions[:3] * 0.0015
         rpy_target[0, 1] += actions[3] * 0.0015
         target_rot = euler_angles_to_quats(rpy_target)
 
         self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
 
-        robot_actions, succ = self._ik.compute_inverse_kinematics(
-            target_position=np.array(target_pos.squeeze(0)),
-            target_orientation=np.array(target_rot.squeeze(0)))
+        jeef = self._robots.get_jacobians()[:, self.ee_idx - 1, :, :7]
+        pos_error = target_pos - self.eef_pos
+        q_r = quat_mul(target_rot, self.eef_rot)
+        rot_error = q_r[:, 1:4] * torch.sign(q_r[:, 1])
+        dpose = torch.cat([pos_error, rot_error], -1).unsqueeze(-1)  # (num_envs,6,1)
+        robot_action = self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
+        print(dpose)
         
         if actions[-1] == 1:
-            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = np.ones(len(self._robots.actuated_finger_dof_indices)) * np.pi/2
+            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = torch.ones(len(self._robots.actuated_finger_dof_indices)) * torch.pi/2
         else:
-            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = np.zeros(len(self._robots.actuated_finger_dof_indices))
+            self.cloned_robot_actions[self._robots.actuated_finger_dof_indices] = torch.zeros(len(self._robots.actuated_finger_dof_indices))
 
-        if succ:
-            self.cloned_robot_actions[self._robots.actuated_diana_dof_indices] = robot_actions.joint_positions
-            robots_actions = torch.tensor((self.cloned_robot_actions.reshape(1,-1)).astype(np.float32))
-            robots_actions[:, self.actuated_dof_indices] = (robots_actions[:, self.actuated_dof_indices] - self._robots.get_applied_actions().joint_positions[:, self.actuated_dof_indices])/(self.dt * self.action_scale)
-            robots_actions[:, self.actuated_dof_indices] = tensor_clamp(robots_actions[:, self.actuated_dof_indices], -0.8 * torch.ones(1, self.num_actuated_dofs), 0.8 * torch.ones(1, self.num_actuated_dofs))
-            super().pre_physics_step(robots_actions[:, self.actuated_dof_indices])
-        else:
-            carb.log_warn("IK did not converge to a solution.  No action is being taken.")
         
-        
+        self.cloned_robot_actions[self._robots.actuated_diana_dof_indices] = robot_action.squeeze(0)
+        robots_actions = torch.tensor((self.cloned_robot_actions.reshape(1,-1)).astype(np.float32))
+        robots_actions[:, self.actuated_dof_indices] = (robots_actions[:, self.actuated_dof_indices] - self._robots.get_applied_actions().joint_positions[:, self.actuated_dof_indices])/(self.dt * self.action_scale)
+        robots_actions[:, self.actuated_dof_indices] = tensor_clamp(robots_actions[:, self.actuated_dof_indices], -0.8 * torch.ones(1, self.num_actuated_dofs), 0.8 * torch.ones(1, self.num_actuated_dofs))
+        super().pre_physics_step(robots_actions[:, self.actuated_dof_indices])
 
-
+    
 
     def get_observations(self) -> dict:
         super().get_observations()
+
+    def control_ik(self, j_eef, dpose, num_envs, num_dofs, damping=0.05):
+        """Solve damped least squares, from `franka_cube_ik_osc.py` in Isaac Gym.
+
+        Returns: Change in DOF positions, [num_envs,num_dofs], to add to current positions.
+        """
+        j_eef_T = torch.transpose(j_eef, 1, 2)
+        lmbda = torch.eye(6).to(j_eef_T.device) * (damping ** 2)
+        u = (j_eef_T @ torch.inverse(j_eef @ j_eef_T + lmbda) @ dpose).view(num_envs, num_dofs)
+        return u
 
 
     # def is_done(self) -> None:

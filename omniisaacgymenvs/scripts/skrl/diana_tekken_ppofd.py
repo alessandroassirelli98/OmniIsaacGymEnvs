@@ -170,7 +170,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
                                      "project": "pick up trial"}
 
@@ -253,7 +253,7 @@ if cfg["pretrain"]:
                     transitions=transitions,
                     lr=cfg["pretrainer_lr"],
                 epochs=cfg["pretrainer_epochs"],
-                batch_size=32)
+                batch_size=64)
 
 # start training
 if cfg["checkpoint"]:
@@ -275,6 +275,8 @@ if cfg["pretrain"] and not cfg["test"]:
 
         plt.title("BC loss")
         plt.plot(pt.log_policy_loss.cpu())
+        plt.plot(pt.log_policy_loss_eval.cpu())
+        plt.legend(["train loss", "val loss"])
         plt.show()
 
         replay_actions = pt.test_bc()

@@ -20,7 +20,7 @@ env:
 
 sim:
   dt: 0.0083 # 1/120 s
-  use_gpu_pipeline: False
+  use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81]
   add_ground_plane: True
   use_flatcache: True
@@ -37,7 +37,7 @@ sim:
     
   physx:
     # GPU buffers
-    use_gpu: False # set to False to run on CPU
+    use_gpu: ${eq:${....sim_device},"gpu"} # set to False to run on CPU
     worker_thread_count: ${....num_threads}
     solver_type: ${....solver_type} # 0: PGS, 1: TGS
     solver_position_iteration_count: 8

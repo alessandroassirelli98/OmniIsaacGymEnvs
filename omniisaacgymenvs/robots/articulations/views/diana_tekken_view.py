@@ -47,7 +47,7 @@ class DianaTekkenView(ArticulationView):
             reset_xform_properties=False
         )
 
-        # self._tool_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/link_7", name="tool_centers_view", reset_xform_properties=False)
+        self._tool_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/link_7", name="tool_centers_view", reset_xform_properties=False)
         self._palm_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/palm_link_hithand", name="palm_centers_view", reset_xform_properties=False)
         self._index_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/Right_Index_Phadist", name="right_indices_view", reset_xform_properties=False)
         self._middle_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/diana/Right_Middle_Phadist", name="right_middles_view", reset_xform_properties=False)
