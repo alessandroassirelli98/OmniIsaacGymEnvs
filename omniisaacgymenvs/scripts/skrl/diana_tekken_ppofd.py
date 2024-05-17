@@ -138,8 +138,8 @@ cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "shared"
 
-cfg["pretrain"] = False
-cfg["pretrainer_epochs"] = 150
+cfg["pretrain"] = True
+cfg["pretrainer_epochs"] = 50
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 8
@@ -253,7 +253,7 @@ if cfg["pretrain"]:
                     transitions=transitions,
                     lr=cfg["pretrainer_lr"],
                 epochs=cfg["pretrainer_epochs"],
-                batch_size=128)
+                batch_size=32)
 
 # start training
 if cfg["checkpoint"]:
@@ -275,13 +275,6 @@ if cfg["pretrain"] and not cfg["test"]:
 
         plt.title("BC loss")
         plt.plot(pt.log_policy_loss.cpu())
-        plt.show()
-
-        value_loss_cpu = pt.log_std.cpu()
-        plt.title("Value loss")
-        plt.plot(pt.log_value_loss.cpu())
-        plt.ylabel("loss")
-        plt.xlabel("iteration")
         plt.show()
 
         replay_actions = pt.test_bc()
