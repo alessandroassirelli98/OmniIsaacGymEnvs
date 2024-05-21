@@ -10,7 +10,7 @@ from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.prims import GeometryPrimView, RigidPrimView, XFormPrimView
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
 from omni.isaac.core.utils.stage import add_reference_to_stage
-from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad, euler_angles_to_quats, quat_conjugate, quat_mul, quat_diff_rad
+from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad, euler_angles_to_quats, quat_conjugate, quat_mul, quat_diff_rad, normalise_quat_in_pose
 from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, FixedSphere, DynamicCuboid
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
 from omniisaacgymenvs.robots.articulations.drill import Drill
@@ -33,6 +33,9 @@ class DianaTekkenTask(RLTask):
         self.action_scale = self._task_cfg["env"]["actionScale"]
         self._max_episode_length = self._task_cfg["env"]["episodeLength"]
         self.robots_to_log = []
+
+        self.ee_idx = 7  # Index of link 7 (tool)
+
 
         self._robot_translation = torch.tensor([0.0, -0.15, 0.])
 
@@ -187,6 +190,9 @@ class DianaTekkenTask(RLTask):
                                             device=self._device)
         self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
 
+        self.eef_pos = torch.tensor([0.3296, -0.0548, 0.5363], device=self._device).unsqueeze(0)
+        self.eef_rot = torch.tensor([-0.4995, -0.4341, 0.4329, 0.6121], device=self._device).unsqueeze(0)
+
         drill_pos, _ = self._drills.get_world_poses()
         drill_finger_targets, _ = self._drills_finger_targets.get_world_poses()
         self.finger_target_offset = drill_finger_targets - drill_pos
@@ -228,8 +234,23 @@ class DianaTekkenTask(RLTask):
             # pass
             self.reset_idx(reset_env_ids, False)
 
-        self.actions = actions.clone().to(self._device)
-        self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
+        self.actions = actions.clone().to(self._device) * self.dt * self.action_scale
+        pos_ref = actions[:, :3]
+        rot_ref = actions[:, 3:6]
+        joints_ref = actions[:, 6:]
+        rot_ref_quat = euler_angles_to_quats(rot_ref)
+
+        # Get the jacobian of the EE
+        jeef = self._robots.get_jacobians()[:, self.ee_idx - 1, :, :7]
+        pos_error = pos_ref - self.eef_pos
+        rot_error = self.orientation_error(rot_ref_quat, self.eef_rot)
+        dpose = torch.cat([pos_error, rot_error], -1).unsqueeze(-1)  # (num_envs,6,1)
+        # Step just a fraction of the GN update
+        delta_action = 0.02 * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
+
+        self._robot_dof_targets[:, self._robots.actuated_diana_dof_indices] += delta_action
+        self._robot_dof_targets[:, self._robots.actuated_finger_dof_indices] += joints_ref
+        
         self._robot_dof_targets = self._robots.clamp_joint0_joint1(self._robot_dof_targets)
 
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
@@ -294,7 +315,7 @@ class DianaTekkenTask(RLTask):
         little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
         thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
 
-        eef_pos, self.ee_rot = self._robots._tool_centers.get_world_poses(clone=False)
+        eef_pos, self.eef_rot = self._robots._tool_centers.get_world_poses(clone=False)
 
         drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=False)
 
@@ -402,8 +423,8 @@ class DianaTekkenTask(RLTask):
 
         if hasattr(self, "_ref_cubes"):
             ref_cube_pos = dof_pos
-            # q = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0))
-            q = torch.tensor([[ 0.5000,  0.5000, -0.5000, -0.5000]], device=self._device)
+            q = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0))
+            
             rot = torch.ones((num_indices, 4), device=self._device) * q
 
             ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
@@ -492,3 +513,20 @@ class DianaTekkenTask(RLTask):
 
     def add_reward_term(self, d, reward, w=1):
         return reward + torch.log(1 / (1.0 + d ** 2)) * w
+    
+    def control_ik(self, j_eef, dpose, num_envs, num_dofs, damping=0.05):
+        """Solve with Gauss Newton approx and regularizationin Isaac Gym.
+
+        Returns: Change in DOF positions, [num_envs, num_dofs], to add to current positions.
+        """
+        j_eef_T = torch.transpose(j_eef, 1, 2)
+        lmbda = torch.eye(7).to(j_eef_T.device) * (damping ** 2)
+        B = j_eef_T @ j_eef + lmbda
+        g = j_eef_T @ dpose
+        u = (torch.inverse(B) @ g).view(num_envs, num_dofs)
+        return u
+
+    def orientation_error(self, desired, current):
+        cc = quat_conjugate(current)
+        q_r = quat_mul(desired, cc)
+        return q_r[:, 1:4] * torch.sign(q_r[:, 0]).unsqueeze(-1)
