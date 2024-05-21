@@ -111,6 +111,10 @@ def parse_hydra_configs(cfg: DictConfig):
 
             
             actions[:, 7] = 1
+            actions[:, 8] = 1
+            actions[:, 9] = 1
+            actions[:, 10] = 1
+            actions[:, 11] = 1
 
             if time.time() - prev_time >= 1:
                 print("FPS:", num_frames, "FPS * num_envs:", env.num_envs * num_frames)

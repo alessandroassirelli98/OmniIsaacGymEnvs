@@ -1,123 +1,31 @@
 configurations:
 ### PPO
   - run1:
-      entropy_loss_scale: 0.0
+      entropy_loss_scale: 0.001
       learning_rate: 0.001
+      ratio_clip: 0.2
 
   - run2:
       entropy_loss_scale: 0.001
-      learning_rate: 0.001
+      learning_rate: 0.0005
+      ratio_clip: 0.2
 
   - run3:
-      entropy_loss_scale: 0.01
+      entropy_loss_scale: 0.001
       learning_rate: 0.001
+      ratio_clip: 0.05
 
   - run4:
-      entropy_loss_scale: 0.
-      learning_rate: 0.0005
+      entropy_loss_scale: 0.001
+      learning_rate: 0.005
+      ratio_clip: 0.05
 
   - run5:
-      entropy_loss_scale: 0.001
-      learning_rate: 0.0005
-
-  - run6:
-      entropy_loss_scale: 0.01
-      learning_rate: 0.0005
-
-  - run1:
-      entropy_loss_scale: 0.0
-      learning_rate: 0.001
-
-  - run2:
-      entropy_loss_scale: 0.001
-      learning_rate: 0.001
-
-  - run3:
       entropy_loss_scale: 0.01
       learning_rate: 0.001
-
-  - run4:
-      entropy_loss_scale: 0.
-      learning_rate: 0.0005
-
-  - run5:
-      entropy_loss_scale: 0.001
-      learning_rate: 0.0005
+      ratio_clip: 0.1
 
   - run6:
       entropy_loss_scale: 0.01
       learning_rate: 0.0005
       ratio_clip: 0.1
-
-  - run7:
-      entropy_loss_scale: 0.0
-      learning_rate: 0.001
-      ratio_clip: 0.1
-
-
-  - run8:
-      entropy_loss_scale: 0.001
-      learning_rate: 0.001
-      ratio_clip: 0.1
-
-
-  - run9:
-      entropy_loss_scale: 0.01
-      learning_rate: 0.001
-      ratio_clip: 0.3
-
-
-  - run10:
-      entropy_loss_scale: 0.
-      learning_rate: 0.0005
-      ratio_clip: 0.3
-
-  - run11:
-      entropy_loss_scale: 0.001
-      learning_rate: 0.0005
-      ratio_clip: 0.3
-
-
-  - run12:
-      entropy_loss_scale: 0.01
-      learning_rate: 0.0005
-      ratio_clip: 0.3
-
-
-  - run13:
-      entropy_loss_scale: 0.0
-      learning_rate: 0.001
-      ratio_clip: 0.4
-
-
-  - run14:
-      entropy_loss_scale: 0.001
-      learning_rate: 0.001
-      ratio_clip: 0.4
-
-
-  - run15:
-      entropy_loss_scale: 0.01
-      learning_rate: 0.001
-      ratio_clip: 0.4
-
-
-  - run16:
-      entropy_loss_scale: 0.
-      learning_rate: 0.0005
-      ratio_clip: 0.4
-
-
-  - run17:
-      entropy_loss_scale: 0.001
-      learning_rate: 0.0005
-      ratio_clip: 0.1
-
-
-  - run18:
-      entropy_loss_scale: 0.01
-      learning_rate: 0.0005
-      ratio_clip: 0.1
-
-
-
