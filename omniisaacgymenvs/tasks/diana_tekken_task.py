@@ -467,7 +467,7 @@ class DianaTekkenTask(RLTask):
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
-
+        
         # If the drill is out of bound
         reward = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - fail_penalty, reward)
         reward = torch.where(torch.any(self.drill_pos <= self._drill_reset_lower_bound, dim=1), reward - fail_penalty, reward)
