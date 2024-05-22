@@ -43,7 +43,7 @@ class DianaTekkenTask(RLTask):
         self.dt = self._task_cfg["sim"]["dt"]
 
         self._num_observations = 75
-        if not hasattr(self, '_num_actions'): self._num_actions = 8 # If the number of actions has been defined from a child
+        if not hasattr(self, '_num_actions'): self._num_actions = 12 # If the number of actions has been defined from a child
 
 
         RLTask.__init__(self, name, env)
@@ -263,7 +263,7 @@ class DianaTekkenTask(RLTask):
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-        self.push_downward()
+        # self.push_downward()
 
         # print(self._robots.get_measured_joint_forces()[:, 12, 3])
 
@@ -448,7 +448,7 @@ class DianaTekkenTask(RLTask):
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = self.add_reward_term(d, reward, 0.2)
-        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
+        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
