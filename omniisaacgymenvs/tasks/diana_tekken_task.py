@@ -454,7 +454,7 @@ class DianaTekkenTask(RLTask):
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = self.add_reward_term(d, reward, 0.2)
-        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
+        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
@@ -491,7 +491,7 @@ class DianaTekkenTask(RLTask):
         
 
         self.rew_buf[:] = reward
-
+        
     def is_done(self) -> None:
         # implement logic to update dones/reset buffer
         # reset if max episode length is exceeded
