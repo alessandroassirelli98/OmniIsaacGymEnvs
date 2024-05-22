@@ -32,15 +32,15 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         self.obs_buf = torch.zeros(self._num_observations)
 
     def set_up_scene(self, scene) -> None:
-        self.get_reference_cube()
+        # self.get_reference_cube()
         super().set_up_scene(scene)
-        self._ref_cubes = GeometryPrimView(
-            prim_paths_expr="/World/envs/.*/ref_cube",
-            name="ref_cube_view",
-            reset_xform_properties=False
-        )
-        scene.add(self._ref_cubes)
-        scene.add(self._robot)
+        # self._ref_cubes = GeometryPrimView(
+        #     prim_paths_expr="/World/envs/.*/ref_cube",
+        #     name="ref_cube_view",
+        #     reset_xform_properties=False
+        # )
+        # scene.add(self._ref_cubes)
+        # scene.add(self._robot)
 
     def get_reference_cube(self):
         self._ref_cube = VisualCuboid(
@@ -56,27 +56,29 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         self.cloned_robot_actions = np.zeros(8)
         super().post_reset()
 
-    def pre_physics_step(self, actions: np.array) -> None:
-        target_pos, target_rot = self._ref_cubes.get_world_poses()
-        target_pos -= self._env_pos
-        rpy_target = torch.tensor(get_euler_xyz(target_rot), device=self._device).unsqueeze(0)
-        target_pos[0, :3] += actions[:3] * 0.0015
-        rpy_target[0, 1] += actions[3] * 0.0015
-        target_rot = euler_angles_to_quats(rpy_target)
+    def pre_physics_step(self, actions: torch.tensor) -> None:
+        delta_pos = actions[:3] * 0.8
+        delta_rot = torch.tensor([0, actions[3], 0], device=self._device) * 0.8
+        # target_pos, target_rot = self._ref_cubes.get_world_poses()
+        # target_pos -= self._env_pos
+        # rpy_target = torch.tensor(get_euler_xyz(target_rot), device=self._device).unsqueeze(0)
+        # target_pos[0, :3] += delta_pos
+        # rpy_target[0, :3] += delta_rot
+        # target_rot = euler_angles_to_quats(rpy_target)
 
-        self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
+        # self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
 
         if actions[-1] == 1:
-            joint_targets = torch.ones(len(self._robots.actuated_finger_dof_indices)) * torch.pi / 2
+            joint_targets = torch.ones(len(self._robots.actuated_finger_dof_indices)) * 0.8
         else:
-            joint_targets = -torch.ones(len(self._robots.actuated_finger_dof_indices)) * torch.pi / 2
+            joint_targets = -torch.ones(len(self._robots.actuated_finger_dof_indices)) * 0.8
 
-        action = torch.cat([target_pos, rpy_target, joint_targets.unsqueeze(0)], dim=1)
+        action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0), joint_targets.unsqueeze(0)], dim=1)
 
         super().pre_physics_step(action)
 
     def get_observations(self) -> dict:
         super().get_observations()
 
-    def is_done(self) -> None:
-        pass
+    # def is_done(self) -> None:
+    #     pass

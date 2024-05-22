@@ -30,7 +30,8 @@ class DianaTekkenTask(RLTask):
 
         self._num_envs = self._task_cfg["env"]["numEnvs"]
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
-        self.action_scale = self._task_cfg["env"]["actionScale"]
+        self.ik_action_scale = self._task_cfg["env"]["ikActionScale"]
+        self.joint_action_scale = self._task_cfg["env"]["jointActionScale"]
         self._max_episode_length = self._task_cfg["env"]["episodeLength"]
         self.robots_to_log = []
 
@@ -190,8 +191,13 @@ class DianaTekkenTask(RLTask):
                                             device=self._device)
         self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
 
-        self.eef_pos = torch.tensor([0.3296, -0.0548, 0.5363], device=self._device).unsqueeze(0)
-        self.eef_rot = torch.tensor([-0.4995, -0.4341, 0.4329, 0.6121], device=self._device).unsqueeze(0)
+        self.eef_pos = torch.tensor([0.2, 0, 0.5], device=self._device).unsqueeze(0)
+        self.eef_rot = torch.tensor([-0.5, -0.5, 0.5, 0.5], device=self._device).unsqueeze(0)
+
+        self.ee_pos_default_targets = torch.ones((self._num_envs, 3), device=self._device) * self.eef_pos
+        self.ee_pos_targets = self.ee_pos_default_targets.clone()
+        self.ee_rot_default_targets = torch.ones((self._num_envs, 3), device=self._device) * torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device)
+        self.ee_rot_targets = self.ee_rot_default_targets.clone()
 
         drill_pos, _ = self._drills.get_world_poses()
         drill_finger_targets, _ = self._drills_finger_targets.get_world_poses()
@@ -234,19 +240,19 @@ class DianaTekkenTask(RLTask):
             # pass
             self.reset_idx(reset_env_ids, False)
 
-        self.actions = actions.clone().to(self._device) * self.dt * self.action_scale
-        pos_ref = actions[:, :3]
-        rot_ref = actions[:, 3:6]
-        joints_ref = actions[:, 6:]
-        rot_ref_quat = euler_angles_to_quats(rot_ref)
+        self.actions = actions.clone().to(self._device) * self.dt
+        self.ee_pos_targets = self.ee_pos_targets + self.actions[:, :3] * self.ik_action_scale
+        self.ee_rot_targets = self.ee_rot_targets + self.actions[:, 3:6] * self.ik_action_scale
+        joints_ref = actions[:, 6:] * self.joint_action_scale
+        rot_ref_quat = euler_angles_to_quats(self.ee_rot_targets)
 
         # Get the jacobian of the EE
         jeef = self._robots.get_jacobians()[:, self.ee_idx - 1, :, :7]
-        pos_error = pos_ref - self.eef_pos
+        pos_error = self.ee_pos_targets - self.eef_pos
         rot_error = self.orientation_error(rot_ref_quat, self.eef_rot)
         dpose = torch.cat([pos_error, rot_error], -1).unsqueeze(-1)  # (num_envs,6,1)
         # Step just a fraction of the GN update
-        delta_action = 0.02 * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
+        delta_action = 0.05 * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
 
         self._robot_dof_targets[:, self._robots.actuated_diana_dof_indices] += delta_action
         self._robot_dof_targets[:, self._robots.actuated_finger_dof_indices] += joints_ref
@@ -389,6 +395,10 @@ class DianaTekkenTask(RLTask):
         self._robots.set_joint_velocities(dof_vel, indices=indices)
         self._robots.set_joint_position_targets(self._robot_dof_targets[env_ids], indices=indices)
 
+        # Reset IK target
+        self.ee_pos_targets[env_ids, :] = self.ee_pos_default_targets
+        self.ee_rot_targets[env_ids, :] = self.ee_rot_default_targets
+
         # Reset target positions
         # pos = tensor_clamp(
         #     self._target_sphere_position.unsqueeze(0)
@@ -421,17 +431,8 @@ class DianaTekkenTask(RLTask):
         self._drills.set_velocities(torch.zeros((num_indices, 6)), indices=indices)
         self._drills.set_world_poses(positions=dof_pos, orientations=rot, indices=indices)
 
-        if hasattr(self, "_ref_cubes"):
-            ref_cube_pos = dof_pos
-            q = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0))
-            
-            rot = torch.ones((num_indices, 4), device=self._device) * q
-
-            ref_cube_pos[:, 0] = ref_cube_pos[:, 0] - torch.ones((num_indices, 1), device=self._device) * 0.4
-            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) *0.01
-
-            self._ref_cubes.set_world_poses(positions=ref_cube_pos, orientations=rot, indices=indices)
-
+        # if hasattr(self, "_ref_cubes"):
+            # self._ref_cubes.set_world_poses(positions=self.ee_pos_default_targets[0,:], orientations=self.ee_rot_default_targets[0,:], indices=indices)
 
         # bookkeeping
         self.reset_buf[env_ids] = 0

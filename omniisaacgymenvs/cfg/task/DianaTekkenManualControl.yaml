@@ -16,8 +16,9 @@ env:
 
   controlFrequencyInv: 2 # 60 Hz
 
-  actionScale: 2.5
-
+  jointActionScale: 2.5
+  ikActionScale: 0.2
+  
 sim:
   dt: 0.0083 # 1/120 s
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
