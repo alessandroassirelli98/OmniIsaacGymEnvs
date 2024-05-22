@@ -64,7 +64,8 @@ def parse_hydra_configs(cfg: DictConfig):
     )
 
 
-    action = torch.zeros(5, dtype=torch.int16)
+    action = torch.zeros(5, dtype=torch.int16, device="cuda:0")
+    # action = torch.zeros(5, dtype=torch.int16)
 
     input_manager = KeyboardManager(action)
 
@@ -119,7 +120,7 @@ def parse_hydra_configs(cfg: DictConfig):
             env.sim_frame_count += 1
             env._task.post_physics_step()
             env.logging_step()
-            print(action)
+            # print(action)
 
             if input_manager.kill: 
                 env.save_log()

@@ -17,7 +17,7 @@ env:
   controlFrequencyInv: 2 # 60 Hz
 
   jointActionScale: 2.5
-  ikActionScale: 0.2
+  ikActionScale: 0.3
   
 sim:
   dt: 0.0083 # 1/120 s

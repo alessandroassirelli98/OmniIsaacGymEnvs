@@ -69,9 +69,9 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         # self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
 
         if actions[-1] == 1:
-            joint_targets = torch.ones(len(self._robots.actuated_finger_dof_indices)) * 0.8
+            joint_targets = torch.ones(len(self._robots.actuated_finger_dof_indices), device=self._device) * 0.8
         else:
-            joint_targets = -torch.ones(len(self._robots.actuated_finger_dof_indices)) * 0.8
+            joint_targets = -torch.ones(len(self._robots.actuated_finger_dof_indices), device=self._device) * 0.8
 
         action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0), joint_targets.unsqueeze(0)], dim=1)
 

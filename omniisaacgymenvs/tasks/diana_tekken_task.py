@@ -35,7 +35,7 @@ class DianaTekkenTask(RLTask):
         self._max_episode_length = self._task_cfg["env"]["episodeLength"]
         self.robots_to_log = []
 
-        self.ee_idx = 7  # Index of link 7 (tool)
+        self.ee_idx = 14  # Index of link 7 (tool)
 
 
         self._robot_translation = torch.tensor([0.0, -0.15, 0.])
@@ -191,16 +191,9 @@ class DianaTekkenTask(RLTask):
                                             device=self._device)
         self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
 
-        ee_pos = torch.tensor([0.2, 0, 0.5], device=self._device).unsqueeze(0)
+        # Initial Orientation for eef, just for initialization
         ee_rot_euler = torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
-        ee_rot_quat = euler_angles_to_quats(ee_rot_euler)
-
-        self.ee_pos_default_targets = torch.ones((self._num_envs, 3), device=self._device) * ee_pos
-        self.ee_pos_targets = self.ee_pos_default_targets.clone()
-        self.ee_rot_default_targets = torch.ones((self._num_envs, 3), device=self._device) * ee_rot_euler
-        self.ee_rot_targets = self.ee_rot_default_targets.clone()
-
-        self.ee_pos = self.ee_pos_default_targets
+        ee_rot_quat = euler_angles_to_quats(ee_rot_euler, device=self._device)
         self.ee_rot = torch.ones((self._num_envs, 4), device=self._device) * ee_rot_quat
 
 
@@ -208,7 +201,6 @@ class DianaTekkenTask(RLTask):
         drill_finger_targets, _ = self._drills_finger_targets.get_world_poses()
         self.finger_target_offset = drill_finger_targets - drill_pos
         
-
         self.reach_target = torch.tensor([0.8, 0., 0.6], device=self._device)
 
         dof_limits = self._robots.get_dof_limits()
@@ -246,19 +238,26 @@ class DianaTekkenTask(RLTask):
             self.reset_idx(reset_env_ids, False)
 
         self.actions = actions.clone().to(self._device) * self.dt
-        self.ee_pos_targets = self.ee_pos_targets + self.actions[:, :3] * self.ik_action_scale
-        self.ee_rot_targets = self.ee_rot_targets + self.actions[:, 3:6] * self.ik_action_scale
         joints_ref = actions[:, 6:] * self.joint_action_scale
-        rot_ref_quat = euler_angles_to_quats(self.ee_rot_targets)
+
+        # 6D Pose is Delta pos, Delta rot in tool reference rame
+        pos_ref_local = self.actions[:, :3] * self.ik_action_scale
+        rot_ref_local = euler_angles_to_quats(self.actions[:, 3:6] * self.ik_action_scale, device=self._device)
+        rot_ref_world = quat_mul(self.ee_rot, rot_ref_local)
 
         # Get the jacobian of the EE
-        jeef = self._robots.get_jacobians()[:, self.ee_idx - 1, :, :7]
-        pos_error = self.ee_pos_targets - self.ee_pos
-        rot_error = self.orientation_error(rot_ref_quat, self.ee_rot)
-        dpose = torch.cat([pos_error, rot_error], -1).unsqueeze(-1)  # (num_envs,6,1)
-        # print(f'Rot target: {self.actions[:, 3:6]}, err: {dpose}')
-        # Step just a fraction of the GN update
-        delta_action = 0.05 * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
+        jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
+
+        # TODO refactor this code which is also in the observations
+        p = torch.zeros((self._num_envs, 4), device=self._device)
+        p[:, 1:4] = pos_ref_local
+        q = self.ee_rot
+        qI = quat_conjugate(q)
+
+        pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
+        rot_error_world = self.orientation_error(rot_ref_world, self.ee_rot)
+        dpose = torch.cat([pos_error_world, rot_error_world], -1).unsqueeze(-1)  # (num_envs,6,1)
+        delta_action = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
 
         self._robot_dof_targets[:, self._robots.actuated_diana_dof_indices] += delta_action
         self._robot_dof_targets[:, self._robots.actuated_finger_dof_indices] += joints_ref
@@ -271,9 +270,6 @@ class DianaTekkenTask(RLTask):
 
         self.push_downward()
 
-        # print(self._robots.get_measured_joint_forces()[:, 12, 3])
-
-        # print(self._robots.get_joint_positions()[:, 7:])
 
     def push_downward(self):
         self._drills_to_pull = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self._drills_to_pull), self._drills_to_pull)
@@ -327,7 +323,7 @@ class DianaTekkenTask(RLTask):
         little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
         thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
 
-        ee_pos, self.ee_rot = self._robots._tool_centers.get_world_poses(clone=False)
+        ee_pos, self.ee_rot = self._robots._palm_centers.get_world_poses(clone=False)
 
         drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=False)
 
@@ -345,10 +341,6 @@ class DianaTekkenTask(RLTask):
         q = self.drill_rot
         qI = quat_conjugate(q)
         self.drill_finger_targets_pos = self.drill_pos + quat_mul(quat_mul(q, p), qI)[:, 1:4]
-        # print(self.drill_finger_targets_pos)
-        
-        # print(f'pos: {self.hand_in_drill_pos} rot:{self.hand_in_drill_rot}')
-        # print(f'Joints: {self.dof_pos[:, 7:]}')
 
         self.index_pos = index_pos_world - self._env_pos
         self.middle_pos = middle_pos_world - self._env_pos
@@ -356,7 +348,6 @@ class DianaTekkenTask(RLTask):
         self.little_pos = little_pos_world - self._env_pos
         self.thumb_pos = thumb_pos_world - self._env_pos
 
-        # self._target_spheres.set_world_poses(positions=self.drill_finger_targets_pos)
 
 
         self.obs_buf[:, :27] = self.dof_pos
@@ -401,9 +392,6 @@ class DianaTekkenTask(RLTask):
         self._robots.set_joint_velocities(dof_vel, indices=indices)
         self._robots.set_joint_position_targets(self._robot_dof_targets[env_ids], indices=indices)
 
-        # Reset IK target
-        self.ee_pos_targets[env_ids, :] = self.ee_pos_default_targets[env_ids, :]
-        self.ee_rot_targets[env_ids, :] = self.ee_rot_default_targets[env_ids, :]
 
         # Reset target positions
         # pos = tensor_clamp(
