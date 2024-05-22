@@ -43,7 +43,7 @@ class DianaTekkenTask(RLTask):
         self.dt = self._task_cfg["sim"]["dt"]
 
         self._num_observations = 75
-        if not hasattr(self, '_num_actions'): self._num_actions = 12 # If the number of actions has been defined from a child
+        if not hasattr(self, '_num_actions'): self._num_actions = 11 # If the number of actions has been defined from a child
 
 
         RLTask.__init__(self, name, env)
@@ -191,13 +191,18 @@ class DianaTekkenTask(RLTask):
                                             device=self._device)
         self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
 
-        self.eef_pos = torch.tensor([0.2, 0, 0.5], device=self._device).unsqueeze(0)
-        self.eef_rot = torch.tensor([-0.5, -0.5, 0.5, 0.5], device=self._device).unsqueeze(0)
+        ee_pos = torch.tensor([0.2, 0, 0.5], device=self._device).unsqueeze(0)
+        ee_rot_euler = torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
+        ee_rot_quat = euler_angles_to_quats(ee_rot_euler)
 
-        self.ee_pos_default_targets = torch.ones((self._num_envs, 3), device=self._device) * self.eef_pos
+        self.ee_pos_default_targets = torch.ones((self._num_envs, 3), device=self._device) * ee_pos
         self.ee_pos_targets = self.ee_pos_default_targets.clone()
-        self.ee_rot_default_targets = torch.ones((self._num_envs, 3), device=self._device) * torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device)
+        self.ee_rot_default_targets = torch.ones((self._num_envs, 3), device=self._device) * ee_rot_euler
         self.ee_rot_targets = self.ee_rot_default_targets.clone()
+
+        self.ee_pos = self.ee_pos_default_targets
+        self.ee_rot = torch.ones((self._num_envs, 4), device=self._device) * ee_rot_quat
+
 
         drill_pos, _ = self._drills.get_world_poses()
         drill_finger_targets, _ = self._drills_finger_targets.get_world_poses()
@@ -248,9 +253,10 @@ class DianaTekkenTask(RLTask):
 
         # Get the jacobian of the EE
         jeef = self._robots.get_jacobians()[:, self.ee_idx - 1, :, :7]
-        pos_error = self.ee_pos_targets - self.eef_pos
-        rot_error = self.orientation_error(rot_ref_quat, self.eef_rot)
+        pos_error = self.ee_pos_targets - self.ee_pos
+        rot_error = self.orientation_error(rot_ref_quat, self.ee_rot)
         dpose = torch.cat([pos_error, rot_error], -1).unsqueeze(-1)  # (num_envs,6,1)
+        # print(f'Rot target: {self.actions[:, 3:6]}, err: {dpose}')
         # Step just a fraction of the GN update
         delta_action = 0.05 * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
 
@@ -263,7 +269,7 @@ class DianaTekkenTask(RLTask):
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-        # self.push_downward()
+        self.push_downward()
 
         # print(self._robots.get_measured_joint_forces()[:, 12, 3])
 
@@ -321,12 +327,12 @@ class DianaTekkenTask(RLTask):
         little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
         thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
 
-        eef_pos, self.eef_rot = self._robots._tool_centers.get_world_poses(clone=False)
+        ee_pos, self.ee_rot = self._robots._tool_centers.get_world_poses(clone=False)
 
         drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=False)
 
         self.hand_pos = hand_pos_world - self._env_pos
-        self.eef_pos = eef_pos - self._env_pos
+        self.ee_pos = ee_pos - self._env_pos
         self.drill_pos = drill_pos_world - self._env_pos
 
         self.hand_in_drill_pos, self.hand_in_drill_rot = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
@@ -396,8 +402,8 @@ class DianaTekkenTask(RLTask):
         self._robots.set_joint_position_targets(self._robot_dof_targets[env_ids], indices=indices)
 
         # Reset IK target
-        self.ee_pos_targets[env_ids, :] = self.ee_pos_default_targets
-        self.ee_rot_targets[env_ids, :] = self.ee_rot_default_targets
+        self.ee_pos_targets[env_ids, :] = self.ee_pos_default_targets[env_ids, :]
+        self.ee_rot_targets[env_ids, :] = self.ee_rot_default_targets[env_ids, :]
 
         # Reset target positions
         # pos = tensor_clamp(
@@ -448,7 +454,7 @@ class DianaTekkenTask(RLTask):
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = self.add_reward_term(d, reward, 0.2)
-        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
+        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.2, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)

@@ -42,7 +42,7 @@ class KeyboardManager():
             self.action[1] = 0
         if (key == keyboard.Key.page_up or key == keyboard.Key.page_down):
             self.action[2] = 0
-        if (key == keyboard.Key.shift_l or key ==keyboard.Key.shift_l):                                  
+        if (key == keyboard.Key.shift_l or key ==keyboard.Key.shift_r):                                  
             self.action[3] = 0
 
         if (key == keyboard.Key.space):
