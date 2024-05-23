@@ -38,7 +38,7 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 75
+        self._num_observations = 45
         if not hasattr(self, '_num_actions'): self._num_actions = 12 # If the number of actions has been defined from a child
 
 
@@ -230,7 +230,7 @@ class DianaTekkenTask(RLTask):
 
         self.actions = actions.clone().to(self._device)
         self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
-        self._robot_dof_targets = self._robots.clamp_joint0_joint1(self._robot_dof_targets)
+        self._robot_dof_targets = self._robots.clamp_joint0_joint1_joint2(self._robot_dof_targets)
 
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
@@ -326,15 +326,16 @@ class DianaTekkenTask(RLTask):
         # self._target_spheres.set_world_poses(positions=self.drill_finger_targets_pos)
 
 
-        self.obs_buf[:, :27] = self.dof_pos
-        self.obs_buf[:, 27:30] = self.hand_pos
-        self.obs_buf[:, 30:34] = self.hand_rot
-        self.obs_buf[:, 34:37] = self.drill_pos
-        self.obs_buf[:, 37:41] = self.drill_rot
-        self.obs_buf[:, 41:44] = self.hand_in_drill_pos
-        self.obs_buf[:, 44:48] = self.hand_in_drill_rot
+        self.obs_buf[:, :12] = self.dof_pos[:, self.actuated_dof_indices]
+        self.obs_buf[:, 12:15] = self.hand_pos
+        self.obs_buf[:, 15:19] = self.hand_rot
+        self.obs_buf[:, 19:22] = self.drill_pos
+        self.obs_buf[:, 22:26] = self.drill_rot
+        self.obs_buf[:, 26:29] = self.hand_in_drill_pos
+        self.obs_buf[:, 29:33] = self.hand_in_drill_rot
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 48:75] = dof_vel
+        self.obs_buf[:, 33:45] = dof_vel[:, self.actuated_dof_indices]
+
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -442,11 +443,11 @@ class DianaTekkenTask(RLTask):
         reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + 0.5, reward)
 
         # Fingertip distance from reference
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.1)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.1)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.1)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.1)
+        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.1)
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)

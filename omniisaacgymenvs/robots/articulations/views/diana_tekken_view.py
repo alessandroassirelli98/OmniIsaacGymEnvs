@@ -120,7 +120,14 @@ class DianaTekkenView(ArticulationView):
             "Right_Middle_2",
             "Right_Ring_2",
             "Right_Little_2",
-            "Right_Thumb_2"]
+            "Right_Thumb_2",
+            
+            "Right_Index_3",
+            "Right_Middle_3",
+            "Right_Ring_3",
+            "Right_Little_3",
+            "Right_Thumb_3"
+            ]
         
         self._actuated_dof_indices = list()
         self._actuated_diana_dof_indices = list()
@@ -142,6 +149,11 @@ class DianaTekkenView(ArticulationView):
 
     def clamp_joint0_joint1(self, actions):
         actions[:, self.clamped_finger_dof_indices] = actions[:, self.actuated_finger_dof_indices]
+        return actions
+    
+    def clamp_joint0_joint1_joint2(self, actions):
+        actions[:, self.clamped_finger_dof_indices[:5]] = actions[:, self.actuated_finger_dof_indices]
+        actions[:, self.clamped_finger_dof_indices[5:]] = actions[:, self.actuated_finger_dof_indices]
         return actions
 
 
