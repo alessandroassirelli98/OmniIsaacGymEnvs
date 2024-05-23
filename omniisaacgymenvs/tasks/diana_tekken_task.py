@@ -236,7 +236,7 @@ class DianaTekkenTask(RLTask):
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-        # self.push_downward()
+        self.push_downward()
 
         # print(self._robots.get_measured_joint_forces()[:, 12, 3])
 
@@ -245,11 +245,14 @@ class DianaTekkenTask(RLTask):
     def push_downward(self):
         self._drills_to_pull = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self._drills_to_pull), self._drills_to_pull)
         self.pull_env_ids = self._drills_to_pull.nonzero(as_tuple=False).squeeze(-1)
+        num_indices = len(self.pull_env_ids)
 
         if len(self.pull_env_ids) > 0:
+            applied_ext_forces = (torch.rand((num_indices, 3), device=self._device) - 0.5) * 2.
+            applied_ext_torques = (torch.rand((num_indices, 3), device=self._device) - 0.5) * 2.
             indices = self.pull_env_ids.to(dtype=torch.int32)
-            self._drills.apply_forces_and_torques_at_pos(forces=self.applied_ext_forces,
-                                                         torques=self.applied_ext_torques,
+            self._drills.apply_forces_and_torques_at_pos(forces=applied_ext_forces,
+                                                         torques=applied_ext_torques,
                                                         indices=indices)
         self._drills_to_pull[self.pull_env_ids] = 0
         
