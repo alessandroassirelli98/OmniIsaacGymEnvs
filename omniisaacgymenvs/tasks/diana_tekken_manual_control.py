@@ -54,11 +54,12 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
 
     def post_reset(self):
         self.cloned_robot_actions = np.zeros(8)
+        self.joint_targets = torch.ones(len(self._robots.actuated_finger_dof_indices), device=self._device) * 0.8
         super().post_reset()
 
     def pre_physics_step(self, actions: torch.tensor) -> None:
-        delta_pos = actions[:3] * 0.8
-        delta_rot = torch.tensor([0, actions[3], 0], device=self._device) * 0.8
+        delta_pos = actions[:3]
+        delta_rot = actions[3:6]
         # target_pos, target_rot = self._ref_cubes.get_world_poses()
         # target_pos -= self._env_pos
         # rpy_target = torch.tensor(get_euler_xyz(target_rot), device=self._device).unsqueeze(0)
@@ -68,10 +69,11 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
 
         # self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
 
-        if actions[-1] == 1:
+        # This can be 0. or 1. I check 0.5 just because of floating point
+        if actions[-1] >= 0.5:
             joint_targets = torch.ones(len(self._robots.actuated_finger_dof_indices), device=self._device) * 0.8
         else:
-            joint_targets = -torch.ones(len(self._robots.actuated_finger_dof_indices), device=self._device) * 0.8
+            joint_targets = - torch.ones(len(self._robots.actuated_finger_dof_indices), device=self._device) * 0.8
 
         action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0), joint_targets.unsqueeze(0)], dim=1)
 

@@ -42,7 +42,7 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 75
+        self._num_observations = 45
         if not hasattr(self, '_num_actions'): self._num_actions = 11 # If the number of actions has been defined from a child
 
 
@@ -192,9 +192,9 @@ class DianaTekkenTask(RLTask):
         self._ref_grasp_in_drill_rot = self._ref_grasp_in_drill_rot * torch.ones((self._num_envs, 4), device=self._device)
 
         # Initial Orientation for eef, just for initialization
-        ee_rot_euler = torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
-        ee_rot_quat = euler_angles_to_quats(ee_rot_euler, device=self._device)
-        self.ee_rot = torch.ones((self._num_envs, 4), device=self._device) * ee_rot_quat
+        hand_rot_euler = torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
+        hand_rot_quat = euler_angles_to_quats(hand_rot_euler, device=self._device)
+        self.hand_rot = torch.ones((self._num_envs, 4), device=self._device) * hand_rot_quat
 
 
         drill_pos, _ = self._drills.get_world_poses()
@@ -241,20 +241,21 @@ class DianaTekkenTask(RLTask):
         joints_ref = actions[:, 6:] * self.joint_action_scale
 
         # 6D Pose is Delta pos, Delta rot in tool reference rame
-        # pos_ref_local = self.actions[:, :3] * self.ik_action_scale
-        # rot_ref_local = euler_angles_to_quats(self.actions[:, 3:6] * self.ik_action_scale, device=self._device)
-        # rot_ref_world = quat_mul(self.ee_rot, rot_ref_local)
-        # # TODO refactor this code which is also in the observations
-        # p = torch.zeros((self._num_envs, 4), device=self._device)
-        # p[:, 1:4] = pos_ref_local
-        # q = self.ee_rot
-        # qI = quat_conjugate(q)
+        pos_ref_local = self.actions[:, :3] * self.ik_action_scale
+        rot_ref_local = euler_angles_to_quats(self.actions[:, 3:6] * self.ik_action_scale, device=self._device)
+        rot_ref_world = quat_mul(self.hand_rot, rot_ref_local)
+        # TODO refactor this code which is also in the observations
+        p = torch.zeros((self._num_envs, 4), device=self._device)
+        p[:, 1:4] = pos_ref_local
+        q = self.hand_rot
+        qI = quat_conjugate(q)
 
-        # pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
-        # rot_error_world = self.orientation_error(rot_ref_world, self.ee_rot)
+        pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
+        rot_error_world = self.orientation_error(rot_ref_world, self.hand_rot)
 
-        pos_error_world = self.actions[:, :3] * self.ik_action_scale
-        rot_error_world = self.actions[:, 3:6] * self.ik_action_scale
+        # 6D Pose is Delta pos, Delta rot in world reference rame
+        # pos_error_world = self.actions[:, :3] * self.ik_action_scale
+        # rot_error_world = self.actions[:, 3:6] * self.ik_action_scale
 
         # Get the jacobian of the EE
         jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
@@ -327,13 +328,9 @@ class DianaTekkenTask(RLTask):
         ring_pos_world, _ = self._robots._ring_fingers.get_world_poses(clone=False)
         little_pos_world, _ = self._robots._little_fingers.get_world_poses(clone=False)
         thumb_pos_world, _ = self._robots._thumb_fingers.get_world_poses(clone=False)
-
-        ee_pos, self.ee_rot = self._robots._palm_centers.get_world_poses(clone=False)
-
         drill_pos_world, self.drill_rot = self._drills.get_world_poses(clone=False)
 
         self.hand_pos = hand_pos_world - self._env_pos
-        self.ee_pos = ee_pos - self._env_pos
         self.drill_pos = drill_pos_world - self._env_pos
 
         self.hand_in_drill_pos, self.hand_in_drill_rot = get_in_object_pose(self.drill_pos, self.hand_pos, self.drill_rot, self.hand_rot)
@@ -355,15 +352,15 @@ class DianaTekkenTask(RLTask):
 
 
 
-        self.obs_buf[:, :27] = self.dof_pos
-        self.obs_buf[:, 27:30] = self.hand_pos
-        self.obs_buf[:, 30:34] = self.hand_rot
-        self.obs_buf[:, 34:37] = self.drill_pos
-        self.obs_buf[:, 37:41] = self.drill_rot
-        self.obs_buf[:, 41:44] = self.hand_in_drill_pos
-        self.obs_buf[:, 44:48] = self.hand_in_drill_rot
+        self.obs_buf[:, :12] = self.dof_pos[:, self.actuated_dof_indices]
+        self.obs_buf[:, 12:15] = self.hand_pos
+        self.obs_buf[:, 15:19] = self.hand_rot
+        self.obs_buf[:, 19:22] = self.drill_pos
+        self.obs_buf[:, 22:26] = self.drill_rot
+        self.obs_buf[:, 26:29] = self.hand_in_drill_pos
+        self.obs_buf[:, 29:33] = self.hand_in_drill_rot
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 48:75] = dof_vel
+        self.obs_buf[:, 33:45] = dof_vel[:, self.actuated_dof_indices]
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
