@@ -241,21 +241,26 @@ class DianaTekkenTask(RLTask):
         joints_ref = actions[:, 6:] * self.joint_action_scale
 
         # 6D Pose is Delta pos, Delta rot in tool reference rame
-        pos_ref_local = self.actions[:, :3] * self.ik_action_scale
-        rot_ref_local = euler_angles_to_quats(self.actions[:, 3:6] * self.ik_action_scale, device=self._device)
-        rot_ref_world = quat_mul(self.ee_rot, rot_ref_local)
+        # pos_ref_local = self.actions[:, :3] * self.ik_action_scale
+        # rot_ref_local = euler_angles_to_quats(self.actions[:, 3:6] * self.ik_action_scale, device=self._device)
+        # rot_ref_world = quat_mul(self.ee_rot, rot_ref_local)
+        # # TODO refactor this code which is also in the observations
+        # p = torch.zeros((self._num_envs, 4), device=self._device)
+        # p[:, 1:4] = pos_ref_local
+        # q = self.ee_rot
+        # qI = quat_conjugate(q)
+
+        # pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
+        # rot_error_world = self.orientation_error(rot_ref_world, self.ee_rot)
+
+        pos_error_world = self.actions[:, :3] * self.ik_action_scale
+        rot_error_world = self.actions[:, 3:6] * self.ik_action_scale
 
         # Get the jacobian of the EE
         jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
 
-        # TODO refactor this code which is also in the observations
-        p = torch.zeros((self._num_envs, 4), device=self._device)
-        p[:, 1:4] = pos_ref_local
-        q = self.ee_rot
-        qI = quat_conjugate(q)
 
-        pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
-        rot_error_world = self.orientation_error(rot_ref_world, self.ee_rot)
+
         dpose = torch.cat([pos_error_world, rot_error_world], -1).unsqueeze(-1)  # (num_envs,6,1)
         delta_action = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
 
