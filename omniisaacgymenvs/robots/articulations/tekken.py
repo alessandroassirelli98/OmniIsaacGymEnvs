@@ -23,8 +23,7 @@ class Tekken(Robot):
         orientation: Optional[np.ndarray] = None,
     ) -> None:
 
-        if usd_path is None:
-            print("Need to reference a usd Tekken file !")
+        usd_path='/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/tekken_cad/tekken_cad.usd'
 
         self._usd_path = usd_path
         self._name = name
@@ -39,11 +38,11 @@ class Tekken(Robot):
         )
 
         dof_paths = [
-            "base_link_hithand/Right_Index_0", 
-            "base_link_hithand/Right_Middle_0",
-            "base_link_hithand/Right_Ring_0",
-            "base_link_hithand/Right_Little_0",
-            "base_link_hithand/Right_Thumb_0",
+            # "base_link_hithand/Right_Index_0", 
+            # "base_link_hithand/Right_Middle_0",
+            # "base_link_hithand/Right_Ring_0",
+            # "base_link_hithand/Right_Little_0",
+            # "base_link_hithand/Right_Thumb_0",
 
             "Right_Index_Basecover/Right_Index_1",
             "Right_Middle_Basecover/Right_Middle_1",
@@ -57,21 +56,26 @@ class Tekken(Robot):
             "Right_Little_Phaprox/Right_Little_2",
             "Right_Thumb_Phaprox/Right_Thumb_2",
 
-            # These joints are coupled
+            "Right_Index_Phamed/Right_Index_3",
+            "Right_Middle_Phamed/Right_Middle_3",
+            "Right_Ring_Phamed/Right_Ring_3",
+            "Right_Little_Phamed/Right_Little_3",
+            "Right_Thumb_Phamed/Right_Thumb_3",
+        ]
+
+        # These joints are coupled, so don't need to set the drive
             # "Right_Index_Phamed/Right_Index_3",
             # "Right_Middle_Phamed/Right_Middle_3",
             # "Right_Ring_Phamed/Right_Ring_3",
             # "Right_Little_Phamed/Right_Little_3",
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
-        ]
-
-        drive_type = ["angular"] * 20
-        default_dof_pos = [0. for _ in range(20)]
-        stiffness = [0.05, 0.05, 0.05, 0.05] * 5
-        damping = [0.0009375, 0.000625, 0.000625, 0.000625] * 5
-        max_force = [10, 1.5, 0.6, 0.3] * 5
-        max_velocity = [3.14 for _ in range(20)]
+        drive_type = ["angular"] * 15
+        default_dof_pos = [0. for _ in range(15)]
+        stiffness =  [5, 5, 5] * 5
+        damping = [0.5, 0.5, 0.5] * 5
+        max_force = [10, 10, 10] * 5
+        max_velocity = [100 for _ in range(15)]
 
         # STICK WITH THE URDF DRIVE PARAMETERS
 
@@ -86,5 +90,45 @@ class Tekken(Robot):
                 max_force=max_force[i]
             )
         
-        PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(max_velocity[i])
-        
+            PhysxSchema.PhysxJointAPI(get_prim_at_path(f"{self.prim_path}/{dof}")).CreateMaxJointVelocityAttr().Set(
+                max_velocity[i]
+            )
+
+        # self._setup_tendons()
+    
+    def _setup_tendons(self, use_limits=False):
+        tendon_root_paths = [
+            "Right_Index_Phaprox/Right_Index_2",
+            "Right_Middle_Phaprox/Right_Middle_2",
+            "Right_Ring_Phaprox/Right_Ring_2",
+            "Right_Little_Phaprox/Right_Little_2",
+            "Right_Thumb_Phaprox/Right_Thumb_2"]
+        tendon_driven_paths = [
+            "Right_Index_Phamed/Right_Index_3",
+            "Right_Middle_Phamed/Right_Middle_3",
+            "Right_Ring_Phamed/Right_Ring_3",
+            "Right_Little_Phamed/Right_Little_3",
+            "Right_Thumb_Phamed/Right_Thumb_3"]
+    
+        tendon_gearing = [-0.00805, 0.00805]
+        tendon_force_coeff = [1, 1]  
+        tendon_names =["Index_tendon", "Middle_tendon", "Ring_tendon", "Little_tenodn", "Thumb_tendon"]
+
+        for i, (root, driven) in enumerate(zip(tendon_root_paths, tendon_driven_paths)):
+            root_joint_prim = get_prim_at_path(self.prim_path + "/" + root)
+            driven_joint_prim = get_prim_at_path(self.prim_path + "/" + driven)
+
+            # setup drive joint
+            rootApi = PhysxSchema.PhysxTendonAxisRootAPI.Apply(root_joint_prim, tendon_names[i])
+            rootAxisApi = PhysxSchema.PhysxTendonAxisAPI(rootApi, tendon_names[i])
+
+            rootApi.CreateStiffnessAttr().Set(5)
+            rootApi.CreateDampingAttr().Set(0.5)
+            # rootApi.CreateLimitStiffnessAttr().Set(0.5)
+            rootAxisApi.CreateGearingAttr().Set([tendon_gearing[0]])
+            rootAxisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
+
+            # setup second joint
+            axisApi = PhysxSchema.PhysxTendonAxisAPI.Apply(driven_joint_prim, tendon_names[i])
+            axisApi.CreateGearingAttr().Set([tendon_gearing[1]])
+            axisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[1]])

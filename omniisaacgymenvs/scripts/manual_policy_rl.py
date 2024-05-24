@@ -109,7 +109,7 @@ def parse_hydra_configs(cfg: DictConfig):
         if i == 14:
             print("Directory busy")
             exit()
-    env.start_logging(file_path)
+    # env.start_logging(file_path)
     
     while env.simulation_app.is_running():
         if env.world.is_playing():
@@ -119,7 +119,7 @@ def parse_hydra_configs(cfg: DictConfig):
             env._world.step(render=render)
             env.sim_frame_count += 1
             env._task.post_physics_step()
-            env.logging_step()
+            # env.logging_step()
             # print(action)
 
             if input_manager.kill: 

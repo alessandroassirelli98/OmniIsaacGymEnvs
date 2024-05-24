@@ -13,6 +13,7 @@ from omni.isaac.core.utils.stage import add_reference_to_stage
 from omni.isaac.core.utils.torch.rotations import get_euler_xyz, quat_diff_rad, euler_angles_to_quats, quat_conjugate, quat_mul, quat_diff_rad, normalise_quat_in_pose
 from omni.isaac.core.objects import FixedCuboid, DynamicSphere, VisualSphere, FixedSphere, DynamicCuboid
 from omniisaacgymenvs.robots.articulations.diana_tekken import DianaTekken
+from omniisaacgymenvs.robots.articulations.tekken import Tekken
 from omniisaacgymenvs.robots.articulations.drill import Drill
 from omniisaacgymenvs.robots.articulations.views.diana_tekken_view import DianaTekkenView
 from omni.isaac.core.prims import RigidPrimView, XFormPrim
@@ -38,7 +39,7 @@ class DianaTekkenTask(RLTask):
         self.ee_idx = 14  # Index of link 7 (tool)
 
 
-        self._robot_translation = torch.tensor([0.0, -0.15, 0.])
+        self._robot_translation = torch.tensor([0.0, -0.15, 0.6])
 
         self.dt = self._task_cfg["sim"]["dt"]
 
@@ -63,7 +64,6 @@ class DianaTekkenTask(RLTask):
         self.robots_to_log.append(self._robots) # Robot that gets logged by the logger
         scene.add(self._robots)  # add view to scene for initialization
 
-        scene.add(self._robots._tool_centers)
         scene.add(self._robots._palm_centers)
         scene.add(self._robots._index_fingers)
         scene.add(self._robots._middle_fingers)
@@ -119,9 +119,11 @@ class DianaTekkenTask(RLTask):
     def get_robot(self, name, translation):
         self._hand_lower_bound = torch.tensor([0.0, -0.5, 0.2], device=self._device)
         self._hand_upper_bound = torch.tensor([0.9, 0.5, 0.9], device=self._device)
-        self._robot = DianaTekken(prim_path=self.default_zero_env_path + '/' + name,
+        rotation = euler_angles_to_quats(torch.tensor([torch.pi/2, 0, torch.pi/2]), device=self._device)
+        self._robot = Tekken(prim_path=self.default_zero_env_path + '/' + name,
                               name=name,
-                              translation=translation)
+                              translation=translation,
+                              orientation=rotation)
         self._sim_config.apply_articulation_settings(name, get_prim_at_path(self._robot.prim_path), self._sim_config.parse_actor_config(name))
 
     def get_drill(self):
@@ -166,15 +168,12 @@ class DianaTekkenTask(RLTask):
         self._sim_config.apply_articulation_settings("target_sphere", get_prim_at_path(self._target_sphere.prim_path), self._sim_config.parse_actor_config("target_sphere"))
 
     def post_reset(self):
-        # implement any logic required for simulation on-start here
-        self.manipulability = torch.zeros((self.num_envs), dtype=torch.bool, device = self._device)
-        self.bool_contacts = torch.zeros((self.num_envs, 15), dtype=torch.bool, device=self._device)
-    
         self.num_diana_tekken_dofs = self._robots.num_dof
         self.actuated_dof_indices = self._robots.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
+
         # 0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300
-        self.default_dof_pos = torch.tensor([0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300]  + [0.] * 20, device=self._device)
+        self.default_dof_pos = torch.tensor([0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos
@@ -195,6 +194,8 @@ class DianaTekkenTask(RLTask):
         hand_rot_euler = torch.tensor([torch.pi/2, 0, -torch.pi/2], device=self._device).unsqueeze(0)
         hand_rot_quat = euler_angles_to_quats(hand_rot_euler, device=self._device)
         self.hand_rot = torch.ones((self._num_envs, 4), device=self._device) * hand_rot_quat
+        self.base_pose_target = torch.zeros((self._num_envs, 7), device=self._device)
+
 
 
         drill_pos, _ = self._drills.get_world_poses()
@@ -252,29 +253,27 @@ class DianaTekkenTask(RLTask):
 
         pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
         rot_error_world = self.orientation_error(rot_ref_world, self.hand_rot)
+        self.base_pose_target[:, :3] += pos_error_world
 
         # 6D Pose is Delta pos, Delta rot in world reference rame
         # pos_error_world = self.actions[:, :3] * self.ik_action_scale
         # rot_error_world = self.actions[:, 3:6] * self.ik_action_scale
 
-        # Get the jacobian of the EE
-        jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
+        dpose = torch.cat([pos_error_world, rot_error_world], -1)
+        # t = torch.tensor([10.,0,0,0,0,0], device=self._device).unsqueeze(0)
 
-
-
-        dpose = torch.cat([pos_error_world, rot_error_world], -1).unsqueeze(-1)  # (num_envs,6,1)
-        delta_action = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
-
-        self._robot_dof_targets[:, self._robots.actuated_diana_dof_indices] += delta_action
         self._robot_dof_targets[:, self._robots.actuated_finger_dof_indices] += joints_ref
-        
-        self._robot_dof_targets = self._robots.clamp_joint0_joint1(self._robot_dof_targets)
+        self._robot_dof_targets = self._robots.clamp_joint0_joint1_joint2(self._robot_dof_targets)
 
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
-        self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-        self.push_downward()
+        self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
+        self._robots.set_local_poses(translations=self.base_pose_target[:, :3])
+        # self._robots.set_linear_velocities(dpose[:, :3])
+        
+
+        # self.push_downward()
 
 
     def push_downward(self):
@@ -352,15 +351,15 @@ class DianaTekkenTask(RLTask):
 
 
 
-        self.obs_buf[:, :12] = self.dof_pos[:, self.actuated_dof_indices]
-        self.obs_buf[:, 12:15] = self.hand_pos
-        self.obs_buf[:, 15:19] = self.hand_rot
-        self.obs_buf[:, 19:22] = self.drill_pos
-        self.obs_buf[:, 22:26] = self.drill_rot
-        self.obs_buf[:, 26:29] = self.hand_in_drill_pos
-        self.obs_buf[:, 29:33] = self.hand_in_drill_rot
-        # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 33:45] = dof_vel[:, self.actuated_dof_indices]
+        self.obs_buf[:, :5] = self.dof_pos[:, self.actuated_dof_indices]
+        # self.obs_buf[:, 12:15] = self.hand_pos
+        # self.obs_buf[:, 15:19] = self.hand_rot
+        # self.obs_buf[:, 19:22] = self.drill_pos
+        # self.obs_buf[:, 22:26] = self.drill_rot
+        # self.obs_buf[:, 26:29] = self.hand_in_drill_pos
+        # self.obs_buf[:, 29:33] = self.hand_in_drill_rot
+        # # self.obs_buf[:, 34:37] = self.target_sphere_pos
+        # self.obs_buf[:, 33:45] = dof_vel[:, self.actuated_dof_indices]
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -389,10 +388,12 @@ class DianaTekkenTask(RLTask):
         dof_pos[:, self.actuated_dof_indices] = pos
         self._robot_dof_targets[env_ids, :] = dof_pos
 
-        
         self._robots.set_joint_positions(dof_pos, indices=indices)
         self._robots.set_joint_velocities(dof_vel, indices=indices)
         self._robots.set_joint_position_targets(self._robot_dof_targets[env_ids], indices=indices)
+
+        self.base_pose_target[:, :3] = self._robot_translation
+        self._robots.set_local_poses(translations=self.base_pose_target[:, :3])
 
 
         # Reset target positions
