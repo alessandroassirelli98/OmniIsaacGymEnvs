@@ -24,7 +24,7 @@ def create_combinatorial_bash_script(script, param_names, combinations):
     for i, combo in enumerate(combinations):
         # Build the command string with all parameters
         script_content += f"\n\necho '------ Running {i + 1} run over {len(combinations)} -------'\n"
-        params_str = ' '.join(f'{name}={value}' for name, value in zip(param_names, combo))
+        params_str = ' '.join(f'+{name}={value}' for name, value in zip(param_names, combo))
         script_content += f'python {script} {params_str}\n'
     return script_content
 
