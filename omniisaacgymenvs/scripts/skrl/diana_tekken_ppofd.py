@@ -28,6 +28,16 @@ commit_hash = repo.head.object.hexsha
 # else:
 #     print("Repo is clean, proceeeding to run \n")
 
+ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
+algo_config = parse_arguments(ignore_args)
+
+if "random_seed" in algo_config.keys():
+    random_seed = int(algo_config['random_seed'])
+else:
+    random_seed = 42
+# seed for reproducibility
+set_seed(random_seed)  # e.g. `set_seed(42)` for fixed seed
+
 # seed for reproducibility
 set_seed(42)  # e.g. `set_seed(42)` for fixed seed
 class StochasticActor(GaussianMixin, Model):
@@ -170,12 +180,10 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 800
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
-                                     "project": "pick up trial 12 DOF"}
+                                     "project": "pick up trial 12 DOF finger_joints"}
 
-ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
-algo_config = parse_arguments(ignore_args)
 for key, value in algo_config.items():
     print(key, value)
     if key == "checkpoint":
@@ -227,7 +235,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 100000}
+cfg_trainer = {"timesteps": 1}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection
