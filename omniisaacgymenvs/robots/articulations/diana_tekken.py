@@ -7,6 +7,8 @@ from omni.isaac.core.utils.nucleus import get_assets_root_path
 from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.utils.stage import add_reference_to_stage
 from omniisaacgymenvs.tasks.utils.usd_utils import set_drive
+import omniisaacgymenvs
+import os
 
 import carb
 from pxr import PhysxSchema
@@ -24,7 +26,7 @@ class DianaTekken(Robot):
     ) -> None:
 
 
-        usd_path='/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/models/diana_tekken/diana_tekken.usd'
+        usd_path=f'{omniisaacgymenvs.__path__[0]}/models/diana_tekken/diana_tekken.usd'
 
         self._usd_path = usd_path
         self._name = name
