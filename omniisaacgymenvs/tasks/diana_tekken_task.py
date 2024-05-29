@@ -174,10 +174,9 @@ class DianaTekkenTask(RLTask):
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos
-        self._ref_joint_targets = torch.tensor([2.1851e-01,  3.3276e-02,  8.0705e-01,  4.9647e-01,  2.3982e-01,
-                                                8.9000e-01,  1.1345e+00,  1.1345e+00,  6.9859e-01,  1.0972e+00], 
+        self._ref_joint_targets = torch.tensor([0.2025, 0.3868, 0.7259, 0.8537, 0.4276], 
                                             device=self._device)
-        self._ref_joint_targets = self._ref_joint_targets * torch.ones((self._num_envs, 10), device=self._device)
+        self._ref_joint_targets = self._ref_joint_targets * torch.ones((self._num_envs, 5), device=self._device)
 
         self._ref_grasp_in_drill_pos = torch.tensor([-0.0269, -0.0307, -0.0138], 
                                             device=self._device)
@@ -240,7 +239,7 @@ class DianaTekkenTask(RLTask):
 
         # print(self._robots.get_measured_joint_forces()[:, 12, 3])
 
-        # print(self._robots.get_joint_positions()[:, 7:])
+        # print(self._robots.get_joint_positions()[:, self._robots.actuated_finger_dof_indices])
 
     def push_downward(self):
         self._drills_to_pull = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self._drills_to_pull), self._drills_to_pull)
@@ -448,6 +447,9 @@ class DianaTekkenTask(RLTask):
         # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.5)
         # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.5)
         # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
+
+        # Joint reference
+        reward = self.add_reward_term(torch.norm(self.dof_pos[:, self._robots.actuated_finger_dof_indices] - self._ref_joint_targets, p=2, dim=1), reward, 0.5)
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
