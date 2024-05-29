@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import os
-matplotlib.style.use("seaborn")
+matplotlib.style.use("seaborn-v0_8")
 
 def parse_json_demo():
     df = []
