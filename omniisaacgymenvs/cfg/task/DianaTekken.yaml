@@ -50,6 +50,7 @@ sim:
     enable_sleeping: True
     enable_stabilization: True
     max_depenetration_velocity: 1000.0
+
     # GPU buffers
     gpu_max_rigid_contact_count: 3048576
     gpu_max_rigid_patch_count: 63554432
