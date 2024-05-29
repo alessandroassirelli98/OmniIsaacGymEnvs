@@ -21,12 +21,12 @@ from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 repo = git.Repo(search_parent_directories=True)
 commit_hash = repo.head.object.hexsha
 
-# if repo.is_dirty():
-#     print("There are unstaged changes, please commit before run\n")
-#     exit()
+if repo.is_dirty():
+    print("There are unstaged changes, please commit before run\n")
+    exit()
 
-# else:
-#     print("Repo is clean, proceeeding to run \n")
+else:
+    print("Repo is clean, proceeeding to run \n")
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
@@ -180,7 +180,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 800
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
                                      "project": "pick up trial 12 DOF finger_joints"}
 
@@ -235,7 +235,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 1}
+cfg_trainer = {"timesteps": 80000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection
