@@ -21,12 +21,12 @@ from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 repo = git.Repo(search_parent_directories=True)
 commit_hash = repo.head.object.hexsha
 
-if repo.is_dirty():
-    print("There are unstaged changes, please commit before run\n")
-    exit()
+# if repo.is_dirty():
+#     print("There are unstaged changes, please commit before run\n")
+#     exit()
 
-else:
-    print("Repo is clean, proceeeding to run \n")
+# else:
+#     print("Repo is clean, proceeeding to run \n")
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
@@ -139,14 +139,14 @@ models["value"] = models["policy"]
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
-plot=True
+plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "shared"
 
-cfg["pretrain"] = False
-cfg["pretrainer_epochs"] = 50
+cfg["pretrain"] = True
+cfg["pretrainer_epochs"] = 100
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 8
