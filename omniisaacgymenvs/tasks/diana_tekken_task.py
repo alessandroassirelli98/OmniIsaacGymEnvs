@@ -455,7 +455,7 @@ class DianaTekkenTask(RLTask):
 
         self.torques_to_manipulability()
         reward += self.manipulability * manipulability_prize
-        print(self.manipulability)
+        # print(self.manipulability)
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
