@@ -464,7 +464,7 @@ class DianaTekkenTask(RLTask):
         # self.cm_bool_to_manipulability(cm)
         self.torques_to_manipulability()
         reward += self.manipulability * manipulability_prize
-        print(self.manipulability)
+        # print(self.manipulability)
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)
 
