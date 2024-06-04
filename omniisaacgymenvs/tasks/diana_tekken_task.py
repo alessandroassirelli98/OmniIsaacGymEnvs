@@ -81,28 +81,28 @@ class DianaTekkenTask(RLTask):
         scene.add(self._cubes)
 
         self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
-                                       prepare_contact_sensors=True,
-                                    #    track_contact_forces=True,
-                                       contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
-                                                                       "/World/envs/.*/diana/Right_Thumb_Phamed",
-                                                                       "/World/envs/.*/diana/Right_Thumb_Phadist",
+                                    #    prepare_contact_sensors=True,
+                                    # #    track_contact_forces=True,
+                                    #    contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
+                                    #                                    "/World/envs/.*/diana/Right_Thumb_Phamed",
+                                    #                                    "/World/envs/.*/diana/Right_Thumb_Phadist",
 
-                                                                       "/World/envs/.*/diana/Right_Index_Phaprox",
-                                                                       "/World/envs/.*/diana/Right_Index_Phamed",
-                                                                       "/World/envs/.*/diana/Right_Index_Phadist",
+                                    #                                    "/World/envs/.*/diana/Right_Index_Phaprox",
+                                    #                                    "/World/envs/.*/diana/Right_Index_Phamed",
+                                    #                                    "/World/envs/.*/diana/Right_Index_Phadist",
 
-                                                                       "/World/envs/.*/diana/Right_Middle_Phaprox",
-                                                                       "/World/envs/.*/diana/Right_Middle_Phamed",
-                                                                       "/World/envs/.*/diana/Right_Middle_Phadist",
+                                    #                                    "/World/envs/.*/diana/Right_Middle_Phaprox",
+                                    #                                    "/World/envs/.*/diana/Right_Middle_Phamed",
+                                    #                                    "/World/envs/.*/diana/Right_Middle_Phadist",
 
-                                                                       "/World/envs/.*/diana/Right_Ring_Phaprox",
-                                                                       "/World/envs/.*/diana/Right_Ring_Phamed",
-                                                                       "/World/envs/.*/diana/Right_Ring_Phadist",
+                                    #                                    "/World/envs/.*/diana/Right_Ring_Phaprox",
+                                    #                                    "/World/envs/.*/diana/Right_Ring_Phamed",
+                                    #                                    "/World/envs/.*/diana/Right_Ring_Phadist",
 
-                                                                       "/World/envs/.*/diana/Right_Little_Phaprox",
-                                                                       "/World/envs/.*/diana/Right_Little_Phamed",
-                                                                       "/World/envs/.*/diana/Right_Little_Phadist",
-                                                                       ]
+                                    #                                    "/World/envs/.*/diana/Right_Little_Phaprox",
+                                    #                                    "/World/envs/.*/diana/Right_Little_Phamed",
+                                    #                                    "/World/envs/.*/diana/Right_Little_Phadist",
+                                    #                                    ]
                                                                        )
         scene.add(self._drills)
 
@@ -460,9 +460,11 @@ class DianaTekkenTask(RLTask):
         reward = self.add_reward_term(d, reward, 0.2)
         reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + 0.5, reward)
 
-        cm = self._drills.get_contact_force_matrix()
-        self.cm_bool_to_manipulability(cm)
+        # cm = self._drills.get_contact_force_matrix()
+        # self.cm_bool_to_manipulability(cm)
+        self.torques_to_manipulability()
         reward += self.manipulability * manipulability_prize
+        # print(self.manipulability)
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)
 
@@ -513,6 +515,10 @@ class DianaTekkenTask(RLTask):
         res = torch.norm(cm, dim=2) > TOL
         self.manipulability = torch.where(torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, 3:], dim=1)),
                                            torch.count_nonzero(res, dim=1), 0.)
+        
+    def torques_to_manipulability(self, TOL=1e-1):
+        t = self._robots.get_measured_joint_efforts()[:, 12:]
+        self.manipulability = torch.count_nonzero(t > TOL, dim=1)
 
     def add_reward_term(self, d, reward, w=1):
         return reward + torch.log(1 / (1.0 + d ** 2)) * w
