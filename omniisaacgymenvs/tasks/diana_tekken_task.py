@@ -417,6 +417,7 @@ class DianaTekkenTask(RLTask):
         reward = torch.zeros(self._num_envs, device=self._device)
         fail_penalty = 10
         goal_achieved = 1
+        manipulability_prize = 0.05
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
@@ -439,11 +440,14 @@ class DianaTekkenTask(RLTask):
         reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + 0.5, reward)
 
         # Fingertip distance from reference
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
+        self.torques_to_manipulability()
+        reward += self.manipulability * manipulability_prize
+        
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
@@ -488,3 +492,11 @@ class DianaTekkenTask(RLTask):
 
     def add_reward_term(self, d, reward, w=1):
         return reward + torch.log(1 / (1.0 + d ** 2)) * w
+    
+    def torques_to_manipulability(self, TOL=1e-1):
+        thumb_contact_idxs = [16, 21, 26]
+        four_finger_idxs = [i for i in range(12,27, 1) if i not in thumb_contact_idxs]
+        t = self._robots.get_measured_joint_efforts()
+        res = t > TOL
+        self.manipulability = torch.where(torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, four_finger_idxs], dim=1)),
+                                           torch.count_nonzero(res, dim=1), 0.)
