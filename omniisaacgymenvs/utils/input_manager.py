@@ -73,6 +73,7 @@ class SpaceMouseManager():
                     self.action[4] = state.pitch
                     self.action[5] = state.yaw
                     self.action[6] = state.buttons[0]
+                    self.kill = bool(state.buttons[1])
         except KeyboardInterrupt:
             pass
 

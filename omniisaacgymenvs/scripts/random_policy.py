@@ -109,12 +109,9 @@ def parse_hydra_configs(cfg: DictConfig):
             actions = (action_high - action_low) * torch.rand(env.num_envs, env.action_space.shape[0], device=task.rl_device) - action_high
             actions=torch.zeros((env.num_envs, env.action_space.shape[0]), device=task.rl_device)
             
-            actions[:, 1] = 1
+            actions[:, 1] = 0.8
             actions[:, 6] = 1
-            actions[:, 7] = 1
-            actions[:, 8] = 1
-            actions[:, 9] = 1
-            actions[:, 10] = 1
+
 
             if time.time() - prev_time >= 1:
                 print("FPS:", num_frames, "FPS * num_envs:", env.num_envs * num_frames)

@@ -150,10 +150,10 @@ cfg["learning_rate"] = 1e-3
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
-cfg["ratio_clip"] = 0.1
+cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.001
+cfg["entropy_loss_scale"] = 0.0001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
@@ -172,7 +172,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
-                                     "project": "pick up trial 12 DOF with ik"}
+                                     "project": "pick up trial 7 DOF with ik"}
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)

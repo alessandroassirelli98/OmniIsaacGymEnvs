@@ -42,8 +42,8 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 45
-        if not hasattr(self, '_num_actions'): self._num_actions = 11 # If the number of actions has been defined from a child
+        self._num_observations = 37
+        if not hasattr(self, '_num_actions'): self._num_actions = 7 # If the number of actions has been defined from a child
 
 
         RLTask.__init__(self, name, env)
@@ -81,28 +81,28 @@ class DianaTekkenTask(RLTask):
         scene.add(self._cubes)
 
         self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
-                                    #    prepare_contact_sensors=True,
-                                    # #    track_contact_forces=True,
-                                    #    contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Thumb_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Thumb_Phadist",
+                                       prepare_contact_sensors=True,
+                                    #    track_contact_forces=True,
+                                       contact_filter_prim_paths_expr=["/World/envs/.*/diana/Right_Thumb_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Thumb_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Thumb_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Index_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Index_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Index_Phadist",
+                                                                       "/World/envs/.*/diana/Right_Index_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Index_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Index_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Middle_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Middle_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Middle_Phadist",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Middle_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Ring_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Ring_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Ring_Phadist",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Ring_Phadist",
 
-                                    #                                    "/World/envs/.*/diana/Right_Little_Phaprox",
-                                    #                                    "/World/envs/.*/diana/Right_Little_Phamed",
-                                    #                                    "/World/envs/.*/diana/Right_Little_Phadist",
-                                    #                                    ]
+                                                                       "/World/envs/.*/diana/Right_Little_Phaprox",
+                                                                       "/World/envs/.*/diana/Right_Little_Phamed",
+                                                                       "/World/envs/.*/diana/Right_Little_Phadist",
+                                                                       ]
                                                                        )
         scene.add(self._drills)
 
@@ -241,21 +241,21 @@ class DianaTekkenTask(RLTask):
         joints_ref = actions[:, 6:] * self.joint_action_scale
 
         # 6D Pose is Delta pos, Delta rot in tool reference rame
-        pos_ref_local = self.actions[:, :3] * self.ik_action_scale
-        rot_ref_local = euler_angles_to_quats(self.actions[:, 3:6] * self.ik_action_scale, device=self._device)
-        rot_ref_world = quat_mul(self.hand_rot, rot_ref_local)
-        # TODO refactor this code which is also in the observations
-        p = torch.zeros((self._num_envs, 4), device=self._device)
-        p[:, 1:4] = pos_ref_local
-        q = self.hand_rot
-        qI = quat_conjugate(q)
+        # pos_ref_local = self.actions[:, :3] * self.ik_action_scale
+        # rot_ref_local = euler_angles_to_quats(self.actions[:, 3:6] * self.ik_action_scale, device=self._device)
+        # rot_ref_world = quat_mul(self.hand_rot, rot_ref_local)
+        # # TODO refactor this code which is also in the observations
+        # p = torch.zeros((self._num_envs, 4), device=self._device)
+        # p[:, 1:4] = pos_ref_local
+        # q = self.hand_rot
+        # qI = quat_conjugate(q)
 
-        pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
-        rot_error_world = self.orientation_error(rot_ref_world, self.hand_rot)
+        # pos_error_world = quat_mul(quat_mul(q, p), qI)[:, 1:4]
+        # rot_error_world = self.orientation_error(rot_ref_world, self.hand_rot)
 
         # 6D Pose is Delta pos, Delta rot in world reference rame
-        # pos_error_world = self.actions[:, :3] * self.ik_action_scale
-        # rot_error_world = self.actions[:, 3:6] * self.ik_action_scale
+        pos_error_world = self.actions[:, :3] * self.ik_action_scale
+        rot_error_world = self.actions[:, 3:6] * self.ik_action_scale
 
         # Get the jacobian of the EE
         jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
@@ -274,7 +274,7 @@ class DianaTekkenTask(RLTask):
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
-        self.push_downward()
+        # self.push_downward()
 
 
     def push_downward(self):
@@ -351,16 +351,15 @@ class DianaTekkenTask(RLTask):
         self.thumb_pos = thumb_pos_world - self._env_pos
 
 
-
-        self.obs_buf[:, :12] = self.dof_pos[:, self.actuated_dof_indices]
-        self.obs_buf[:, 12:15] = self.hand_pos
-        self.obs_buf[:, 15:19] = self.hand_rot
-        self.obs_buf[:, 19:22] = self.drill_pos
-        self.obs_buf[:, 22:26] = self.drill_rot
-        self.obs_buf[:, 26:29] = self.hand_in_drill_pos
-        self.obs_buf[:, 29:33] = self.hand_in_drill_rot
+        self.obs_buf[:, :8] = self.dof_pos[:, self._robots.actuated_dof_indices]
+        self.obs_buf[:, 8:11] = self.hand_pos
+        self.obs_buf[:, 11:15] = self.hand_rot
+        self.obs_buf[:, 15:18] = self.drill_pos
+        self.obs_buf[:, 18:22] = self.drill_rot
+        self.obs_buf[:, 22:25] = self.hand_in_drill_pos
+        self.obs_buf[:, 25:29] = self.hand_in_drill_rot
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 33:45] = dof_vel[:, self.actuated_dof_indices]
+        self.obs_buf[:, 29:37] = dof_vel[:, self._robots.actuated_dof_indices]
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -439,6 +438,7 @@ class DianaTekkenTask(RLTask):
         reward = torch.zeros(self._num_envs, device=self._device)
         fail_penalty = 10
         goal_achieved = 1
+        manipulability_prize = 0.05
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
@@ -460,12 +460,18 @@ class DianaTekkenTask(RLTask):
         reward = self.add_reward_term(d, reward, 0.2)
         reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + 0.5, reward)
 
+        cm = self._drills.get_contact_force_matrix()
+        self.cm_bool_to_manipulability(cm)
+        reward += self.manipulability * manipulability_prize
+        # print(max(self.manipulability * manipulability_prize))
+        # print(reward)
+
         # Fingertip distance from reference
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.5)
-        reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.index_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.middle_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.ring_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.little_pos, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
