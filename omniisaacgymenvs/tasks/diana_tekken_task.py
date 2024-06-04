@@ -464,7 +464,7 @@ class DianaTekkenTask(RLTask):
         # self.cm_bool_to_manipulability(cm)
         self.torques_to_manipulability()
         reward += self.manipulability * manipulability_prize
-        # print(self.manipulability)
+        print(self.manipulability)
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)
 
@@ -517,8 +517,12 @@ class DianaTekkenTask(RLTask):
                                            torch.count_nonzero(res, dim=1), 0.)
         
     def torques_to_manipulability(self, TOL=1e-1):
-        t = self._robots.get_measured_joint_efforts()[:, 12:]
-        self.manipulability = torch.count_nonzero(t > TOL, dim=1)
+        thumb_contact_idxs = [16, 21, 26]
+        four_finger_idxs = [i for i in range(12,27, 1) if i not in thumb_contact_idxs]
+        t = self._robots.get_measured_joint_efforts()
+        res = t > TOL
+        self.manipulability = torch.where(torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, four_finger_idxs], dim=1)),
+                                           torch.count_nonzero(res, dim=1), 0.)
 
     def add_reward_term(self, d, reward, w=1):
         return reward + torch.log(1 / (1.0 + d ** 2)) * w
