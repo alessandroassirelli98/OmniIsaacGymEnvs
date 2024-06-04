@@ -229,9 +229,10 @@ class DianaTekkenTask(RLTask):
 
         self.actions = actions.clone().to(self._device)
         self._robot_dof_targets[:, self.actuated_dof_indices] += self.actions * self.dt * self.action_scale
+        self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
+        
         self._robot_dof_targets = self._robots.clamp_joint0_joint1_joint2(self._robot_dof_targets)
 
-        self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
@@ -420,6 +421,7 @@ class DianaTekkenTask(RLTask):
         reward = torch.zeros(self._num_envs, device=self._device)
         fail_penalty = 10
         goal_achieved = 1
+        manipulability_prize = 0.05
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
@@ -449,7 +451,11 @@ class DianaTekkenTask(RLTask):
         # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
 
         # Joint reference
-        reward = self.add_reward_term(torch.norm(self.dof_pos[:, self._robots.actuated_finger_dof_indices] - self._ref_joint_targets, p=2, dim=1), reward, 0.5)
+        # reward = self.add_reward_term(torch.norm(self.dof_pos[:, self._robots.actuated_finger_dof_indices] - self._ref_joint_targets, p=2, dim=1), reward, 0.5)
+
+        self.torques_to_manipulability()
+        reward += self.manipulability * manipulability_prize
+        print(self.manipulability)
 
         # Prize if goal achieved
         reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
@@ -490,6 +496,14 @@ class DianaTekkenTask(RLTask):
         thumb_contact_idxs = [0, 1, 2]
         res = torch.norm(cm, dim=2) > TOL
         self.manipulability = torch.where(torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, 3:], dim=1)),
+                                           torch.count_nonzero(res, dim=1), 0.)
+    
+    def torques_to_manipulability(self, TOL=1e-1):
+        thumb_contact_idxs = [16, 21, 26]
+        four_finger_idxs = [i for i in range(12,27, 1) if i not in thumb_contact_idxs]
+        t = self._robots.get_measured_joint_efforts()
+        res = t > TOL
+        self.manipulability = torch.where(torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, four_finger_idxs], dim=1)),
                                            torch.count_nonzero(res, dim=1), 0.)
 
     def add_reward_term(self, d, reward, w=1):
