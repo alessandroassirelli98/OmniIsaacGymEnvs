@@ -439,9 +439,9 @@ class DianaTekkenTask(RLTask):
 
     def calculate_metrics(self) -> None:
         reward = torch.zeros(self._num_envs, device=self._device)
-        fail_penalty = 10
-        goal_achieved = 1
-        manipulability_prize = 0.05
+        fail_penalty = 5
+        goal_achieved = 2
+        manipulability_prize = 0.025
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos

@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": "task=DianaTekkenManualControl",
+            "args": "task=DianaTekken headless=True num_envs=2",
             "justMyCode": false
         }
     ]
