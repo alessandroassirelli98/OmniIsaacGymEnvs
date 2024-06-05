@@ -54,7 +54,7 @@ if __name__ == "__main__":
     ep_length = 800
     ep_ret = []
     r = []
-    actions = np.zeros((8, ep_length))
+    actions = np.zeros((7, ep_length))
     for t in range(ep_length):
         r.append(e[(ep_length * which_episode + t)]["rewards"])
         actions[:, t] = np.array(e[(ep_length * which_episode + t)]["actions"])
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     plt.plot(np.array(r))
     plt.show()
 
-    for i in range(8):
+    for i in range(7):
         plt.subplot(2,4, i+1)
         plt.title(f'action {i}')
         plt.plot(actions[i, :])

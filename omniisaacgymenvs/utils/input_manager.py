@@ -66,8 +66,8 @@ class SpaceMouseManager():
             if success:
                 while 1:
                     state = pyspacemouse.read()
-                    self.action[0] = state.x
-                    self.action[1] = state.y
+                    self.action[0] = state.y
+                    self.action[1] = state.x
                     self.action[2] = state.z
                     self.action[3] = state.roll
                     self.action[4] = state.pitch
