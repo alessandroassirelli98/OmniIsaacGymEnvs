@@ -360,7 +360,7 @@ class DianaTekkenTask(RLTask):
         self.obs_buf[:, 18:22] = self.drill_rot
         self.obs_buf[:, 22:25] = self.hand_in_drill_pos
         self.obs_buf[:, 25:29] = self.hand_in_drill_rot
-        self.obs_buf[:, 29:30] = self.manipulability
+        self.obs_buf[:, 29:30] = self.manipulability.unsqueeze(1)
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
         self.obs_buf[:, 30:38] = dof_vel[:, self._robots.actuated_dof_indices]
 
