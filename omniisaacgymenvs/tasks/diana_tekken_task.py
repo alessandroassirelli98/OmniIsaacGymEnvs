@@ -42,7 +42,7 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 37
+        self._num_observations = 38
         if not hasattr(self, '_num_actions'): self._num_actions = 7 # If the number of actions has been defined from a child
 
 
@@ -225,7 +225,7 @@ class DianaTekkenTask(RLTask):
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
-        self.reset_idx(indices, False)
+        self.reset_idx(indices, True)
         
     def pre_physics_step(self, actions: torch.Tensor) -> None:
         # implement logic to be performed before physics steps
@@ -235,10 +235,11 @@ class DianaTekkenTask(RLTask):
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
         if len(reset_env_ids) > 0:
             # pass
-            self.reset_idx(reset_env_ids, False)
+            self.reset_idx(reset_env_ids, True)
 
-        self.actions = actions.clone().to(self._device) * self.dt
-        joints_ref = actions[:, 6:] * self.joint_action_scale
+        self.actions = actions.clone().to(self._device)
+         
+        joints_ref = self.actions[:, 6:] * self.joint_action_scale * self.dt
 
         # 6D Pose is Delta pos, Delta rot in tool reference rame
         # pos_ref_local = self.actions[:, :3] * self.ik_action_scale
@@ -254,8 +255,8 @@ class DianaTekkenTask(RLTask):
         # rot_error_world = self.orientation_error(rot_ref_world, self.hand_rot)
 
         # 6D Pose is Delta pos, Delta rot in world reference rame
-        pos_error_world = self.actions[:, :3] * self.ik_action_scale
-        rot_error_world = self.actions[:, 3:6] * self.ik_action_scale
+        pos_error_world = self.actions[:, :3] * self.ik_action_scale * self.dt
+        rot_error_world = self.actions[:, 3:6] * self.ik_action_scale * self.dt
 
         # Get the jacobian of the EE
         jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
@@ -350,6 +351,7 @@ class DianaTekkenTask(RLTask):
         self.little_pos = little_pos_world - self._env_pos
         self.thumb_pos = thumb_pos_world - self._env_pos
 
+        self.torques_to_manipulability()
 
         self.obs_buf[:, :8] = self.dof_pos[:, self._robots.actuated_dof_indices]
         self.obs_buf[:, 8:11] = self.hand_pos
@@ -358,8 +360,9 @@ class DianaTekkenTask(RLTask):
         self.obs_buf[:, 18:22] = self.drill_rot
         self.obs_buf[:, 22:25] = self.hand_in_drill_pos
         self.obs_buf[:, 25:29] = self.hand_in_drill_rot
+        self.obs_buf[:, 29:30] = self.manipulability
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 29:37] = dof_vel[:, self._robots.actuated_dof_indices]
+        self.obs_buf[:, 30:38] = dof_vel[:, self._robots.actuated_dof_indices]
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -462,7 +465,6 @@ class DianaTekkenTask(RLTask):
 
         # cm = self._drills.get_contact_force_matrix()
         # self.cm_bool_to_manipulability(cm)
-        self.torques_to_manipulability()
         reward += self.manipulability * manipulability_prize
         # print(self.manipulability)
         # print(max(self.manipulability * manipulability_prize))
