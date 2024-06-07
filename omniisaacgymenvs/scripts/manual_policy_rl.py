@@ -64,10 +64,10 @@ def parse_hydra_configs(cfg: DictConfig):
     )
 
 
-    action = torch.zeros(7, dtype=torch.float32, device="cuda:0")
-    # action = torch.zeros(7, dtype=torch.float32, device=cfg.pipeline)
+    # action = torch.zeros(7, dtype=torch.float32, device="cuda:0")
+    action = torch.zeros(7, dtype=torch.float32, device=cfg.pipeline)
 
-    input_manager = SpaceMouseManager(action)
+    input_manager = KeyboardManager(action)
 
 
     # parse experiment directory

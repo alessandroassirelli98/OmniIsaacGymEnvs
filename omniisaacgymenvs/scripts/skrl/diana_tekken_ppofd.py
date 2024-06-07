@@ -81,9 +81,9 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
         GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction) # here we clip inside
         DeterministicMixin.__init__(self, clip_actions=clip_actions)
 
-        self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
+        self.net = nn.Sequential(nn.Linear(self.num_observations, 512),
                                  nn.ELU(),
-                                 nn.Linear(256, 256),
+                                 nn.Linear(512, 256),
                                  nn.ELU(),
                                  nn.Linear(256, 128),
                                  nn.ELU(),
@@ -141,18 +141,18 @@ cfg["commit_hash"] = commit_hash
 cfg["nn_type"] = "shared"
 
 cfg["pretrain"] = True
-cfg["pretrainer_epochs"] = 100
-cfg["pretrainer_lr"] = 1e-3
+cfg["pretrainer_epochs"] = 300
+cfg["pretrainer_lr"] = 5e-4
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 8
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768
 cfg["discount_factor"] = 0.99
 cfg["lambda"] = 0.95
-cfg["learning_rate"] = 1e-3
+cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
-cfg["ratio_clip"] = 0.1
+cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
 cfg["entropy_loss_scale"] = 0.001
