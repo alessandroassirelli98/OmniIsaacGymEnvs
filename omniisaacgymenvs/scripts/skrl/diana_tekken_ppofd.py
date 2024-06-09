@@ -81,9 +81,9 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
         GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction) # here we clip inside
         DeterministicMixin.__init__(self, clip_actions=clip_actions)
 
-        self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
+        self.net = nn.Sequential(nn.Linear(self.num_observations, 512),
                                  nn.ELU(),
-                                 nn.Linear(256, 256),
+                                 nn.Linear(512, 256),
                                  nn.ELU(),
                                  nn.Linear(256, 128),
                                  nn.ELU(),
