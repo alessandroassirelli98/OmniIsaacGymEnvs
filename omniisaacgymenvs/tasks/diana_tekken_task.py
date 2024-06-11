@@ -453,7 +453,7 @@ class DianaTekkenTask(RLTask):
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = self.add_reward_term(d, reward, self.hand_drill_pos_weight)
-        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
+        # reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
@@ -485,7 +485,7 @@ class DianaTekkenTask(RLTask):
         # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
 
         # Prize if goal achieved
-        reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + self.goal_achieved, reward)
+        reward = torch.where(torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 ), reward + self.goal_achieved, reward)
         
         # If the drill is out of bound
         reward = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
