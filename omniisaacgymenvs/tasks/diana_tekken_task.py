@@ -34,6 +34,15 @@ class DianaTekkenTask(RLTask):
         self.joint_action_scale = self._task_cfg["env"]["jointActionScale"]
         self._max_episode_length = self._task_cfg["env"]["episodeLength"]
         self.robots_to_log = []
+        
+        self.fail_penalty = self._task_cfg["env"]["fail_penalty"]
+        self.goal_achieved = self._task_cfg["env"]["goal_achieved"]
+        self.goal_orientation_prize = self._task_cfg["env"]["goal_orientation_prize"]
+        self.manipulability_prize = self._task_cfg["env"]["manipulability_prize"]
+        self.hand_drill_pos_weight = self._task_cfg["env"]["hand_drill_pos_weight"]
+        self.hand_drill_rot_weight = self._task_cfg["env"]["hand_drill_rot_weight"]
+        self.distance_to_target_weight = self._task_cfg["env"]["distance_to_target_weight"]
+        self.orientation_weight = self._task_cfg["env"]["orientation_weight"]
 
         self.ee_idx = 14  # Index of link 7 (tool)
 
@@ -439,33 +448,31 @@ class DianaTekkenTask(RLTask):
 
     def calculate_metrics(self) -> None:
         reward = torch.zeros(self._num_envs, device=self._device)
-        fail_penalty = 5
-        goal_achieved = 2
-        manipulability_prize = 0.025
         # implement logic to compute rewards
 
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
-        reward = self.add_reward_term(d, reward, 0.2)
+        reward = self.add_reward_term(d, reward, self.hand_drill_pos_weight)
         reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
-        reward = self.add_reward_term(d, reward, 0.2)
+        reward = self.add_reward_term(d, reward, self.hand_drill_rot_weight)
         # print(d)
 
         # Distance to target height
         d = torch.abs(0.7 - self.drill_pos[:, 2])
-        reward = self.add_reward_term(d, reward, 0.5)
+        reward = self.add_reward_term(d, reward, self.distance_to_target_weight)
 
         # Orientation cost
         d = quat_diff_rad(self.drill_zero_rot, self.drill_rot)
-        reward = self.add_reward_term(d, reward, 0.2)
-        reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + 0.5, reward)
+        reward = self.add_reward_term(d, reward, self.orientation_weight)
+
+        reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + self.goal_orientation_prize, reward)
 
         # cm = self._drills.get_contact_force_matrix()
         # self.cm_bool_to_manipulability(cm)
-        reward += self.manipulability * manipulability_prize
+        reward += self.manipulability * self.manipulability_prize
         # print(self.manipulability)
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)
@@ -478,15 +485,15 @@ class DianaTekkenTask(RLTask):
         # reward = self.add_reward_term(torch.norm(self.drill_finger_targets_pos - self.thumb_pos, p=2, dim=1), reward, 0.5)
 
         # Prize if goal achieved
-        reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + goal_achieved, reward)
+        reward = torch.where(self.drill_pos[:, 2] > 0.7, reward + self.goal_achieved, reward)
         
         # If the drill is out of bound
-        reward = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - fail_penalty, reward)
-        reward = torch.where(torch.any(self.drill_pos <= self._drill_reset_lower_bound, dim=1), reward - fail_penalty, reward)
+        reward = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
+        reward = torch.where(torch.any(self.drill_pos <= self._drill_reset_lower_bound, dim=1), reward - self.fail_penalty, reward)
 
         # If the hand is out of bound
-        reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - fail_penalty, reward)
-        reward = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), reward - fail_penalty, reward)
+        reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
+        reward = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), reward - self.fail_penalty, reward)
         # print(reward)
         
 
@@ -506,7 +513,7 @@ class DianaTekkenTask(RLTask):
         self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
         # # # Task achieved
-        # self.reset_buf = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self.reset_buf), self.reset_buf)
+        self.reset_buf = torch.where(torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 ), torch.ones_like(self.reset_buf), self.reset_buf)
 
         # If the resultant contact force between table and hand is more than a threshold
         # self.reset_buf = torch.where(torch.sqrt(torch.sum(self._cubes.get_contact_force_matrix()[:, 0, :]**2, dim=1 )) >= 0.5, 
