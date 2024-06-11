@@ -468,11 +468,11 @@ class DianaTekkenTask(RLTask):
         d = quat_diff_rad(self.drill_zero_rot, self.drill_rot)
         reward = self.add_reward_term(d, reward, self.orientation_weight)
 
-        reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + self.goal_orientation_prize, reward)
+        # reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + self.goal_orientation_prize, reward)
 
         # cm = self._drills.get_contact_force_matrix()
         # self.cm_bool_to_manipulability(cm)
-        reward += self.manipulability * self.manipulability_prize
+        reward += (self.manipulability - 15) * self.manipulability_prize
         # print(self.manipulability)
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)

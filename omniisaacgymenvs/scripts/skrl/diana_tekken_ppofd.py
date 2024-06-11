@@ -11,7 +11,7 @@ from skrl.memories.torch import RandomMemory
 from skrl.models.torch import DeterministicMixin, GaussianMixin, Model
 from skrl.resources.preprocessors.torch import RunningStandardScaler
 from skrl.resources.schedulers.torch import KLAdaptiveRL
-from skrl.trainers.torch import SequentialTrainer, Pretrainer
+from skrl.trainers.torch import SequentialTrainer, Pretrainer, PretrainerV2
 from skrl.utils import set_seed
 from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
 from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
@@ -140,7 +140,7 @@ cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "SeparateNetworks"
 
-cfg["pretrain"] = False
+cfg["pretrain"] = True
 cfg["pretrainer_epochs"] = 100
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
@@ -157,7 +157,7 @@ cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
 cfg["entropy_loss_scale"] = 0.001
 cfg["value_loss_scale"] = 2.0
-cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
+cfg["rewards_shaper"] = None #lambda rewards, timestep, timesteps: rewards * 0.01
 
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
@@ -172,7 +172,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
                                      "project": "pick up trial 7 DOF with ik cut"}
 
@@ -251,7 +251,7 @@ if cfg["pretrain"]:
         demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
 
     # trainer.pre_train(transitions, 10)
-    pt = Pretrainer(agent=agent,
+    pt = PretrainerV2(agent=agent,
                     transitions=transitions,
                     lr=cfg["pretrainer_lr"],
                 epochs=cfg["pretrainer_epochs"],
@@ -261,59 +261,50 @@ if cfg["pretrain"]:
 if cfg["checkpoint"]:
     agent.load(cfg["checkpoint"])
 
-if cfg["pretrain"] and not cfg["test"]:
+if cfg["pretrain"]:
     import matplotlib.pyplot as plt
-
-    replay_actions = pt.test_bc()
     pt.train_bc()
     
     if plot:
-        test_cpu = pt.test_policy_loss.cpu()
-        plt.title("timestep error")
-        plt.plot(test_cpu)
-        plt.ylabel("error")
-        plt.xlabel("timestep")
-        plt.show()
-
         plt.title("BC loss")
-        plt.plot(pt.log_policy_loss.cpu())
-        plt.plot(pt.log_policy_loss_eval.cpu())
-        plt.legend(["train loss", "val loss"])
+        plt.plot(pt.log_policy_loss)
+        plt.plot(pt.log_policy_test_loss)
+        plt.legend(["train loss", "test loss"])
         plt.show()
 
-        pt.test_cloned()
-        plt.title("Actions")
-        for i in range(7):
-            plt.subplot(2,4,i+1)
-            plt.plot(pt.test_gt_actions[i, :])
-            plt.plot(pt.test_bc_actions[i, :])
-        plt.ylabel("action")
-        plt.xlabel("timestep")
-        plt.show()
+        # pt.test_cloned()
+        # plt.title("Actions")
+        # for i in range(7):
+        #     plt.subplot(2,4,i+1)
+        #     plt.plot(pt.test_gt_actions[i, :])
+        #     plt.plot(pt.test_bc_actions[i, :])
+        # plt.ylabel("action")
+        # plt.xlabel("timestep")
+        # plt.show()
 
-        replay_actions = pt.test_bc()
-        test_cpu = pt.test_policy_loss.cpu()
-        plt.title("Acion test loss")
-        plt.plot(test_cpu)
-        plt.ylabel("mse")
-        plt.xlabel("timestep")
-        plt.show()
+        # replay_actions = pt.test_bc()
+        # test_cpu = pt.test_policy_loss.cpu()
+        # plt.title("Acion test loss")
+        # plt.plot(test_cpu)
+        # plt.ylabel("mse")
+        # plt.xlabel("timestep")
+        # plt.show()
 
-        std_cpu = pt.log_std.cpu()
-        plt.title("Actions std")
-        for i in range(std_cpu.shape[1]):
-            plt.plot(std_cpu[:,i])
-        plt.ylabel("std")
-        plt.xlabel("Epoch")
-        plt.show()
+        # std_cpu = pt.log_std.cpu()
+        # plt.title("Actions std")
+        # for i in range(std_cpu.shape[1]):
+        #     plt.plot(std_cpu[:,i])
+        # plt.ylabel("std")
+        # plt.xlabel("Epoch")
+        # plt.show()
 
-        mean_cpu = pt.log_mse.cpu()
-        plt.title("Actions mse")
-        for i in range(mean_cpu.shape[1]):
-            plt.plot(mean_cpu[:,i])
-        plt.ylabel("mse")
-        plt.xlabel("Epoch")
-        plt.show()
+        # mean_cpu = pt.log_mse.cpu()
+        # plt.title("Actions mse")
+        # for i in range(mean_cpu.shape[1]):
+        #     plt.plot(mean_cpu[:,i])
+        # plt.ylabel("mse")
+        # plt.xlabel("Epoch")
+        # plt.show()
 
 if not cfg["test"]:
     trainer.train()
