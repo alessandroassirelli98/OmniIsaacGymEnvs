@@ -278,7 +278,7 @@ class DianaTekkenTask(RLTask):
         self._robot_dof_targets[:, self._robots.actuated_diana_dof_indices] += delta_action
         self._robot_dof_targets[:, self._robots.actuated_finger_dof_indices] += joints_ref
         
-        self._robot_dof_targets = self._robots.clamp_joint0_joint1(self._robot_dof_targets)
+        self._robot_dof_targets = self._robots.clamp_joint0_joint1_joint2(self._robot_dof_targets)
 
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
