@@ -9,6 +9,8 @@ from skrl.memories.torch import RandomMemory
 from skrl.models.torch import DeterministicMixin, GaussianMixin, Model
 from skrl.resources.noises.torch import GaussianNoise
 from skrl.resources.preprocessors.torch import RunningStandardScaler
+from skrl.trainers.torch import SequentialTrainer, Pretrainer, PretrainerV2
+
 from skrl.trainers.torch import SequentialTrainer
 from skrl.utils import set_seed
 from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
@@ -94,7 +96,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["td3"],
-                                     "project": "pick up trial 7 DOF with ik"}
+                                     "project": "pick up trial 7 DOF with ik with cut"}
 
 agent = TD3(models=models,
             memory=memory,
@@ -139,5 +141,12 @@ for tstep in episode:
         env_id = 0
         mem_idx += 1
 
+    # trainer.pre_train(transitions, 10)
+pt = PretrainerV2(agent=agent,
+                    transitions=transitions,
+                    lr=1e-3,
+                epochs=100,
+                batch_size=32)
+pt.train_bc()
 # start training
 trainer.train()
