@@ -534,7 +534,7 @@ class DianaTekkenTask(RLTask):
                                            torch.count_nonzero(res, dim=1), 0.)
 
     def add_reward_term(self, d, reward, w=1):
-        return reward + torch.log(1 / (1.0 + d ** 2)) * w
+        return reward - torch.tanh(d ** 2) * w
     
     def control_ik(self, j_eef, dpose, num_envs, num_dofs, damping=0.05):
         """Solve with Gauss Newton approx and regularizationin Isaac Gym.

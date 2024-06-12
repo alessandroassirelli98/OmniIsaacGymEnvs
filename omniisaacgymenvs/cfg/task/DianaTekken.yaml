@@ -16,10 +16,10 @@ env:
 
   controlFrequencyInv: 2 # 60 Hz
 
-  fail_penalty: 5
-  goal_achieved: 100
+  fail_penalty: 10
+  goal_achieved: 500
   goal_orientation_prize: 0.5
-  manipulability_prize: 0.025
+  manipulability_prize: 0.05
   hand_drill_pos_weight: 0.2
   hand_drill_rot_weight: 0.2
   distance_to_target_weight: 0.5
