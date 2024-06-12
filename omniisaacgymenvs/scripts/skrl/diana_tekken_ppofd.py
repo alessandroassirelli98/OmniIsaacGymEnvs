@@ -140,7 +140,7 @@ cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "SeparateNetworks"
 
-cfg["pretrain"] = True
+cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 100
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
@@ -155,7 +155,7 @@ cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.001
+cfg["entropy_loss_scale"] = 0.0001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
@@ -305,7 +305,8 @@ if cfg["pretrain"]:
         # plt.ylabel("mse")
         # plt.xlabel("Epoch")
         # plt.show()
-
+print(models["policy"])
+print(models["policy"].log_std_parameter)
 if not cfg["test"]:
     trainer.train()
 else:
