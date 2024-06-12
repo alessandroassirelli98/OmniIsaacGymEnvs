@@ -8,6 +8,8 @@ from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.utils.stage import add_reference_to_stage
 from omniisaacgymenvs.tasks.utils.usd_utils import set_drive
 import omniisaacgymenvs
+import os
+
 import carb
 from pxr import PhysxSchema
 
@@ -25,7 +27,6 @@ class DianaTekken(Robot):
 
 
         usd_path=f'{omniisaacgymenvs.__path__[0]}/models/diana_tekken/diana_tekken.usd'
-
 
         self._usd_path = usd_path
         self._name = name
@@ -65,6 +66,12 @@ class DianaTekken(Robot):
             "Right_Ring_Phaprox/Right_Ring_2",
             "Right_Little_Phaprox/Right_Little_2",
             "Right_Thumb_Phaprox/Right_Thumb_2",
+
+            "Right_Index_Phamed/Right_Index_3",
+            "Right_Middle_Phamed/Right_Middle_3",
+            "Right_Ring_Phamed/Right_Ring_3",
+            "Right_Little_Phamed/Right_Little_3",
+            "Right_Thumb_Phamed/Right_Thumb_3"
         ]
 
         # These joints are coupled, so don't need to set the drive
@@ -74,12 +81,12 @@ class DianaTekken(Robot):
             # "Right_Little_Phamed/Right_Little_3",
             # "Right_Thumb_Phamed/Right_Thumb_3",
 
-        drive_type = ["angular"] * 17
-        default_dof_pos = [math.degrees(x) for x in [-0.4882, -0.5160,  0.1176,  2.5050,  2.3009, -0.5262,  2.4023]] + [0. for _ in range(10)]
-        stiffness = [600*np.pi/180] * 7 + [5, 5] * 5
-        damping = [90*np.pi/180] * 7 + [0.5, 0.5] * 5
-        max_force = [110] * 7 + [10, 10] * 5
-        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [100 for _ in range(10)]
+        drive_type = ["angular"] * 22
+        default_dof_pos = [math.degrees(x) for x in [-0.4882, -0.5160,  0.1176,  2.5050,  2.3009, -0.5262,  2.4023]] + [0. for _ in range(15)]
+        stiffness = [600*np.pi/180] * 7 + [30, 30, 30] * 5
+        damping = [90*np.pi/180] * 7 + [10, 10, 10] * 5
+        max_force = [110] * 7 + [10, 10, 10] * 5
+        max_velocity =  [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] +  [100 for _ in range(15)]
 
         # STICK WITH THE URDF DRIVE PARAMETERS
 
@@ -98,7 +105,7 @@ class DianaTekken(Robot):
                 max_velocity[i]
             )
 
-        self._setup_tendons()
+        # self._setup_tendons()
     
     def _setup_tendons(self, use_limits=False):
         tendon_root_paths = [
@@ -112,7 +119,8 @@ class DianaTekken(Robot):
             "Right_Middle_Phamed/Right_Middle_3",
             "Right_Ring_Phamed/Right_Ring_3",
             "Right_Little_Phamed/Right_Little_3",
-            "Right_Thumb_Phamed/Right_Thumb_3"]
+            "Right_Thumb_Phamed/Right_Thumb_3"
+            ]
     
         tendon_gearing = [-0.00805, 0.00805]
         tendon_force_coeff = [1, 1]  
@@ -126,8 +134,8 @@ class DianaTekken(Robot):
             rootApi = PhysxSchema.PhysxTendonAxisRootAPI.Apply(root_joint_prim, tendon_names[i])
             rootAxisApi = PhysxSchema.PhysxTendonAxisAPI(rootApi, tendon_names[i])
 
-            rootApi.CreateStiffnessAttr().Set(5)
-            rootApi.CreateDampingAttr().Set(0.5)
+            rootApi.CreateStiffnessAttr().Set(10)
+            rootApi.CreateDampingAttr().Set(2)
             # rootApi.CreateLimitStiffnessAttr().Set(0.5)
             rootAxisApi.CreateGearingAttr().Set([tendon_gearing[0]])
             rootAxisApi.CreateForceCoefficientAttr().Set([tendon_force_coeff[0]])
