@@ -109,7 +109,7 @@ def parse_hydra_configs(cfg: DictConfig):
             actions = (action_high - action_low) * torch.rand(env.num_envs, env.action_space.shape[0], device=task.rl_device) - action_high
             actions=torch.zeros((env.num_envs, env.action_space.shape[0]), device=task.rl_device)
             
-            actions[:, 0] = 0.8
+            actions[:, 1] = -0.8 if num_frames < 20 else 0.8
             actions[:, 6] = 1
 
 

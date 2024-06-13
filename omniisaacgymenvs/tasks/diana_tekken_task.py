@@ -52,7 +52,7 @@ class DianaTekkenTask(RLTask):
         self.dt = self._task_cfg["sim"]["dt"]
 
         self._num_observations = 38
-        if not hasattr(self, '_num_actions'): self._num_actions = 7 # If the number of actions has been defined from a child
+        if not hasattr(self, '_num_actions'): self._num_actions = 8 # If the number of actions has been defined from a child
 
 
         RLTask.__init__(self, name, env)
@@ -248,7 +248,7 @@ class DianaTekkenTask(RLTask):
 
         self.actions = actions.clone().to(self._device)
          
-        joints_ref = self.actions[:, 6:] * self.joint_action_scale * self.dt
+        # joints_ref = self.actions[:, 6:] * self.joint_action_scale * self.dt
 
         # 6D Pose is Delta pos, Delta rot in tool reference rame
         # pos_ref_local = self.actions[:, :3] * self.ik_action_scale
@@ -264,24 +264,25 @@ class DianaTekkenTask(RLTask):
         # rot_error_world = self.orientation_error(rot_ref_world, self.hand_rot)
 
         # 6D Pose is Delta pos, Delta rot in world reference rame
-        pos_error_world = self.actions[:, :3] * self.ik_action_scale * self.dt
-        rot_error_world = self.actions[:, 3:6] * self.ik_action_scale * self.dt
+        # pos_error_world = self.actions[:, :3] * self.ik_action_scale * self.dt
+        # rot_error_world = self.actions[:, 3:6] * self.ik_action_scale * self.dt
 
         # Get the jacobian of the EE
-        jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
+        # jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
 
 
 
-        dpose = torch.cat([pos_error_world, rot_error_world], -1).unsqueeze(-1)  # (num_envs,6,1)
-        delta_action = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
+        # dpose = torch.cat([pos_error_world, rot_error_world], -1).unsqueeze(-1)  # (num_envs,6,1)
+        # delta_action = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
 
-        self._robot_dof_targets[:, self._robots.actuated_diana_dof_indices] += delta_action
-        self._robot_dof_targets[:, self._robots.actuated_finger_dof_indices] += joints_ref
+        # self._robot_dof_targets[:, self._robots.actuated_diana_dof_indices] += delta_action
+        self._robot_dof_targets[:, self._robots.actuated_dof_indices] += self.actions * self.dt * self.joint_action_scale
         
         self._robot_dof_targets = self._robots.clamp_joint0_joint1_joint2(self._robot_dof_targets)
 
         self._robot_dof_targets[:, self.actuated_dof_indices] = tensor_clamp(self._robot_dof_targets[:, self.actuated_dof_indices], self._robot_dof_lower_limits[self.actuated_dof_indices], self._robot_dof_upper_limits[self.actuated_dof_indices])
         env_ids_int32 = torch.arange(self._robots.count, dtype=torch.int32, device=self._device)
+        
         self._robots.set_joint_position_targets(self._robot_dof_targets, indices=env_ids_int32)
 
         # print(self._robots.get_joint_positions()[:, :7])
