@@ -521,8 +521,7 @@ class DianaTekkenTask(RLTask):
         #                              torch.ones_like(self.reset_buf), self.reset_buf) #Doesn't work on gpu
 
     def get_extras(self):
-        self.extras["success"] = torch.count_nonzero(torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 ))
-        self.extras["success_ratio"] = self.extras["success"] / self.num_envs
+        self.extras["success"] = torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 )
 
     def cm_bool_to_manipulability(self, cm, TOL=1e-3):
         thumb_contact_idxs = [0, 1, 2]
