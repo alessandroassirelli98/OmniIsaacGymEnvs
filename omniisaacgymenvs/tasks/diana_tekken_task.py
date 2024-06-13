@@ -183,7 +183,8 @@ class DianaTekkenTask(RLTask):
         self.actuated_dof_indices = self._robots.actuated_dof_indices
         self.num_actuated_dofs = len(self.actuated_dof_indices)
         # 0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300
-        self.default_dof_pos = torch.tensor([ 0.2782, -0.3680, -0.3825,  2.2931,  2.8813, -0.3066,  1.6716]  + [0.] * 20, device=self._device)
+        # 0.2782, -0.3680, -0.3825,  2.2931,  2.8813, -0.3066,  1.6716
+        self.default_dof_pos = torch.tensor([0.3311, -0.8079, -0.4242,  2.2495,  2.7821,  0.0904,  1.6300]  + [0.] * 20, device=self._device)
         pos = self.default_dof_pos.unsqueeze(0) * torch.ones((self._num_envs, self.num_diana_tekken_dofs), device=self._device)
 
         self._robot_dof_targets = pos
