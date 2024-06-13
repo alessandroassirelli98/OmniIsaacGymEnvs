@@ -490,8 +490,8 @@ class DianaTekkenTask(RLTask):
         reward = torch.where(torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 ), reward + self.goal_achieved, reward)
         
         # If the drill is out of bound
-        reward = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
-        reward = torch.where(torch.any(self.drill_pos <= self._drill_reset_lower_bound, dim=1), reward - self.fail_penalty, reward)
+        # reward = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
+        # reward = torch.where(torch.any(self.drill_pos <= self._drill_reset_lower_bound, dim=1), reward - self.fail_penalty, reward)
 
         # If the hand is out of bound
         reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
@@ -507,8 +507,8 @@ class DianaTekkenTask(RLTask):
         self.reset_buf = torch.where(self.progress_buf >= self._max_episode_length - 1, torch.ones_like(self.reset_buf), self.reset_buf)
 
         # If the drill is out of bound
-        self.reset_buf = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
-        self.reset_buf = torch.where(torch.any(self.drill_pos <= self._drill_reset_lower_bound, dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
+        # self.reset_buf = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
+        # self.reset_buf = torch.where(torch.any(self.drill_pos <= self._drill_reset_lower_bound, dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
 
         # # # If the hand is out of bound
         self.reset_buf = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), torch.ones_like(self.reset_buf), self.reset_buf)
