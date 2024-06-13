@@ -96,7 +96,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["sacfd "],
-                                     "project": "pick up trial 7 DOF with ik"}
+                                     "project": "pick up trial 7 DOF with ik cut"}
 
 agent = SAC(models=models,
             memory=memory,
@@ -143,3 +143,7 @@ for tstep in episode:
 
 # start training
 trainer.train()
+
+# path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-06-13_19-16-21-970876_SAC/checkpoints/best_agent.pt"
+# agent.load(path)
+# trainer.eval()
