@@ -75,7 +75,15 @@ class DianaTekkenManualControlTask(DianaTekkenTask):
         else:
             joint_targets = - torch.ones(len(self._robots.actuated_finger_dof_indices), device=self._device) * 0.8
 
-        action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0), joint_targets.unsqueeze(0)], dim=1)
+        pos_error_world = delta_pos * self.ik_action_scale * self.dt
+        rot_error_world = delta_rot * self.ik_action_scale * self.dt 
+        jeef = self._robots.get_jacobians()[:, self.ee_idx, :, :7]
+
+        dpose = torch.cat([pos_error_world, rot_error_world], -1).unsqueeze(-1)  # (num_envs,6,1)
+        delta_action = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7) / (self.dt * self.joint_action_scale)
+
+
+        action = torch.cat([delta_action, joint_targets.unsqueeze(0)], dim=1)
 
         super().pre_physics_step(action)
 
