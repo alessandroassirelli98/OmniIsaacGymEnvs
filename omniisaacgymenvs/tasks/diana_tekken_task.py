@@ -51,7 +51,8 @@ class DianaTekkenTask(RLTask):
 
         self.dt = self._task_cfg["sim"]["dt"]
 
-        self._num_observations = 38
+        self._num_observations = 34
+
         if not hasattr(self, '_num_actions'): self._num_actions = 7 # If the number of actions has been defined from a child
 
 
@@ -369,11 +370,11 @@ class DianaTekkenTask(RLTask):
         self.obs_buf[:, 11:15] = self.hand_rot
         self.obs_buf[:, 15:18] = self.drill_pos
         self.obs_buf[:, 18:22] = self.drill_rot
-        self.obs_buf[:, 22:25] = self.hand_in_drill_pos
-        self.obs_buf[:, 25:29] = self.hand_in_drill_rot
-        self.obs_buf[:, 29:30] = self.manipulability.unsqueeze(1)
+        self.obs_buf[:, 22:25] = self.hand_in_drill_pos - self._ref_grasp_in_drill_pos
+        self.obs_buf[:, 25:26] = self.manipulability.unsqueeze(1)
         # self.obs_buf[:, 34:37] = self.target_sphere_pos
-        self.obs_buf[:, 30:38] = dof_vel[:, self._robots.actuated_dof_indices]
+        self.obs_buf[:, 26:34] = dof_vel[:, self._robots.actuated_dof_indices]
+
 
         # self.obs_buf[:, 41:68] = dof_vel
         # # implement logic to retrieve observation states
@@ -539,7 +540,7 @@ class DianaTekkenTask(RLTask):
                                            torch.count_nonzero(res, dim=1), 0.)
 
     def add_reward_term(self, d, reward, w=1):
-        return reward - (d ** 2) * w
+        return reward - torch.tanh(d ** 2) * w
     
     def control_ik(self, j_eef, dpose, num_envs, num_dofs, damping=0.05):
         """Solve with Gauss Newton approx and regularizationin Isaac Gym.

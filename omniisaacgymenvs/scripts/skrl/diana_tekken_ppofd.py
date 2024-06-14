@@ -141,7 +141,7 @@ cfg["commit_hash"] = commit_hash
 cfg["nn_type"] = "SeparateNetworks"
 
 cfg["pretrain"] = False
-cfg["pretrainer_epochs"] = 100
+cfg["pretrainer_epochs"] = 5
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 8

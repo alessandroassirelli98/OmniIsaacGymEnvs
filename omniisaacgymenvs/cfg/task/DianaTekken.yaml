@@ -19,10 +19,10 @@ env:
   fail_penalty: 500
   goal_achieved: 250
   goal_orientation_prize: 0.5
-  manipulability_prize: 0.1
-  hand_drill_pos_weight: 1.
-  hand_drill_rot_weight: 0.8
-  distance_to_target_weight: 1.
+  manipulability_prize: 0.002
+  hand_drill_pos_weight: 0.2
+  hand_drill_rot_weight: 0.2
+  distance_to_target_weight: 0.2
   orientation_weight: 0.2
 
   jointActionScale: 2.5
