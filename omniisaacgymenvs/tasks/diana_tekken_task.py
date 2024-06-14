@@ -455,7 +455,7 @@ class DianaTekkenTask(RLTask):
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = self.add_reward_term(d, reward, self.hand_drill_pos_weight)
-        # reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
+        reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
@@ -539,7 +539,7 @@ class DianaTekkenTask(RLTask):
                                            torch.count_nonzero(res, dim=1), 0.)
 
     def add_reward_term(self, d, reward, w=1):
-        return reward - torch.tanh(d ** 2) * w
+        return reward - (d ** 2) * w
     
     def control_ik(self, j_eef, dpose, num_envs, num_dofs, damping=0.05):
         """Solve with Gauss Newton approx and regularizationin Isaac Gym.
