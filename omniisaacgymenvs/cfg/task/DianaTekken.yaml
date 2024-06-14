@@ -19,7 +19,7 @@ env:
   fail_penalty: 500
   goal_achieved: 250
   goal_orientation_prize: 0.5
-  manipulability_prize: 0.
+  manipulability_prize: 0.001
   hand_drill_pos_weight: 1.
   hand_drill_rot_weight: 0.8
   distance_to_target_weight: 1.
@@ -91,7 +91,7 @@ sim:
     override_usd_defaults: False
     enable_self_collisions: False
     enable_gyroscopic_forces: True
-    make_kinematic: True
+    make_kinematic: False
     # also in stage params
     # per-actor
     sleep_threshold: 0.005
