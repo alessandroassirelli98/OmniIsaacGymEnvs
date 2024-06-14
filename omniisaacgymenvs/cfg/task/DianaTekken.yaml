@@ -16,13 +16,13 @@ env:
 
   controlFrequencyInv: 2 # 60 Hz
 
-  fail_penalty: 300
+  fail_penalty: 500
   goal_achieved: 250
   goal_orientation_prize: 0.5
-  manipulability_prize: 0.05
-  hand_drill_pos_weight: 0.2
-  hand_drill_rot_weight: 0.2
-  distance_to_target_weight: 0.5
+  manipulability_prize: 0.1
+  hand_drill_pos_weight: 1.
+  hand_drill_rot_weight: 0.8
+  distance_to_target_weight: 1.
   orientation_weight: 0.2
 
 
@@ -91,7 +91,7 @@ sim:
     override_usd_defaults: False
     enable_self_collisions: False
     enable_gyroscopic_forces: True
-    make_kinematic: False
+    make_kinematic: True
     # also in stage params
     # per-actor
     sleep_threshold: 0.005
