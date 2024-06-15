@@ -142,7 +142,7 @@ cfg["nn_type"] = "SeparateNetworks"
 
 cfg["lambda_0"] = 0.
 cfg["pretrain"] = False
-cfg["pretrainer_epochs"] = 5
+cfg["pretrainer_epochs"] = 15
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 8
