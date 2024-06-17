@@ -113,7 +113,7 @@ demo_size = len(episode)
 
 transitions = []
 mem_idx = 0
-env_id = 0
+env_id = 0  
 for i, tstep in enumerate(episode):
     if i == (len(episode) // env.num_envs) * env.num_envs:
         break
@@ -137,6 +137,7 @@ for i, tstep in enumerate(episode):
     if env_id == env.num_envs:
         env_id = 0
         mem_idx += 1
-
+print(len(transitions))
 # start training
+
 trainer.train()

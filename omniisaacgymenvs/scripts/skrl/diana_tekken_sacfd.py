@@ -115,8 +115,10 @@ trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 transitions = []
 mem_idx = 0
-env_id = 0
-for tstep in episode:
+env_id = 0  
+for i, tstep in enumerate(episode):
+    if i == (len(episode) // env.num_envs) * env.num_envs:
+        break
     states = torch.tensor(tstep["states"], device=device)
     actions = torch.tensor(tstep["actions"], device=device)
     rewards = torch.tensor(tstep["rewards"], device=device)
@@ -130,16 +132,14 @@ for tstep in episode:
     dict["terminated"] = terminated
     transitions.append(dict)
 
-    memory._tensor_states[mem_idx, env_id, :] = states
-    memory._tensor_actions[mem_idx, env_id, :] = actions
-    memory._tensor_rewards[mem_idx, env_id, :] = rewards
-    memory._tensor_terminated[mem_idx, env_id, :] = terminated
-    memory._tensor_next_states[mem_idx, env_id, :] = next_states
+    memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,
+                                    terminated=terminated, truncated=terminated)
 
     env_id += 1
     if env_id == env.num_envs:
         env_id = 0
         mem_idx += 1
+print(len(transitions))
 
 # start training
 trainer.train()
