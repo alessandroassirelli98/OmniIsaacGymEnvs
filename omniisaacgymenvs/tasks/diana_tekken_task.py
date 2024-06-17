@@ -44,6 +44,9 @@ class DianaTekkenTask(RLTask):
         self.distance_to_target_weight = self._task_cfg["env"]["distance_to_target_weight"]
         self.orientation_weight = self._task_cfg["env"]["orientation_weight"]
 
+        self.reward_terms_log = {}
+        self.reward_weights_log = {}
+
         self.ee_idx = 14  # Index of link 7 (tool)
 
 
@@ -456,26 +459,42 @@ class DianaTekkenTask(RLTask):
         # Distance hand to drill grasp pos
         d = torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1)
         reward = self.add_reward_term(d, reward, self.hand_drill_pos_weight)
+        self.reward_terms_log["hand_dist_to_ref"] = - torch.tanh(d ** 2)
+        self.reward_weights_log["hand_dist_to_ref"] = self.hand_drill_pos_weight
+
         reward = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, reward + 0.05, reward)
+        self.reward_terms_log["dist_prize"] = torch.where(torch.norm(self.hand_in_drill_pos - self._ref_grasp_in_drill_pos, p=2, dim=1) < 0.05, 0.05, 0)
+        self.reward_weights_log["dist_prize"] = 1
 
         # rotation difference
         d = quat_diff_rad(self.hand_in_drill_rot, self._ref_grasp_in_drill_rot)
         reward = self.add_reward_term(d, reward, self.hand_drill_rot_weight)
+        self.reward_terms_log["hand_rot_diff_to_ref"] = - torch.tanh(d ** 2)
+        self.reward_weights_log["hand_rot_diff_to_ref"] = self.hand_drill_rot_weight
+
         # print(d)
 
         # Distance to target height
         d = torch.abs(0.7 - self.drill_pos[:, 2])
         reward = self.add_reward_term(d, reward, self.distance_to_target_weight)
+        self.reward_terms_log["drill_dist_to_ref"] = - torch.tanh(d ** 2)
+        self.reward_weights_log["drill_dist_to_ref"] = self.distance_to_target_weight
 
         # Orientation cost
         d = quat_diff_rad(self.drill_zero_rot, self.drill_rot)
         reward = self.add_reward_term(d, reward, self.orientation_weight)
+        self.reward_terms_log["drill_rot_diff_to_ref"] = - torch.tanh(d ** 2)
+        self.reward_weights_log["drill_rot_diff_to_ref"] = self.orientation_weight
+
 
         # reward = torch.where(torch.logical_and(d < 0.15, self.drill_pos[:, 2] > 0.7), reward + self.goal_orientation_prize, reward)
 
         # cm = self._drills.get_contact_force_matrix()
         # self.cm_bool_to_manipulability(cm)
         reward += (self.manipulability - 15) * self.manipulability_prize
+        self.reward_terms_log["manipulability"] = (self.manipulability - 15)
+        self.reward_weights_log["manipulability"] = self.manipulability_prize
+
         # print(self.manipulability)
         # print(max(self.manipulability * manipulability_prize))
         # print(reward)
@@ -489,6 +508,8 @@ class DianaTekkenTask(RLTask):
 
         # Prize if goal achieved
         reward = torch.where(torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 ), reward + self.goal_achieved, reward)
+        self.reward_terms_log["goal_achieved"] = torch.where(torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 ), self.goal_achieved, 0)
+        self.reward_weights_log["goal_achieved"] = 1
         
         # If the drill is out of bound
         # reward = torch.where(torch.any(self.drill_pos[:, :2] >= self._drill_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
@@ -497,6 +518,7 @@ class DianaTekkenTask(RLTask):
         # If the hand is out of bound
         reward = torch.where(torch.any(self.hand_pos[:, :2] >= self._hand_upper_bound[:2], dim=1), reward - self.fail_penalty, reward)
         reward = torch.where(torch.any(self.hand_pos[:, :2] <= self._hand_lower_bound[:2], dim=1), reward - self.fail_penalty, reward)
+
         # print(reward)
         
 
@@ -524,6 +546,8 @@ class DianaTekkenTask(RLTask):
 
     def get_extras(self):
         self.extras["success"] = torch.logical_and(self.drill_pos[:, 2] > 0.7, self.manipulability > 0.5 )
+        self.extras["rew_terms"] = self.reward_terms_log
+        self.extras["rew_weights"] = self.reward_weights_log
 
     def cm_bool_to_manipulability(self, cm, TOL=1e-3):
         thumb_contact_idxs = [0, 1, 2]
