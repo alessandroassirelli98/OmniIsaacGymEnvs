@@ -36,18 +36,16 @@ class StochasticActor(GaussianMixin, Model):
         Model.__init__(self, observation_space, action_space, device)
         GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction)
 
-        self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
-                                 nn.ELU(),
-                                 nn.Linear(256, 128),
-                                 nn.ELU(),
-                                 nn.Linear(128, 64),
-                                 nn.ELU())
-                                 
-        self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions), nn.Tanh())
+        self.net = nn.Sequential(nn.Linear(self.num_observations, 512),
+                                 nn.ReLU(),
+                                 nn.Linear(512, 256),
+                                 nn.ReLU(),
+                                 nn.Linear(256, self.num_actions),
+                                 nn.Tanh())
         self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions))
 
     def compute(self, inputs, role):
-        return self.mean_layer(self.net(inputs["states"])), self.log_std_parameter, {}
+        return self.net(inputs["states"]), self.log_std_parameter, {}
     
     def reset_std(self):
         with torch.no_grad():
@@ -62,17 +60,14 @@ class Critic(DeterministicMixin, Model):
         Model.__init__(self, observation_space, action_space, device)
         DeterministicMixin.__init__(self, clip_actions)
 
-        self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
-                                nn.ELU(),
-                                 nn.Linear(256, 128),
-                                 nn.ELU(),
-                                 nn.Linear(128, 64),
-                                 nn.ELU()
-                                 )
-        self.value_layer = nn.Linear(64, 1)
+        self.net = nn.Sequential(nn.Linear(self.num_observations + self.num_actions, 512),
+                                 nn.ReLU(),
+                                 nn.Linear(512, 256),
+                                 nn.ReLU(),
+                                 nn.Linear(256, 1))
 
     def compute(self, inputs, role):
-        return self.value_layer(self.net(inputs["states"])), {}   
+        return self.net(torch.cat([inputs["states"], inputs["taken_actions"]], dim=1)), {}
 
 class Shared(GaussianMixin, DeterministicMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False,
@@ -84,16 +79,12 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
         self.net = nn.Sequential(nn.Linear(self.num_observations, 512),
                                  nn.ELU(),
                                  nn.Linear(512, 256),
-                                 nn.ELU(),
-                                 nn.Linear(256, 128),
-                                 nn.ELU(),
-                                 nn.Linear(128, 64),
-                                 nn.ELU())
+        )
 
-        self.mean_layer = nn.Sequential(nn.Linear(64, self.num_actions), nn.Tanh())
+        self.mean_layer = nn.Sequential(nn.Linear(256, self.num_actions), nn.Tanh())
         self.log_std_parameter = nn.Parameter(torch.zeros(self.num_actions))
 
-        self.value_layer = nn.Linear(64, 1)
+        self.value_layer = nn.Linear(256, 1)
 
     def act(self, inputs, role):
         if role == "policy":
@@ -140,7 +131,6 @@ cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "SeparateNetworks"
 
-cfg["lambda_0"] = 0.
 cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 15
 cfg["pretrainer_lr"] = 1e-3
@@ -175,7 +165,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
-                                     "project": "pick up trial 7 DOF with ik cut"}
+                                     "project": "pick up trial 7 DOF with ik cut ppo analysis"}
 
 ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
 algo_config = parse_arguments(ignore_args)
@@ -230,7 +220,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 80000}
+cfg_trainer = {"timesteps": 50000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # demonstrations injection

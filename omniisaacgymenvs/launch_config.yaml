@@ -1,4 +1,4 @@
 configurations:
 ### PPO
-  - pretrain: [False, True]
-  - nn_type: [SharedNetworks, SeparatedNetworks]
+  - nn_type: [SharedNetworks, SeparateNetworks]
+  - reward_shaper: [True, False]
