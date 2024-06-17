@@ -84,8 +84,8 @@ cfg["discount_factor"] = 0.99
 cfg["polyak"] = 0.005
 cfg["actor_learning_rate"] = 5e-4
 cfg["critic_learning_rate"] = 5e-4
-cfg["random_timesteps"] = 80
-cfg["learning_starts"] = 80
+cfg["random_timesteps"] = 0
+cfg["learning_starts"] = 0
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
@@ -114,7 +114,9 @@ demo_size = len(episode)
 transitions = []
 mem_idx = 0
 env_id = 0
-for tstep in episode:
+for i, tstep in enumerate(episode):
+    if i == (len(episode) // env.num_envs) * env.num_envs:
+        break
     states = torch.tensor(tstep["states"], device=device)
     actions = torch.tensor(tstep["actions"], device=device)
     rewards = torch.tensor(tstep["rewards"], device=device)
@@ -128,11 +130,8 @@ for tstep in episode:
     dict["terminated"] = terminated
     transitions.append(dict)
 
-    memory._tensor_states[mem_idx, env_id, :] = states
-    memory._tensor_actions[mem_idx, env_id, :] = actions
-    memory._tensor_rewards[mem_idx, env_id, :] = rewards
-    memory._tensor_terminated[mem_idx, env_id, :] = terminated
-    memory._tensor_next_states[mem_idx, env_id, :] = next_states
+    memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,
+                                    terminated=terminated, truncated=terminated)
 
     env_id += 1
     if env_id == env.num_envs:
