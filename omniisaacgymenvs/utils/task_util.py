@@ -49,6 +49,7 @@ def import_tasks(cfg):
     from omniisaacgymenvs.tasks.warp.ant import AntLocomotionTask as AntLocomotionTaskWarp
     from omniisaacgymenvs.tasks.warp.cartpole import CartpoleTask as CartpoleTaskWarp
     from omniisaacgymenvs.tasks.warp.humanoid import HumanoidLocomotionTask as HumanoidLocomotionTaskWarp
+    from omniisaacgymenvs.tasks.franka_manual_control import FrankaManualTask
 
     if (cfg["task_name"] == "DianaTekkenManualControl"):
         from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
@@ -75,6 +76,7 @@ def import_tasks(cfg):
         "ShadowHandOpenAI_FF": ShadowHandTask,
         "ShadowHandOpenAI_LSTM": ShadowHandTask,
         "DianaTekken": DianaTekkenTask,
+        "FrankaManual": FrankaManualTask
     }
     if (cfg["task_name"] == "DianaTekkenManualControl"):
         task_map["DianaTekkenManualControl"] = DianaTekkenManualControlTask
