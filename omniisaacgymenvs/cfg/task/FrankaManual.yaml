@@ -30,6 +30,7 @@ env:
   fingerDistRewardScale: 100.0
   actionPenaltyScale: 0.01
   fingerCloseRewardScale: 10.0
+  goalAchievedBonus: 250
 
 sim:
   dt: 0.0083 # 1/120 s

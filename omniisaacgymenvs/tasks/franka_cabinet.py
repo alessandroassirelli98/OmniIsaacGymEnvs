@@ -47,6 +47,9 @@ class FrankaCabinetTask(RLTask):
         self._cfg = sim_config.config
         self._task_cfg = sim_config.task_config
 
+        self.reward_terms_log = {}
+        self.reward_weights_log = {}
+
         self._num_envs = self._task_cfg["env"]["numEnvs"]
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
 
@@ -58,13 +61,31 @@ class FrankaCabinetTask(RLTask):
         self.num_props = self._task_cfg["env"]["numProps"]
 
         self.dof_vel_scale = self._task_cfg["env"]["dofVelocityScale"]
+
         self.dist_reward_scale = self._task_cfg["env"]["distRewardScale"]
+        self.reward_weights_log["distReward"] =  self._task_cfg["env"]["distRewardScale"]
+
         self.rot_reward_scale = self._task_cfg["env"]["rotRewardScale"]
+        self.reward_weights_log["rotReward"] = self._task_cfg["env"]["rotRewardScale"]
+        
         self.around_handle_reward_scale = self._task_cfg["env"]["aroundHandleRewardScale"]
+        self.reward_weights_log["aroundHandleReward"] = self._task_cfg["env"]["aroundHandleRewardScale"]
+
         self.open_reward_scale = self._task_cfg["env"]["openRewardScale"]
+        self.reward_weights_log["openReward"] = self._task_cfg["env"]["openRewardScale"]
+
         self.finger_dist_reward_scale = self._task_cfg["env"]["fingerDistRewardScale"]
+        self.reward_weights_log["fingerDistReward"] = self._task_cfg["env"]["fingerDistRewardScale"]
+
         self.action_penalty_scale = self._task_cfg["env"]["actionPenaltyScale"]
+        self.reward_weights_log["actionPenalty"] = self._task_cfg["env"]["actionPenaltyScale"]
+
+
         self.finger_close_reward_scale = self._task_cfg["env"]["fingerCloseRewardScale"]
+        self.reward_weights_log["fingerCloseReward"] = self._task_cfg["env"]["fingerCloseRewardScale"]
+
+
+        self.goal_achieved_bonus = self._task_cfg["env"]["goalAchievedBonus"]
 
     def set_up_scene(self, scene) -> None:
         self.get_franka()
@@ -476,8 +497,9 @@ class FrankaCabinetTask(RLTask):
         lfinger_dist = torch.abs(franka_lfinger_pos[:, 1] - drill_grasp_pos[:, 1])
         rfinger_dist = torch.abs(franka_rfinger_pos[:, 1] - drill_grasp_pos[:, 1])
         finger_dist_reward = torch.where(
-            d < 0.04, (0.04 - lfinger_dist) + (0.04 - rfinger_dist), finger_dist_reward)
+            d < 0.03, (0.04 - lfinger_dist) + (0.04 - rfinger_dist), finger_dist_reward)
         
+
         finger_close_reward = torch.zeros_like(rot_reward)
         finger_close_reward = torch.where(
             d <= 0.03, (0.04 - joint_positions[:, 7]) + (0.04 - joint_positions[:, 8]), finger_close_reward
@@ -487,7 +509,7 @@ class FrankaCabinetTask(RLTask):
         action_penalty = torch.sum(actions**2, dim=-1)
 
         # how far the cabinet has been opened out
-        open_reward = 1 / (1 + torch.norm((0.6 - drill_pos[:, 2]), p=2, dim=-1) **2) * around_handle_reward
+        open_reward = 1 / (1 + torch.abs((0.6 - drill_pos[:, 2])) **2)
 
         rewards = (
             dist_reward_scale * dist_reward
@@ -499,9 +521,17 @@ class FrankaCabinetTask(RLTask):
             + finger_close_reward * finger_close_reward_scale
         )
 
+        self.reward_terms_log["distReward"] = dist_reward
+        self.reward_terms_log["rotReward"] = rot_reward
+        self.reward_terms_log["aroundHandleReward"] = around_handle_reward
+        self.reward_terms_log["openReward"] = open_reward
+        self.reward_terms_log["fingerDistReward"] = finger_dist_reward
+        self.reward_terms_log["actionPenalty"] = action_penalty
+        self.reward_terms_log["fingerCloseReward"] = finger_close_reward
+
+
         # bonus for opening drawer properly
-        rewards = torch.where(drill_pos[:, 2] > 0.56, around_handle_reward , rewards)
-        rewards = torch.where(drill_pos[:, 2] > 0.6, 2.0 * around_handle_reward , rewards)
+        rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + self.goal_achieved_bonus , rewards)
 
         # # prevent bad style in opening drawer
         # rewards = torch.where(franka_lfinger_pos[:, 0] < drawer_grasp_pos[:, 0] - distX_offset,
@@ -510,3 +540,8 @@ class FrankaCabinetTask(RLTask):
         #                       torch.ones_like(rewards) * -1, rewards)
 
         return rewards
+    
+    def get_extras(self):
+        self.extras["success"] = self.drill_pos[:, 2] > 0.6
+        self.extras["rew_terms"] = self.reward_terms_log
+        self.extras["rew_weights"] = self.reward_weights_log
