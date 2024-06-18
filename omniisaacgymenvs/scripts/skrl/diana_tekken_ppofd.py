@@ -60,14 +60,14 @@ class Critic(DeterministicMixin, Model):
         Model.__init__(self, observation_space, action_space, device)
         DeterministicMixin.__init__(self, clip_actions)
 
-        self.net = nn.Sequential(nn.Linear(self.num_observations + self.num_actions, 512),
+        self.net = nn.Sequential(nn.Linear(self.num_observations, 512),
                                  nn.ReLU(),
                                  nn.Linear(512, 256),
                                  nn.ReLU(),
                                  nn.Linear(256, 1))
 
     def compute(self, inputs, role):
-        return self.net(torch.cat([inputs["states"], inputs["taken_actions"]], dim=1)), {}
+        return self.net(inputs["states"]), {}
 
 class Shared(GaussianMixin, DeterministicMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False,
