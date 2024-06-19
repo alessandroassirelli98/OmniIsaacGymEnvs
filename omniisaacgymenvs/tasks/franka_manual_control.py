@@ -67,9 +67,9 @@ class FrankaManualTask(FrankaCabinetTask):
 
         # This can be 0. or 1. I check 0.5 just because of floating point
         if actions[-1] >= 0.5:
-            gripper = torch.tensor([1., 1.], device=self._device).unsqueeze(0)
+            gripper = torch.tensor([1., 1., 1., 1., 1.], device=self._device).unsqueeze(0)
         else:
-            gripper = torch.tensor([-1., -1.], device=self._device).unsqueeze(0)
+            gripper = torch.tensor([-1., -1., -1., -1., -1.], device=self._device).unsqueeze(0)
 
         # action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0), joint_targets.unsqueeze(0)], dim=1)
 
@@ -81,6 +81,7 @@ class FrankaManualTask(FrankaCabinetTask):
 
         
         action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0),gripper], dim=1)
+        
 
         super().pre_physics_step(action)
 

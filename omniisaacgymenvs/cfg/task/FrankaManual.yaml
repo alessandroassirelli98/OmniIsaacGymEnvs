@@ -7,7 +7,7 @@ physics_engine: ${..physics_engine}
 env:
   numEnvs: ${resolve_default:4096,${...num_envs}}
   envSpacing: 3.0
-  episodeLength: 500
+  episodeLength: 5000
   enableDebugVis: False
 
   clipObservations: 5.0
@@ -129,3 +129,4 @@ sim:
     rest_offset: 0.0
   drill:
     make_kinematic: True
+    mass: 0.1

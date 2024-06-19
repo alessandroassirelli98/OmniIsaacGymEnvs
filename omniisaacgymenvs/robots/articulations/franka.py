@@ -41,7 +41,7 @@ class Franka(Robot):
             assets_root_path = get_assets_root_path()
             if assets_root_path is None:
                 carb.log_error("Could not find Isaac Sim assets folder")
-            self._usd_path = assets_root_path + "/Isaac/Robots/Franka/franka_instanceable.usd"
+            # self._usd_path = assets_root_path + "/Isaac/Robots/Franka/franka_instanceable.usd"
 
         add_reference_to_stage(self._usd_path, prim_path)
 
@@ -61,16 +61,33 @@ class Franka(Robot):
             "panda_link4/panda_joint5",
             "panda_link5/panda_joint6",
             "panda_link6/panda_joint7",
-            "panda_hand/panda_finger_joint1",
-            "panda_hand/panda_finger_joint2",
+
+            "tekken/Right_Index_Basecover/Right_Index_1",
+            "tekken/Right_Middle_Basecover/Right_Middle_1",
+            "tekken/Right_Ring_Basecover/Right_Ring_1",
+            "tekken/Right_Little_Basecover/Right_Little_1",
+            "tekken/Right_Thumb_Basecover/Right_Thumb_1",
+
+            "tekken/Right_Index_Phaprox/Right_Index_2",
+            "tekken/Right_Middle_Phaprox/Right_Middle_2",
+            "tekken/Right_Ring_Phaprox/Right_Ring_2",
+            "tekken/Right_Little_Phaprox/Right_Little_2",
+            "tekken/Right_Thumb_Phaprox/Right_Thumb_2",
+
+            "tekken/Right_Index_Phamed/Right_Index_3",
+            "tekken/Right_Middle_Phamed/Right_Middle_3",
+            "tekken/Right_Ring_Phamed/Right_Ring_3",
+            "tekken/Right_Little_Phamed/Right_Little_3",
+            "tekken/Right_Thumb_Phamed/Right_Thumb_3"
         ]
 
-        drive_type = ["angular"] * 7 + ["linear"] * 2
-        default_dof_pos = [math.degrees(x) for x in [0.0, -1.0, 0.0, -2.2, 0.0, 2.4, 0.8]] + [0.02, 0.02]
-        stiffness = [400 * np.pi / 180] * 7 + [10000] * 2
-        damping = [80 * np.pi / 180] * 7 + [100] * 2
-        max_force = [87, 87, 87, 87, 12, 12, 12, 200, 200]
-        max_velocity = [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] + [0.2, 0.2]
+        drive_type = ["angular"] * 22
+        default_dof_pos = [math.degrees(x) for x in [0.0, -1.0, 0.0, -2.2, 0.0, 2.4, 0.8]] + [0.] * 15
+        stiffness = [800 * np.pi / 180] * 7 + [400 * np.pi / 180] * 15
+        damping = [160 * np.pi / 180] * 7 + [80 * np.pi / 180] * 15
+        # max_force = [87, 87, 87, 87, 12, 12, 12]+  [200, 200, 200] * 5
+        max_force = [100, 100, 100, 100, 100, 100, 100]+  [200, 200, 200] * 5
+        max_velocity = [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] + [100.] * 15
 
         for i, dof in enumerate(dof_paths):
             set_drive(
