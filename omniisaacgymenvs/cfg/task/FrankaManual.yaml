@@ -25,15 +25,16 @@ env:
   dofVelocityScale: 0.1
   ikVelocity: 2.
 
-  distRewardScale: 5.
-  rotRewardScale: 2
+  distRewardScale: 100.
+  rotRewardScale: 2.
   aroundHandleRewardScale: 0.
   openRewardScale: 0.
-  fingerDistRewardScale: 10.
-  actionPenaltyScale: 0.01
+  fingerDistRewardScale: 0.
+  actionPenaltyScale: 0.001
   fingerCloseRewardScale: 10.
+  fingerOpenRewardScale: 10.
   goalAchievedBonus: 0.
-  failPenalty: 0
+  failPenalty: 10
 
 
 sim:

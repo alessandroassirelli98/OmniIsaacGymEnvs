@@ -88,6 +88,9 @@ class FrankaCabinetTask(RLTask):
         self.finger_close_reward_scale = self._task_cfg["env"]["fingerCloseRewardScale"]
         self.reward_weights_log["fingerCloseReward"] = self._task_cfg["env"]["fingerCloseRewardScale"]
 
+        self.finger_open_reward_scale = self._task_cfg["env"]["fingerOpenRewardScale"]
+        self.reward_weights_log["fingerOpenReward"] = self._task_cfg["env"]["fingerOpenRewardScale"]
+
         self.fail_penalty = self._task_cfg["env"]["failPenalty"]
 
 
@@ -429,6 +432,7 @@ class FrankaCabinetTask(RLTask):
             self._max_episode_length,
             self.franka_dof_pos,
             self.finger_close_reward_scale,
+            self.finger_open_reward_scale,
         )
 
     def is_done(self) -> None:
@@ -486,6 +490,7 @@ class FrankaCabinetTask(RLTask):
         max_episode_length,
         joint_positions,
         finger_close_reward_scale,
+        finger_open_reward_scale,
     ):
 
         # distance from hand to the drawer
@@ -528,10 +533,15 @@ class FrankaCabinetTask(RLTask):
         #     finger_dist_reward)
         
 
-        # finger_close_reward = torch.zeros_like(rot_reward)
-        # finger_close_reward = torch.where(
-        #     d <= 0.04, (0.04 - joint_positions[:, 7]) + (0.04 - joint_positions[:, 8]), finger_close_reward
-        # )
+        finger_close_reward = torch.zeros_like(rot_reward)
+        finger_close_reward = torch.where(
+            d <= 0.04, torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
+        )
+
+        finger_open_reward = torch.zeros_like(rot_reward)
+        finger_open_reward = torch.where(
+            d >= 0.04, -torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_open_reward
+        )
 
 
         # regularization on the actions (summed for each environment)
@@ -547,7 +557,8 @@ class FrankaCabinetTask(RLTask):
             # + open_reward_scale * open_reward
             # + finger_dist_reward_scale * finger_dist_reward
             - action_penalty_scale * action_penalty
-            # + finger_close_reward * finger_close_reward_scale
+            + finger_close_reward * finger_close_reward_scale
+            + finger_open_reward * finger_open_reward_scale
         )
 
         # self.reward_terms_log["distReward"] = dist_reward
