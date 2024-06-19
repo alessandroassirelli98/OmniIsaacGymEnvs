@@ -23,14 +23,14 @@ env:
 
   actionScale: 7.5
   dofVelocityScale: 0.1
-  distRewardScale: 5.
+  distRewardScale: 2.
   rotRewardScale: 0.5
-  aroundHandleRewardScale: 5.
-  openRewardScale: 7.5
+  aroundHandleRewardScale: 3.
+  openRewardScale: 10.
   fingerDistRewardScale: 0.
-  actionPenaltyScale: 0.01
-  fingerCloseRewardScale: 100.0
-  goalAchievedBonus: 2000
+  actionPenaltyScale: 0.
+  fingerCloseRewardScale: 100.
+  goalAchievedBonus: 0.
 
 sim:
   dt: 0.0083 # 1/120 s
@@ -123,3 +123,5 @@ sim:
     # per-shape
     contact_offset: 0.005
     rest_offset: 0.0
+  drill:
+   make_kinematic: False

@@ -51,7 +51,7 @@ def parse_json_demo():
 if __name__ == "__main__":
     e = parse_json_demo()
     expert_len = len(e)
-    which_episode = 2
+    which_episode = 0
 
     ep_ret = []
     r = []
@@ -62,16 +62,17 @@ if __name__ == "__main__":
     for t in range(expert_len):
         done = bool(e[t]["terminated"][0])
         if not done:
-            r.append(pow(0.99, t_) * e[t]["rewards"][0])
+            r.append(e[t]["rewards"][0])
             actions.append(np.array(e[t]["actions"]))
             t_ += 1
 
         else:
-            ep_ret.append(r)
+            ep_ret.append(sum(r))
             r = []
             done = False
             episode_cnt += 1
             t_ = 0
+    print(f'Episodes returns: {ep_ret}')
     print("Average Return: ", np.mean(ep_ret))
     print("Demonstrations length: ", len(e))
     print("Number of Episodes: ", episode_cnt)

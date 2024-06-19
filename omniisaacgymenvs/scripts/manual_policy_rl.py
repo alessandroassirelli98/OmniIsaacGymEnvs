@@ -100,16 +100,16 @@ def parse_hydra_configs(cfg: DictConfig):
     task = initialize_task(cfg_dict, env)
 
     # Saving path
-    # for i in range(15):
-    #     dire = f'{os.getcwd()}{"/demonstrations/data"}'
-    #     file_path = f'{dire}{"/"}{str(i)}{".json"}'
-    #     if not os.path.isfile(file_path):
-    #         print("Saving demonstration in: " + file_path)
-    #         break
-    #     if i == 14:
-    #         print("Directory busy")
-    #         exit()
-    # env.start_logging(file_path)
+    for i in range(15):
+        dire = f'{os.getcwd()}{"/demonstrations/data"}'
+        file_path = f'{dire}{"/"}{str(i)}{".json"}'
+        if not os.path.isfile(file_path):
+            print("Saving demonstration in: " + file_path)
+            break
+        if i == 14:
+            print("Directory busy")
+            exit()
+    env.start_logging(file_path)
     
     while env.simulation_app.is_running():
         if env.world.is_playing():
@@ -119,7 +119,7 @@ def parse_hydra_configs(cfg: DictConfig):
             env._world.step(render=render)
             env.sim_frame_count += 1
             env._task.post_physics_step()
-            # env.logging_step()
+            env.logging_step()
             # print(action)
 
             if input_manager.kill: 

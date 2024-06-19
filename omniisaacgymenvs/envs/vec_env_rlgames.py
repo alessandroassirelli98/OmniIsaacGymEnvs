@@ -117,7 +117,7 @@ class VecEnvRLGames(VecEnvBase):
     def start_logging(self, save_path):
         self.data_logger = self._world.get_data_logger() # a DataLogger object is defined in the World by default
         self._save_path = save_path
-        robot = self._task._robots
+        robot = self._task._frankas
         task = self._task
 
         # A data logging function is called at every time step index if the data logger is started already.

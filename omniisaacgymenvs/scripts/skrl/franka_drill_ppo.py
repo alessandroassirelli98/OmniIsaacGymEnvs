@@ -98,7 +98,7 @@ cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 cfg["experiment"]["write_interval"] = 120
 cfg["experiment"]["checkpoint_interval"] = 1200
 cfg["experiment"]["directory"] = "runs/torch/FrankaCabinet"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPOFD "],
                                      "project": "franka_drill"}
 
