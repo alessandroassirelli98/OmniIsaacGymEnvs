@@ -115,7 +115,7 @@ cfg_trainer = {"timesteps": 24000, "headless": True}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # start training
-trainer.train()
+# trainer.train()
 
 
 # # ---------------------------------------------------------
@@ -129,4 +129,6 @@ trainer.train()
 # agent.load(path)
 
 # # start evaluation
-# trainer.eval()
+path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/FrankaCabinet/24-06-19_09-09-15-484249_PPO/checkpoints/best_agent.pt"
+agent.load(path)
+trainer.eval()

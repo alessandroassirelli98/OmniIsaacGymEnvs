@@ -25,7 +25,7 @@ class FrankaManualTask(FrankaCabinetTask):
 
     def __init__(self, name: str, sim_config, env, offset=None) -> None:
         super().__init__(name=name, sim_config=sim_config, env=env, offset=offset)
-        self._num_actions = 4
+        self._num_actions = 8
         self.obs_buf = torch.zeros(self._num_observations)
 
     def set_up_scene(self, scene) -> None:
@@ -79,12 +79,8 @@ class FrankaManualTask(FrankaCabinetTask):
         # Get the jacobian of the EE
         jeef = self._frankas.get_jacobians()[:, 6, :, :7]
 
-        dpose = torch.cat([pos_error_world, rot_error_world], -1).unsqueeze(-1)  # (num_envs,6,1)
-        delta_action = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
-
         
-
-        action = torch.cat([delta_action, gripper], dim=1)
+        action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0),gripper], dim=1)
 
         super().pre_physics_step(action)
 
