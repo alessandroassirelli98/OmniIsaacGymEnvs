@@ -18,6 +18,8 @@ class FrankaView(ArticulationView):
             prim_paths_expr="/World/envs/.*/franka/panda_link7", name="hands_view", reset_xform_properties=False
         )
         self._palm_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/tekken/palm_link_hithand", name="palm_centers_view", reset_xform_properties=False)
+        self._thumb_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/tekken/Right_Thumb_Phadist", name="right_thumbs_view", reset_xform_properties=False)
+        self._index_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/tekken/Right_Index_Phadist", name="right_indices_view", reset_xform_properties=False)
 
         # self._lfingers = RigidPrimView(
         #     prim_paths_expr="/World/envs/.*/franka/panda_leftfinger", name="lfingers_view", reset_xform_properties=False

@@ -140,7 +140,8 @@ class FrankaCabinetTask(RLTask):
         scene.add(self._frankas)
         scene.add(self._frankas._hands)
         scene.add(self._frankas._palm_centers)
-        # scene.add(self._frankas._rfingers)
+        scene.add(self._frankas._thumb_fingers)
+        scene.add(self._frankas._index_fingers)
         scene.add(self._drills)
 
         self.init_data()
@@ -294,6 +295,10 @@ class FrankaCabinetTask(RLTask):
             - 1.0
         )
         to_target = self.drill_grasp_pos - self.franka_grasp_pos
+
+        self.franka_thumb_pos, self.franka_thumb_rot = self._frankas._thumb_fingers.get_world_poses(clone=False)
+        self.franka_index_pos, self.franka_index_rot = self._frankas._index_fingers.get_world_poses(clone=False)
+
         self.obs_buf = torch.cat(
             (
                 dof_pos_scaled[:, self._frankas.actuated_dof_indices],
@@ -415,6 +420,8 @@ class FrankaCabinetTask(RLTask):
             self.franka_grasp_pos,
             self.drill_grasp_pos,
             self.drill_pos,
+            self.franka_thumb_pos,
+            self.franka_index_pos,
             self.franka_grasp_rot,
             self.drill_grasp_rot,
             self.gripper_forward_axis,
@@ -473,6 +480,8 @@ class FrankaCabinetTask(RLTask):
         franka_grasp_pos,
         drill_grasp_pos,
         drill_pos,
+        franka_thumb_pos,
+        franka_index_pos,
         franka_grasp_rot,
         drill_grasp_rot,
         gripper_forward_axis,
@@ -513,14 +522,14 @@ class FrankaCabinetTask(RLTask):
         rot_reward = 0.5 * (torch.sign(dot1) * dot1**2 + torch.sign(dot2) * dot2**2)
 
         # bonus if left finger is above the drawer handle and right below
-        # around_handle_reward = torch.zeros_like(rot_reward)
-        # around_handle_reward = torch.where(
-        #     franka_lfinger_pos[:, 1] > drill_grasp_pos[:, 1],
-        #     torch.where(
-        #         franka_rfinger_pos[:, 1] < drill_grasp_pos[:, 1], around_handle_reward + 0.5, around_handle_reward
-        #     ),
-        #     around_handle_reward,
-        # )
+        around_handle_reward = torch.zeros_like(rot_reward)
+        around_handle_reward = torch.where(
+            franka_index_pos[:, 1] > drill_grasp_pos[:, 1],
+            torch.where(
+                franka_thumb_pos[:, 1] < drill_grasp_pos[:, 1], around_handle_reward + 0.5, around_handle_reward
+            ),
+            around_handle_reward,
+        )
 
         # # reward for distance of each finger from the drawer
         # finger_dist_reward = torch.zeros_like(rot_reward)

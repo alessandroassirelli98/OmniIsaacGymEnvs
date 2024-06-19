@@ -27,12 +27,12 @@ env:
 
   distRewardScale: 100.
   rotRewardScale: 2.
-  aroundHandleRewardScale: 0.
+  aroundHandleRewardScale: 5.
   openRewardScale: 0.
   fingerDistRewardScale: 0.
   actionPenaltyScale: 0.01
   fingerCloseRewardScale: 10.
-  fingerOpenRewardScale: 10.
+  fingerOpenRewardScale: 1.
   goalAchievedBonus: 0.
   failPenalty: 1
 
