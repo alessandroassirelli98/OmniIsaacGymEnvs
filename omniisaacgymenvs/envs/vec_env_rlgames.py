@@ -118,6 +118,7 @@ class VecEnvRLGames(VecEnvBase):
         self.data_logger = self._world.get_data_logger() # a DataLogger object is defined in the World by default
         self._save_path = save_path
         robot = self._task._frankas
+        ee = self.task._frankas._hands
         task = self._task
 
         # A data logging function is called at every time step index if the data logger is started already.
@@ -127,6 +128,7 @@ class VecEnvRLGames(VecEnvBase):
             
             return  {robot.name : {"states" : task.obs_buf.tolist(),
                                    "actions" : task.actions.tolist(),
+                                   "ee_vel": ee.get_velocities().tolist(),
                                     "rewards": task.rew_buf.tolist(),
                                     "terminated": task.reset_buf.tolist(),
                                     "applied_joint_actions": robot.get_applied_actions().joint_positions.tolist()}}
