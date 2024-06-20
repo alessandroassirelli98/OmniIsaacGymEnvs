@@ -129,5 +129,5 @@ sim:
     contact_offset: 0.005
     rest_offset: 0.0
   drill:
-    make_kinematic: True
+    make_kinematic: False
     mass: 0.1

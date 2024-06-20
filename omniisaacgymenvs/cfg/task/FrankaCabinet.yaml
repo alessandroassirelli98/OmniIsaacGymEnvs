@@ -25,7 +25,7 @@ env:
   dofVelocityScale: 0.1
   ikVelocity: 2.
 
-  distRewardScale: 80.
+  distRewardScale: 100.
   rotRewardScale: 5
   aroundHandleRewardScale: 2.
   openRewardScale: 7.

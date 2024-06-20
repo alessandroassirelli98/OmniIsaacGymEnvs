@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": "${command:pickArgs} task=FrankaCabinet num_envs=5 headless=True",
+            "args": "${command:pickArgs} task=FrankaManual num_envs=1 headless=True",
             "justMyCode": false
         }
     ]
