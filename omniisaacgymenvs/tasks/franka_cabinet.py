@@ -320,6 +320,7 @@ class FrankaCabinetTask(RLTask):
         )
 
         self.compute_failure(self.drill_rot)
+        self.compute_success(self.drill_pos)
         # self._target_spheres.set_world_poses(positions=self.franka_grasp_pos, orientations=self.drill_grasp_rot)
         # print(self._frankas.get_measured_joint_efforts()[:, :7])
         observations = {self._frankas.name: {"obs_buf": self.obs_buf}}
@@ -518,6 +519,7 @@ class FrankaCabinetTask(RLTask):
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
         dist_reward = torch.where(d <= 0.03, dist_reward + 0.5, dist_reward)
+        self.reward_terms_log["distReward"] = dist_reward
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
         axis2 = tf_vector(drill_grasp_rot, drill_inward_axis)
@@ -532,6 +534,8 @@ class FrankaCabinetTask(RLTask):
         )  # alignment of up axis for gripper
         # reward for matching the orientation of the hand to the drawer (fingers wrapped)
         rot_reward = 0.5 * (torch.sign(dot1) * dot1**2 + torch.sign(dot2) * dot2**2)
+        self.reward_terms_log["rotReward"] = rot_reward
+
 
         # bonus if left finger is above the drawer handle and right below
         around_handle_reward = torch.zeros_like(rot_reward)
@@ -542,6 +546,8 @@ class FrankaCabinetTask(RLTask):
             ),
             around_handle_reward,
         )
+        self.reward_terms_log["aroundHandleReward"] = around_handle_reward
+
 
         # # reward for distance of each finger from the drawer
         # finger_dist_reward = torch.zeros_like(rot_reward)
@@ -558,19 +564,27 @@ class FrankaCabinetTask(RLTask):
         finger_close_reward = torch.where(
             d <= 0.04, torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
         )
+        self.reward_terms_log["fingerCloseReward"] = finger_close_reward
+
 
         finger_open_reward = torch.zeros_like(rot_reward)
         finger_open_reward = torch.where(
             d >= 0.04, -torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_open_reward
         )
+        self.reward_terms_log["fingerOpenReward"] = finger_open_reward
+
 
 
         # regularization on the actions (summed for each environment)
         action_penalty = torch.sum(actions**2, dim=-1)
+        self.reward_terms_log["actionPenalty"] = action_penalty
+
 
         # how far the cabinet has been opened out
         open_reward = torch.zeros_like(rot_reward)
         open_reward = torch.where(d <= 0.04, 1 / (1 + (0.6 - drill_pos[:, 2]) **2 ), open_reward)
+        self.reward_terms_log["openReward"] = open_reward
+
 
         rewards = (
             dist_reward_scale * dist_reward
@@ -594,7 +608,7 @@ class FrankaCabinetTask(RLTask):
 
         # bonus for opening drawer properly
         rewards = torch.where(drill_pos[:, 2] > 0.56, rewards + 10 , rewards)
-        rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + 2 * 10, rewards)
+        rewards = torch.where(self.success_envs, rewards + 2 * 10, rewards)
         rewards = torch.where(drill_pos[:, 2] <= self._drill_reset_lower_bound[2], rewards - self.fail_penalty, rewards)
         rewards = torch.where(self.failed_envs, 
                                       rewards - self.fail_penalty,
@@ -610,10 +624,9 @@ class FrankaCabinetTask(RLTask):
         return rewards
     
     def get_extras(self):
-        pass
-        # self.extras["success"] = self.drill_pos[:, 2] > 0.6
-        # self.extras["rew_terms"] = self.reward_terms_log
-        # self.extras["rew_weights"] = self.reward_weights_log
+        self.extras["success"] = self.success_envs
+        self.extras["rew_terms"] = self.reward_terms_log
+        self.extras["rew_weights"] = self.reward_weights_log
     
     def control_ik(self, j_eef, dpose, num_envs, num_dofs, damping=0.05):
         """Solve with Gauss Newton approx and regularizationin Isaac Gym.
@@ -640,3 +653,6 @@ class FrankaCabinetTask(RLTask):
         )  # alignment of drill with world y
 
         self.failed_envs = torch.logical_or(dot1 < FAIL, dot2 < FAIL)
+
+    def compute_success(self, drill_pos, SUCCESS=0.6):
+        self.success_envs = drill_pos[:, 2] >= SUCCESS
