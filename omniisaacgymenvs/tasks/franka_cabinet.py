@@ -272,6 +272,10 @@ class FrankaCabinetTask(RLTask):
             [0, -0.99, 0., -2.6, -0., 3.14, 0.17] + [0.] * 20, device=self._device
         )
 
+        self.drill_target_pos = torch.tensor([0.45, 0, 0.6], device=self._device, dtype=torch.float).repeat(
+            (self._num_envs, 1)
+        )
+
         self.joint_actions = torch.zeros((self._num_envs, 12), device=self._device)
 
     def get_observations(self) -> dict:
@@ -582,7 +586,8 @@ class FrankaCabinetTask(RLTask):
 
         # how far the cabinet has been opened out
         open_reward = torch.zeros_like(rot_reward)
-        open_reward = torch.where(d <= 0.04, 1 / (1 + (0.6 - drill_pos[:, 2]) **2 ), open_reward)
+        d_target = torch.norm(self.drill_target_pos - drill_pos, p=2, dim=-1)
+        open_reward = torch.where(d <= 0.04, 1 / (1 + d_target **2 ), open_reward)
         self.reward_terms_log["openReward"] = open_reward
 
 
@@ -608,7 +613,7 @@ class FrankaCabinetTask(RLTask):
 
         # bonus for opening drawer properly
         rewards = torch.where(drill_pos[:, 2] > 0.56, rewards + 10 , rewards)
-        rewards = torch.where(self.success_envs, rewards + 2 * 10, rewards)
+        rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + 2 * 10, rewards)
         rewards = torch.where(drill_pos[:, 2] <= self._drill_reset_lower_bound[2], rewards - self.fail_penalty, rewards)
         rewards = torch.where(self.failed_envs, 
                                       rewards - self.fail_penalty,

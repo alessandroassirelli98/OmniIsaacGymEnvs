@@ -30,8 +30,8 @@ env:
   aroundHandleRewardScale: 2.
   openRewardScale: 7.
   fingerDistRewardScale: 0.
-  actionPenaltyScale: 0.01
-  fingerCloseRewardScale: 10.
+  actionPenaltyScale: 0.1
+  fingerCloseRewardScale: 15.
   fingerOpenRewardScale: 0.05
   goalAchievedBonus: 0.
   failPenalty: 1
