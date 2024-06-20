@@ -240,7 +240,7 @@ class FrankaCabinetTask(RLTask):
         self.franka_local_grasp_pos = franka_local_pose_pos.repeat((self._num_envs, 1))
         self.franka_local_grasp_rot = franka_local_grasp_pose_rot.repeat((self._num_envs, 1))
 
-        drill_local_grasp_pose = torch.tensor([0.0045, 0.0, 0.026, 1.0, 0.0, 0.0, 0.0], device=self._device)
+        drill_local_grasp_pose = torch.tensor([0.0, 0.0, 0.01, 1.0, 0.0, 0.0, 0.0], device=self._device)
         self.drill_local_grasp_pos = drill_local_grasp_pose[0:3].repeat((self._num_envs, 1))
         self.drill_local_grasp_rot = drill_local_grasp_pose[3:7].repeat((self._num_envs, 1))
 
