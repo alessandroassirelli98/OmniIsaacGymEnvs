@@ -48,7 +48,10 @@ if __name__ == "__main__":
         vdes[:, t] = e[t]["vdes"][0][:6]
         v[:, t] = e[t]["v"][0][:6]
 
-    plt.plot(vdes[3, :])
-    plt.plot(v[3, :])
+    for i in range(6):
+        plt.subplot(2,3, i+1)
+        plt.plot(vdes[i, :])
+        plt.plot(v[i, :])
+        plt.legend(["desired", "real"])
     plt.show()
         
