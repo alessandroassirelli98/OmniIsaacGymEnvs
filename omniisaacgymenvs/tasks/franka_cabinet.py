@@ -37,7 +37,7 @@ class FrankaCabinetTask(RLTask):
         self.distX_offset = 0.04
         self.dt = 1 / 60.0
 
-        self._num_observations = 28
+        self._num_observations = 32
         self._num_actions = 12
 
         RLTask.__init__(self, name, env)
@@ -117,10 +117,8 @@ class FrankaCabinetTask(RLTask):
 
         scene.add(self._frankas)
         scene.add(self._frankas._hands)
-        # scene.add(self._frankas._lfingers)
-        # scene.add(self._frankas._rfingers)
-        # scene.add(self._cabinets)
-        # scene.add(self._cabinets._drawers)
+        scene.add(self._frankas._thumb_fingers)
+        scene.add(self._frankas._index_fingers)
         scene.add(self._drills)
         scene.add(self._tables)
         # scene.add(self._target_spheres)
@@ -163,7 +161,7 @@ class FrankaCabinetTask(RLTask):
         self._drill_position = torch.tensor([0.4, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, torch.pi], device=self._device).unsqueeze(0)
         self._drill_lower_bound = torch.tensor([0.3, -0.5, 0.53], device=self._device)
-        self._drill_reset_lower_bound = torch.tensor([0.3, -0.5, 0.48], device=self._device)
+        self._drill_reset_lower_bound = torch.tensor([0.3, -0.5, 0.50], device=self._device)
         self._drill_upper_bound = torch.tensor([0.8, 0.5, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device).squeeze(0)
 
@@ -305,6 +303,7 @@ class FrankaCabinetTask(RLTask):
                 (franka_dof_vel * self.dof_vel_scale)[:, self._frankas.actuated_dof_indices],
                 to_target,
                 self.drill_pos[:, 2].unsqueeze(-1),
+                self.drill_rot
             ),
             dim=-1,
         )
@@ -505,7 +504,7 @@ class FrankaCabinetTask(RLTask):
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
-        dist_reward = torch.where(d <= 0.02, dist_reward + 0.5, dist_reward)
+        dist_reward = torch.where(d <= 0.03, dist_reward + 0.5, dist_reward)
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
         axis2 = tf_vector(drill_grasp_rot, drill_inward_axis)
@@ -557,13 +556,14 @@ class FrankaCabinetTask(RLTask):
         action_penalty = torch.sum(actions**2, dim=-1)
 
         # how far the cabinet has been opened out
-        # open_reward = (drill_pos[:, 2] - self._drill_position[2])
+        open_reward = torch.zeros_like(rot_reward)
+        open_reward = torch.where(d <= 0.04, 1 / (1 + (0.6 - drill_pos[:, 2]) **2 ), open_reward)
 
         rewards = (
             dist_reward_scale * dist_reward
             + rot_reward_scale * rot_reward
-            # + around_handle_reward_scale * around_handle_reward
-            # + open_reward_scale * open_reward
+            + around_handle_reward_scale * around_handle_reward
+            + open_reward_scale * open_reward
             # + finger_dist_reward_scale * finger_dist_reward
             - action_penalty_scale * action_penalty
             + finger_close_reward * finger_close_reward_scale
@@ -580,8 +580,8 @@ class FrankaCabinetTask(RLTask):
 
 
         # bonus for opening drawer properly
-        rewards = torch.where(drill_pos[:, 2] > 0.56, rewards + 0.5 , rewards)
-        rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + 2 * 0.5, rewards)
+        rewards = torch.where(drill_pos[:, 2] > 0.56, rewards + 10 , rewards)
+        rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + 2 * 10, rewards)
         rewards = torch.where(drill_pos[:, 2] <= self._drill_reset_lower_bound[2], rewards - self.fail_penalty, rewards)
 
 
