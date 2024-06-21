@@ -349,7 +349,7 @@ class FrankaCabinetTask(RLTask):
 
         jeef = self._frankas.get_jacobians()[:, 7, :, :7]
         dpose = actions[:, :6].unsqueeze(-1) * self.ik_velocity
-        self.hand_pos_des = self.hand_pos + dpose[:, :3]
+        # self.hand_pos_des = self.hand_pos + dpose[:, :3]
 
         self.joint_actions[:, :7] = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
         self.joint_actions[:, 7:] = actions[:, 6:]

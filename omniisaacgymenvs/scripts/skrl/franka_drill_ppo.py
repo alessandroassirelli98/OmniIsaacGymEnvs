@@ -30,7 +30,16 @@ commit_hash = repo.head.object.hexsha
 #     print("Repo is clean, proceeeding to run \n")
 
 # seed for reproducibility
-set_seed(42)  # e.g. `set_seed(42)` for fixed seed
+ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
+algo_config = parse_arguments(ignore_args)
+if "random_seed" in algo_config.keys():
+    rs = int(algo_config["random_seed"])
+    print("set random seed ", rs)
+    exit
+else:
+    rs = 42
+
+set_seed(rs)  # e.g. `set_seed(42)` for fixed seed
 class StochasticActor(GaussianMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False,
                  clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
@@ -131,6 +140,7 @@ cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "SeparateNetworks"
+cfg["random_seed"] = rs
 
 cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 15
@@ -166,10 +176,8 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev2"}
+                                     "project": "franka_tekken 12 dof cs rev2"}
 
-ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
-algo_config = parse_arguments(ignore_args)
 for key, value in algo_config.items():
     print(key, value)
     if key == "checkpoint":
@@ -204,11 +212,6 @@ for key, value in algo_config.items():
     cfg[str(key)] = value
     print(f"Setting {key} to {value} of type {type(value)}")
 
-
-# Buffer prefill
-episode = parse_json_demo()
-demo_size = len(episode)
-demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=device)
 
 agent = PPO(models=models,
             memory=memory,
