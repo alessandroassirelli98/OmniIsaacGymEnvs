@@ -21,7 +21,7 @@ env:
   numProps: 4
   aggregateMode: 3
 
-  actionScale: 1.
+  actionScale: 3.
   dofVelocityScale: 0.1
   ikVelocity: 2.
 
@@ -32,8 +32,8 @@ env:
   fingerDistRewardScale: 0.
   actionPenaltyScale: 0.1
   fingerCloseRewardScale: 15.
-  fingerOpenRewardScale: 0.01
-  goalAchievedBonus: 0.
+  fingerOpenRewardScale: 0.
+  goalAchievedBonus: 2.
   failPenalty: 1
 
 sim:
