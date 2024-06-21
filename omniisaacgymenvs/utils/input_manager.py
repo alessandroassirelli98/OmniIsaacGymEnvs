@@ -66,12 +66,12 @@ class SpaceMouseManager():
             if success:
                 while 1:
                     state = pyspacemouse.read()
-                    self.action[0] = state.y
-                    self.action[1] = state.x
+                    self.action[0] = state.x
+                    self.action[1] = state.y
                     self.action[2] = state.z
-                    self.action[3] = state.roll
-                    self.action[4] = state.pitch
-                    self.action[5] = state.yaw
+                    self.action[3] = -state.pitch
+                    self.action[4] = state.roll
+                    self.action[5] = -state.yaw
                     self.action[6] = state.buttons[0]
                     self.kill = bool(state.buttons[1])
         except KeyboardInterrupt:
@@ -87,4 +87,5 @@ if __name__ == "__main__":
     
     action = torch.zeros(7, dtype=torch.float32)
     sm = SpaceMouseManager(action)
-    print(action)
+    while True:
+        print(action)

@@ -13,15 +13,15 @@ def parse_json_demo():
             with open(f'{root}{"/"}{filename}') as f:
                 data = json.load(f)
                 df_tmp = pd.json_normalize(data["Isaac Sim Data"])
-                df_tmp.columns = ["time", "timestep", "states", "actions", "ee_vel", "rewards", "terminated", "applied_joint_act"]
+                df_tmp.columns = ["time", "timestep", "states", "actions", "ee_pos", "ee_pos_des", "rewards", "terminated", "applied_joint_act"]
                 df.append(df_tmp)
     if len(df) == 1:
         df = df[0]
     else:
         df = pd.concat(df).reset_index()
 
-    actions = df["actions"]
-    ee_vel = df["ee_vel"]
+    actions = df["ee_pos_des"]
+    ee_vel = df["ee_pos"]
 
 
     episode = []
@@ -29,8 +29,8 @@ def parse_json_demo():
     for i, (vdes, v) in enumerate(zip(actions,ee_vel)):
         if i == dim-1: break
         timestep = {}
-        timestep["vdes"] = vdes
-        timestep["v"] = v
+        timestep["d_pos"] = vdes
+        timestep["pos"] = v
         episode.append(timestep)
 
     return episode
@@ -40,16 +40,15 @@ if __name__ == "__main__":
     expert_len = len(e)
     which_episode = 0
 
-    vdes = np.zeros((6, expert_len))
-    v = np.zeros((6, expert_len))
-    print(e[0]["v"][0])
+    vdes = np.zeros((3, expert_len))
+    v = np.zeros((3, expert_len))
 
     for t in range(expert_len):
-        vdes[:, t] = e[t]["vdes"][0][:6]
-        v[:, t] = e[t]["v"][0][:6]
+        vdes[:, t] = e[t]["d_pos"][0][:3]
+        v[:, t] = e[t]["pos"][0][:3]
 
-    for i in range(6):
-        plt.subplot(2,3, i+1)
+    for i in range(3):
+        plt.subplot(1,3, i+1)
         plt.plot(vdes[i, :])
         plt.plot(v[i, :])
         plt.legend(["desired", "real"])

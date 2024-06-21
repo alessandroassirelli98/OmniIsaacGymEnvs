@@ -38,7 +38,7 @@ class FrankaCabinetTask(RLTask):
         self.dt = 1 / 60.0
 
         self._num_observations = 32
-        self._num_actions = 12
+        self._num_actions = 11
 
         RLTask.__init__(self, name, env)
         return
@@ -277,10 +277,13 @@ class FrankaCabinetTask(RLTask):
         )
 
         self.drill_pos = torch.ones((self._num_envs, 3), device=self._device) * self._drill_position + self._env_pos
+        self.hand_pos, _ = self._frankas._hands.get_world_poses(clone=False)
+        self.hand_pos_des, _ = self._frankas._hands.get_world_poses(clone=False)
+
         self.joint_actions = torch.zeros((self._num_envs, 12), device=self._device)
 
     def get_observations(self) -> dict:
-        hand_pos, hand_rot = self._frankas._hands.get_world_poses(clone=False)
+        self.hand_pos, self.hand_rot = self._frankas._hands.get_world_poses(clone=False)
         self.drill_pos, self.drill_rot = self._drills.get_world_poses(clone=False)
         franka_dof_pos = self._frankas.get_joint_positions(clone=False)
         franka_dof_vel = self._frankas.get_joint_velocities(clone=False)
@@ -292,8 +295,8 @@ class FrankaCabinetTask(RLTask):
             self.drill_grasp_rot,
             self.drill_grasp_pos,
         ) = self.compute_grasp_transforms(
-            hand_rot,
-            hand_pos,
+            self.hand_rot,
+            self.hand_pos,
             self.franka_local_grasp_rot,
             self.franka_local_grasp_pos,
             self.drill_rot,
@@ -342,14 +345,16 @@ class FrankaCabinetTask(RLTask):
             self.reset_idx(reset_env_ids)
 
         self.actions = actions.clone().to(self._device)
-        self.joint_actions = self.actions
+        # self.joint_actions = self.actions
 
-        # jeef = self._frankas.get_jacobians()[:, 6, :, :7]
-        # dpose = actions[:, :6].unsqueeze(-1) * self.dt * self.ik_velocity
-        # self.joint_actions[:, :7] = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
-        # self.joint_actions[:, 7:] = actions[:, 6:]
+        jeef = self._frankas.get_jacobians()[:, 7, :, :7]
+        dpose = actions[:, :6].unsqueeze(-1) * self.ik_velocity
+        self.hand_pos_des = self.hand_pos + dpose[:, :3]
 
-        targets = self.franka_dof_targets[:, self._frankas.actuated_dof_indices] + self.franka_dof_speed_scales[self._frankas.actuated_dof_indices] * self.dt * self.joint_actions * self.action_scale
+        self.joint_actions[:, :7] = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
+        self.joint_actions[:, 7:] = actions[:, 6:]
+
+        targets = self.franka_dof_targets[:, self._frankas.actuated_dof_indices] + self.joint_actions 
         self.franka_dof_targets[:, self._frankas.actuated_dof_indices] = tensor_clamp(targets, self.franka_dof_lower_limits[self._frankas.actuated_dof_indices], self.franka_dof_upper_limits[self._frankas.actuated_dof_indices])
         
         self.franka_dof_targets[:, self._frankas.clamped_dof_indices[:5]] = self.franka_dof_targets[:, self._frankas.clamp_drive_dof_indices]

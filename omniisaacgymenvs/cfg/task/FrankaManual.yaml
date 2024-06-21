@@ -21,21 +21,20 @@ env:
   numProps: 4
   aggregateMode: 3
 
-  actionScale: 7.5
+  actionScale: 3.
   dofVelocityScale: 0.1
-  ikVelocity: 2.
+  ikVelocity: 0.01
 
-  distRewardScale: 100.
-  rotRewardScale: 2.
-  aroundHandleRewardScale: 0.
-  openRewardScale: 0.
+  distRewardScale: 200.
+  rotRewardScale: 5
+  aroundHandleRewardScale: 1.
+  openRewardScale: 7.
   fingerDistRewardScale: 0.
-  actionPenaltyScale: 0.001
-  fingerCloseRewardScale: 10.
-  fingerOpenRewardScale: 10.
-  goalAchievedBonus: 0.
-  failPenalty: 10
-
+  actionPenaltyScale: 0.1
+  fingerCloseRewardScale: 15.
+  fingerOpenRewardScale: 0.
+  goalAchievedBonus: 2.
+  failPenalty: 1
 
 sim:
   dt: 0.0083 # 1/120 s
@@ -71,11 +70,11 @@ sim:
     max_depenetration_velocity: 1000.0
 
     # GPU buffers
-    gpu_max_rigid_contact_count: 524288
+    gpu_max_rigid_contact_count: 1048576
     gpu_max_rigid_patch_count: 33554432
-    gpu_found_lost_pairs_capacity: 524288
-    gpu_found_lost_aggregate_pairs_capacity: 262144
-    gpu_total_aggregate_pairs_capacity: 1048576
+    gpu_found_lost_pairs_capacity: 20971520
+    gpu_found_lost_aggregate_pairs_capacity: 20971520
+    gpu_total_aggregate_pairs_capacity: 20971520
     gpu_max_soft_body_contacts: 1048576
     gpu_max_particle_contacts: 1048576
     gpu_heap_capacity: 33554432
@@ -129,5 +128,4 @@ sim:
     contact_offset: 0.005
     rest_offset: 0.0
   drill:
-    make_kinematic: False
-    mass: 0.1
+   make_kinematic: False
