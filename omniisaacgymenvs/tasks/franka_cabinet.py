@@ -276,6 +276,7 @@ class FrankaCabinetTask(RLTask):
             (self._num_envs, 1)
         )
 
+        self.drill_pos = torch.ones((self._num_envs, 3), device=self._device) * self._drill_position + self._env_pos
         self.joint_actions = torch.zeros((self._num_envs, 12), device=self._device)
 
     def get_observations(self) -> dict:
@@ -355,7 +356,19 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_targets[:, self._frankas.clamped_dof_indices[5:]] = self.franka_dof_targets[:, self._frankas.clamp_drive_dof_indices]
         env_ids_int32 = torch.arange(self._frankas.count, dtype=torch.int32, device=self._device)
 
+        self.pull_downward()
         self._frankas.set_joint_position_targets(self.franka_dof_targets, indices=env_ids_int32)
+
+    def pull_downward(self, strength=1.5):
+        self._drills_to_pull = torch.where(self.drill_pos[:, 2] > 0.55, torch.ones_like(self._drills_to_pull), self._drills_to_pull)
+        self.pull_env_ids = self._drills_to_pull.nonzero(as_tuple=False).squeeze(-1)
+
+        if len(self.pull_env_ids) > 0:
+            indices = self.pull_env_ids.to(dtype=torch.int32)
+            self._drills.apply_forces_and_torques_at_pos(forces=torch.rand(3) * strength,
+                                                         torques=torch.rand(3) * strength,
+                                                        indices=indices)
+        self._drills_to_pull[self.pull_env_ids] = 0
 
     def reset_idx(self, env_ids):
         indices = env_ids.to(dtype=torch.int32)
@@ -418,6 +431,8 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_targets = torch.zeros(
             (self._num_envs, self.num_franka_dofs), dtype=torch.float, device=self._device
         )
+        self._drills_to_pull = torch.zeros(self.num_envs, device = self._device, dtype=torch.bool)
+
 
         # if self.num_props > 0:
         #     self.default_prop_pos, self.default_prop_rot = self._props.get_world_poses()
