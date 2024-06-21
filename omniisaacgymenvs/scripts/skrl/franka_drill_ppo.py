@@ -119,10 +119,10 @@ samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, devi
 # PPO requires 2 models, visit its documentation for more details
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#models
 models = {}
-# models["policy"] = StochasticActor(env.observation_space, env.action_space, device, False)
-# models["value"] = Critic(env.observation_space, env.action_space, device, False)
-models["policy"] = Shared(env.observation_space, env.action_space, device)
-models["value"] = models["policy"]
+models["policy"] = StochasticActor(env.observation_space, env.action_space, device, False)
+models["value"] = Critic(env.observation_space, env.action_space, device, False)
+# models["policy"] = Shared(env.observation_space, env.action_space, device)
+# models["value"] = models["policy"]
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
@@ -144,10 +144,10 @@ cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
-cfg["ratio_clip"] = 0.2
+cfg["ratio_clip"] = 0.1
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.
+cfg["entropy_loss_scale"] = 0.0001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
