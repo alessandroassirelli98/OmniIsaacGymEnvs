@@ -30,7 +30,16 @@ commit_hash = repo.head.object.hexsha
 #     print("Repo is clean, proceeeding to run \n")
 
 # seed for reproducibility
-set_seed(42)  # e.g. `set_seed(42)` for fixed seed
+ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
+algo_config = parse_arguments(ignore_args)
+if "random_seed" in algo_config.keys():
+    rs = int(algo_config["random_seed"])
+    print("set random seed ", rs)
+    exit
+else:
+    rs = 42
+
+set_seed(rs)  # e.g. `set_seed(42)` for fixed seed
 class StochasticActor(GaussianMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False,
                  clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
@@ -119,10 +128,10 @@ samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, devi
 # PPO requires 2 models, visit its documentation for more details
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#models
 models = {}
-# models["policy"] = StochasticActor(env.observation_space, env.action_space, device, False)
-# models["value"] = Critic(env.observation_space, env.action_space, device, False)
-models["policy"] = Shared(env.observation_space, env.action_space, device)
-models["value"] = models["policy"]
+models["policy"] = StochasticActor(env.observation_space, env.action_space, device, False)
+models["value"] = Critic(env.observation_space, env.action_space, device, False)
+# models["policy"] = Shared(env.observation_space, env.action_space, device)
+# models["value"] = models["policy"]
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
@@ -131,6 +140,7 @@ cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
 
 cfg["nn_type"] = "SeparateNetworks"
+cfg["random_seed"] = rs
 
 cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 15
@@ -144,10 +154,10 @@ cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
-cfg["ratio_clip"] = 0.2
+cfg["ratio_clip"] = 0.1
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.
+cfg["entropy_loss_scale"] = 0.0001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
@@ -164,12 +174,11 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev2"}
+                                     "project": "franka_tekken 12 dof js rev3"}
 
-ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
-algo_config = parse_arguments(ignore_args)
+
 for key, value in algo_config.items():
     print(key, value)
     if key == "checkpoint":
