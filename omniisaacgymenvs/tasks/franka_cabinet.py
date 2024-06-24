@@ -356,7 +356,7 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_targets[:, self._frankas.clamped_dof_indices[5:]] = self.franka_dof_targets[:, self._frankas.clamp_drive_dof_indices]
         env_ids_int32 = torch.arange(self._frankas.count, dtype=torch.int32, device=self._device)
 
-        self.pull_downward()
+        # self.pull_downward()
         self._frankas.set_joint_position_targets(self.franka_dof_targets, indices=env_ids_int32)
 
     def pull_downward(self, strength=1.5):
@@ -581,7 +581,7 @@ class FrankaCabinetTask(RLTask):
 
         finger_close_reward = torch.zeros_like(rot_reward)
         finger_close_reward = torch.where(
-            d <= 0.04, torch.sum(self._frankas.get_measured_joint_efforts()[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
+            d <= 0.04, torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
         )
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
 
