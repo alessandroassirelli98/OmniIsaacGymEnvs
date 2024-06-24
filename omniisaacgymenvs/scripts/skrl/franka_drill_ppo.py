@@ -154,10 +154,10 @@ cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
-cfg["ratio_clip"] = 0.1
+cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.0001
+cfg["entropy_loss_scale"] = 0.001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
@@ -176,7 +176,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev3"}
+                                     "project": "franka_tekken 12 dof js rev4"}
 
 
 for key, value in algo_config.items():
@@ -228,7 +228,7 @@ agent = PPO(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 80000}
+cfg_trainer = {"timesteps": 100000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # # demonstrations injection
