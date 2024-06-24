@@ -71,16 +71,13 @@ class FrankaManualTask(FrankaCabinetTask):
         else:
             gripper = torch.tensor([-1., -1., -1., -1., -1.], device=self._device).unsqueeze(0)
 
-        # action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0), joint_targets.unsqueeze(0)], dim=1)
-
-        pos_error_world = delta_pos * self.dt
-        rot_error_world = delta_rot * self.dt
+        dpose = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0)], dim=1).unsqueeze(-1) * self.ik_velocity
 
         # Get the jacobian of the EE
-        jeef = self._frankas.get_jacobians()[:, 6, :, :7]
+        jeef = self._frankas.get_jacobians()[:, 7, :, :7]
+        arm = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7) / (self.dt * self.action_scale)
 
-        
-        action = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0),gripper], dim=1)
+        action = torch.cat([arm, gripper], dim=1)
         
 
         super().pre_physics_step(action)
