@@ -2,7 +2,11 @@ import torch
 import torch.nn as nn
 import sys
 import git
+import os
+from pynput import keyboard
 
+
+from omniisaacgymenvs.utils.logger import Logger
 # import the skrl components to build the RL system
 from skrl.agents.torch.ppofd import PPOFD, PPOFD_DEFAULT_CONFIG
 from skrl.agents.torch.ppo import PPO, PPO_DEFAULT_CONFIG
@@ -12,34 +16,10 @@ from skrl.memories.torch import RandomMemory
 from skrl.models.torch import DeterministicMixin, GaussianMixin, Model
 from skrl.resources.preprocessors.torch import RunningStandardScaler
 from skrl.resources.schedulers.torch import KLAdaptiveRL
-from skrl.trainers.torch import SequentialTrainer, Pretrainer, PretrainerV2
 from skrl.utils import set_seed
-from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
-from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 
 
-# Check git commit
-repo = git.Repo(search_parent_directories=True)
-commit_hash = repo.head.object.hexsha
-
-# if repo.is_dirty():
-#     print("There are unstaged changes, please commit before run\n")
-#     exit()
-
-# else:
-#     print("Repo is clean, proceeeding to run \n")
-
-# seed for reproducibility
-ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
-algo_config = parse_arguments(ignore_args)
-if "random_seed" in algo_config.keys():
-    rs = int(algo_config["random_seed"])
-    print("set random seed ", rs)
-    exit
-else:
-    rs = 42
-
-set_seed(rs)  # e.g. `set_seed(42)` for fixed seed
+set_seed(42)  # e.g. `set_seed(42)` for fixed seed
 class StochasticActor(GaussianMixin, Model):
     def __init__(self, observation_space, action_space, device, clip_actions=False,
                  clip_log_std=True, min_log_std=-20, max_log_std=2, reduction="sum"):
@@ -114,7 +94,7 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
 
 
 # load and wrap the Omniverse Isaac Gym environment
-env = load_omniverse_isaacgym_env(task_name="FrankaCabinet")
+env = load_omniverse_isaacgym_env(task_name="FrankaCabinet", headless=False, num_envs=1)
 env = wrap_env(env)
 
 device = env.device
@@ -135,12 +115,7 @@ models["value"] = Critic(env.observation_space, env.action_space, device, False)
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
-plot=True
 cfg = PPOFD_DEFAULT_CONFIG.copy()
-cfg["commit_hash"] = commit_hash
-
-cfg["nn_type"] = "SeparateNetworks"
-cfg["random_seed"] = rs
 
 cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 15
@@ -170,55 +145,6 @@ cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 cfg["learning_rate_scheduler"] = KLAdaptiveRL
 cfg["kl_threshold"] = 0.008
 
-# logging to TensorBoard and write checkpoints (in timesteps)
-cfg["experiment"]["write_interval"] = 200
-cfg["experiment"]["checkpoint_interval"] = 200
-cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev4"}
-
-
-for key, value in algo_config.items():
-    print(key, value)
-    if key == "checkpoint":
-        pass
-    elif key == "reward_shaper" and value == True:
-        value = lambda rewards, timestep, timesteps: rewards * 0.01
-    elif key == "reward_shaper" and value == False:
-        value = None
-    elif value == "SharedNetworks":
-        models = {}
-        models["policy"] = Shared(env.observation_space, env.action_space, device)
-        models["value"] = models["policy"]
-        cfg["nn_type"] = "shared"
-
-    elif value == "SeparateNetworks":
-        models["policy"] = StochasticActor(env.observation_space, env.action_space, device)
-        models["value"] = Critic(env.observation_space, env.action_space, device)
-        cfg["nn_type"] = "separate"
-
-    elif value == "RunningStandardScaler":
-        value = RunningStandardScaler
-    elif value == "KLAdaptiveRL":
-        value = KLAdaptiveRL
-    elif value == 'True':
-        value = True
-    elif value == 'False':
-        value = False
-    elif '.' in value:
-        value = float(value)
-    else:
-        value = int(value)
-    cfg[str(key)] = value
-    print(f"Setting {key} to {value} of type {type(value)}")
-
-
-# Buffer prefill
-episode = parse_json_demo()
-demo_size = len(episode)
-demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=device)
-
 agent = PPO(models=models,
             memory=memory,
             cfg=cfg,
@@ -226,53 +152,55 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
+checkpoint_path = "/home/alessandro.assirelli/devel/git-repos/OmniIsaacGymEnvs/omniisaacgymenvs/runs/torch/DianaTekken/24-06-25_06-57-40-170244_PPO/checkpoints/best_agent.pt"
+agent.load(checkpoint_path)
+agent.set_running_mode("eval")
 
-# configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 150000}
-trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
+states, infos = env.reset()
+    # Saving path
+for i in range(15):
+    dire = f'{os.getcwd()}{"/demonstrations/data"}'
+    file_path = f'{dire}{"/"}{str(i)}{".json"}'
+    if not os.path.isfile(file_path):
+        print("Saving demonstration in: " + file_path)
+        break
+    if i == 14:
+        print("Directory busy")
+        exit()
 
-# # demonstrations injection
-# if cfg["pretrain"]:
-#     transitions = []
-#     for tstep in episode:
-#         states = torch.tensor(tstep["states"], device=device)
-#         actions = torch.tensor(tstep["actions"], device=device)
-#         rewards = torch.tensor(tstep["rewards"], device=device)
-#         terminated = torch.tensor(tstep["terminated"], device=device)
-#         next_states = torch.tensor(tstep["next_states"], device=device)
-#         dict = {}
-#         dict["states"] = states
-#         dict["actions"] = actions
-#         dict["reward"] = rewards
-#         dict["next_states"] = next_states
-#         dict["terminated"] = terminated
-#         transitions.append(dict)
-#         demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
+log = Logger(env)
+log.start_logging(file_path)
 
-#     # trainer.pre_train(transitions, 10)
-#     pt = PretrainerV2(agent=agent,
-#                     transitions=transitions,
-#                     lr=cfg["pretrainer_lr"],
-#                 epochs=cfg["pretrainer_epochs"],
-#                 batch_size=16)
+def on_press(self, key):
+    global kill
+    kill = False
+    if (key == keyboard.Key.space):
+        kill = True
 
-# start training
-if cfg["checkpoint"]:
-    agent.load(cfg["checkpoint"])
+listener = keyboard.Listener(on_press=on_press)
 
-# if cfg["pretrain"]:
-#     import matplotlib.pyplot as plt
-#     pt.train_bc()
-    
-#     if plot:
-#         plt.title("BC loss")
-#         plt.plot(pt.log_policy_loss)
-#         plt.plot(pt.log_policy_test_loss)
-#         plt.legend(["train loss", "test loss"])
-#         plt.show()
+while True:
+    # compute actions
+    with torch.no_grad():
+        actions = agent.act(states, timestep=0, timesteps=0)[0]
+        # step the environments
+        next_states, rewards, terminated, truncated, infos = env.step(actions)
 
-if not cfg["test"]:
-    trainer.train()
-else:
-    # agent.policy.make_deterministic()
-    trainer.eval()
+        log.logging_step()
+    # reset environments
+    if env.num_envs > 1:
+        states = next_states
+    else:
+        if terminated.any() or truncated.any():
+            with torch.no_grad():
+                states, infos = env.reset()
+        else:
+            states = next_states
+
+    if kill:  # if key 'q' is pressed 
+        log.save_log()
+        env._simulation_app.close()
+        print(f'Saving demo in {file_path}')
+        break
+            
+

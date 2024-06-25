@@ -160,9 +160,8 @@ class FrankaCabinetTask(RLTask):
     def get_drill(self):
         self._drill_position = torch.tensor([0.4, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, torch.pi], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.3, -0.5, 0.53], device=self._device)
-        self._drill_reset_lower_bound = torch.tensor([0.3, -0.5, 0.50], device=self._device)
-        self._drill_upper_bound = torch.tensor([0.8, 0.5, 0.53], device=self._device)
+        self._drill_lower_bound = torch.tensor([0., -0.4, 0.53], device=self._device)
+        self._drill_upper_bound = torch.tensor([0.6, 0.4, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device).squeeze(0)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
@@ -356,7 +355,7 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_targets[:, self._frankas.clamped_dof_indices[5:]] = self.franka_dof_targets[:, self._frankas.clamp_drive_dof_indices]
         env_ids_int32 = torch.arange(self._frankas.count, dtype=torch.int32, device=self._device)
 
-        self.pull_downward()
+        # self.pull_downward()
         self._frankas.set_joint_position_targets(self.franka_dof_targets, indices=env_ids_int32)
 
     def pull_downward(self, strength=1.5):
@@ -387,30 +386,25 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_targets[env_ids, :] = dof_pos
         self.franka_dof_pos[env_ids, :] = dof_pos
 
-        # reset cabinet
-        # self._cabinets.set_joint_positions(
-        #     torch.zeros_like(self._cabinets.get_joint_positions(clone=False)[env_ids]), indices=indices
-        # )
-        # self._cabinets.set_joint_velocities(
-        #     torch.zeros_like(self._cabinets.get_joint_velocities(clone=False)[env_ids]), indices=indices
-        # )
 
-        # # reset props
-        # if self.num_props > 0:
-        #     self._props.set_world_poses(
-        #         self.default_prop_pos[self.prop_indices[env_ids].flatten()],
-        #         self.default_prop_rot[self.prop_indices[env_ids].flatten()],
-        #         self.prop_indices[env_ids].flatten().to(torch.int32),
-        #     )
 
         self._frankas.set_joint_position_targets(self.franka_dof_targets[env_ids], indices=indices)
         self._frankas.set_joint_positions(dof_pos, indices=indices)
         self._frankas.set_joint_velocities(dof_vel, indices=indices)
 
-        pos = torch.ones((num_indices, 3), device=self._device) * self._drill_position + self._env_pos[indices, :]
+        pos = tensor_clamp(
+            self._drill_position.unsqueeze(0)
+            + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
+            self._drill_lower_bound,
+            self._drill_upper_bound,
+            )
+
+        dof_pos = torch.zeros((num_indices, 3), device=self._device)
+        dof_pos[:, :] = pos + self._env_pos[env_ids]
+
         rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
         vel = torch.zeros((num_indices, 6), device=self._device)
-        self._drills.set_world_poses(positions=pos,
+        self._drills.set_world_poses(positions=dof_pos,
                                      orientations=rot,
                                     indices=indices)
         self._drills.set_velocities(vel, indices=indices)
@@ -477,7 +471,6 @@ class FrankaCabinetTask(RLTask):
     def is_done(self) -> None:
         # reset if drawer is open or max length reached
         # self.reset_buf = torch.where(self.drill_pos[:, 2] > 0.6, torch.ones_like(self.reset_buf), self.reset_buf)
-        # self.reset_buf = torch.where(self.drill_pos[:, 2] <= self._drill_reset_lower_bound[2], torch.ones_like(self.reset_buf), self.reset_buf)
         self.reset_buf = torch.where(self.failed_envs, torch.ones_like(self.reset_buf), self.reset_buf)
         self.reset_buf = torch.where(
             self.progress_buf >= self._max_episode_length - 1, torch.ones_like(self.reset_buf), self.reset_buf
@@ -537,7 +530,7 @@ class FrankaCabinetTask(RLTask):
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
-        dist_reward = torch.where(d <= 0.03, dist_reward + 0.5, dist_reward)
+        dist_reward = torch.where(d <= 0.03, dist_reward + 0.005, dist_reward)
         self.reward_terms_log["distReward"] = dist_reward
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
@@ -581,7 +574,7 @@ class FrankaCabinetTask(RLTask):
 
         finger_close_reward = torch.zeros_like(rot_reward)
         finger_close_reward = torch.where(
-            d <= 0.04, torch.sum(self._frankas.get_measured_joint_efforts()[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
+            d <= 0.04, torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
         )
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
 
@@ -629,7 +622,6 @@ class FrankaCabinetTask(RLTask):
         # bonus for opening drawer properly
         rewards = torch.where(drill_pos[:, 2] > 0.56, rewards + 10 , rewards)
         rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + 2 * 10, rewards)
-        rewards = torch.where(drill_pos[:, 2] <= self._drill_reset_lower_bound[2], rewards - self.fail_penalty, rewards)
         rewards = torch.where(self.failed_envs, 
                                       rewards - self.fail_penalty,
                                       rewards)

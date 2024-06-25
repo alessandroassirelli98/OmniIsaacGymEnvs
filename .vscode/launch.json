@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": "task=DianaTekken headless=True num_envs=2",
+            "args": "task=FrankaCabinet headless=False num_envs=1",
             "justMyCode": false
         }
     ]
