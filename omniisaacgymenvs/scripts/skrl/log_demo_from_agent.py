@@ -152,7 +152,7 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
-checkpoint_path = "/home/alessandro.assirelli/devel/git-repos/OmniIsaacGymEnvs/omniisaacgymenvs/runs/torch/DianaTekken/24-06-25_06-57-40-170244_PPO/checkpoints/best_agent.pt"
+checkpoint_path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/24-06-25_06-57-40-170244_PPO"
 agent.load(checkpoint_path)
 agent.set_running_mode("eval")
 
@@ -169,15 +169,15 @@ for i in range(15):
         exit()
 
 log = Logger(env)
-log.start_logging(file_path)
-
-def on_press(self, key):
+log.start_logging(file_path)             
+kill = False
+def on_press(key):
     global kill
-    kill = False
     if (key == keyboard.Key.space):
         kill = True
 
-listener = keyboard.Listener(on_press=on_press)
+listener = keyboard.Listener(on_press=on_press)  
+listener.start()
 
 while True:
     # compute actions
