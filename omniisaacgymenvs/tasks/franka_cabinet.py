@@ -542,7 +542,7 @@ class FrankaCabinetTask(RLTask):
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
-        dist_reward = torch.where(d <= 0.03, dist_reward + 0.5, dist_reward)
+        dist_reward = torch.where(d <= 0.03, dist_reward + 0.005, dist_reward)
         self.reward_terms_log["distReward"] = dist_reward
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
@@ -634,7 +634,6 @@ class FrankaCabinetTask(RLTask):
         # bonus for opening drawer properly
         rewards = torch.where(drill_pos[:, 2] > 0.56, rewards + 10 , rewards)
         rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + 2 * 10, rewards)
-        rewards = torch.where(drill_pos[:, 2] <= self._drill_reset_lower_bound[2], rewards - self.fail_penalty, rewards)
         rewards = torch.where(self.failed_envs, 
                                       rewards - self.fail_penalty,
                                       rewards)

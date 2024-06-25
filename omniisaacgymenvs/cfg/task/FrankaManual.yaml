@@ -7,7 +7,7 @@ physics_engine: ${..physics_engine}
 env:
   numEnvs: ${resolve_default:4096,${...num_envs}}
   envSpacing: 3.0
-  episodeLength: 5000
+  episodeLength: 500
   enableDebugVis: False
 
   clipObservations: 5.0
@@ -27,11 +27,11 @@ env:
 
   distRewardScale: 200.
   rotRewardScale: 5
-  aroundHandleRewardScale: 1.
-  openRewardScale: 7.
+  aroundHandleRewardScale: 0.
+  openRewardScale: 20.
   fingerDistRewardScale: 0.
   actionPenaltyScale: 0.1
-  fingerCloseRewardScale: 15.
+  fingerCloseRewardScale: 10.
   fingerOpenRewardScale: 0.
   goalAchievedBonus: 2.
   failPenalty: 1
