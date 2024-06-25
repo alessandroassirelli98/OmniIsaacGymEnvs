@@ -18,7 +18,7 @@ class Logger():
                                    "actions" : task.actions.tolist(),
                                     "rewards": task.rew_buf.tolist(),
                                     "terminated": task.reset_buf.tolist(),
-                                    "applied_joint_actions": robot.get_applied_actions().joint_positions.tolist()}}
+                                    "joint_efforts": (robot.get_measured_joint_efforts()[:, :7]).tolist()}}
         
         self.data_logger.add_data_frame_logging_func(frame_logging_func)
         

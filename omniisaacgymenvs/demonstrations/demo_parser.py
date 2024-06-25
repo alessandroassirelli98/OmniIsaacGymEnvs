@@ -4,22 +4,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import os
-matplotlib.style.use("seaborn")
+import omniisaacgymenvs
+# matplotlib.style.use("seaborn")
 
-def parse_json_demo():
+def load_dataset(path = f'{omniisaacgymenvs.__path__[0]}/demonstrations/data'):
     df = []
-    for root, dir, filenames in os.walk(f'{os.getcwd()}{"/demonstrations/data"}'):
+    for root, dir, filenames in os.walk(path):
         for filename in filenames:
             with open(f'{root}{"/"}{filename}') as f:
                 data = json.load(f)
                 df_tmp = pd.json_normalize(data["Isaac Sim Data"])
-                df_tmp.columns = ["time", "timestep", "states", "actions", "rewards", "terminated", "applied_joint_act"]
+                df_tmp.columns = ["time", "timestep", "states", "actions", "rewards", "terminated", "joint_effort"]
                 df.append(df_tmp)
     if len(df) == 1:
         df = df[0]
     else:
         df = pd.concat(df).reset_index()
+    return df
 
+def parse_json_demo():
+    df = load_dataset()
     states = df["states"]
     actions = df["actions"]
     rewards = df["rewards"]
