@@ -174,7 +174,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
                                      "project": "franka_tekken 12 dof js bc rev2"}
 
@@ -212,9 +212,15 @@ for key, value in algo_config.items():
     cfg[str(key)] = value
     print(f"Setting {key} to {value} of type {type(value)}")
 
+# Buffer prefill
+episode = parse_json_demo()
+demo_size = len(episode)
+demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=device)
 
-agent = PPO(models=models,
+agent = PPOFD(models=models,
             memory=memory,
+            demonstration_memory=demonstration_memory,
+            sampling_demo_memory=demonstration_memory,
             cfg=cfg,
             observation_space=env.observation_space,
             action_space=env.action_space,
@@ -224,11 +230,6 @@ agent = PPO(models=models,
 # configure and instantiate the RL trainer
 cfg_trainer = {"timesteps": 80000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
-
-# Buffer prefill
-episode = parse_json_demo()
-demo_size = len(episode)
-demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=device)
 
 # # demonstrations injection
 if cfg["pretrain"] and not cfg["test"]:
@@ -253,7 +254,7 @@ if cfg["pretrain"] and not cfg["test"]:
                     transitions=transitions,
                     lr=cfg["pretrainer_lr"],
                 epochs=cfg["pretrainer_epochs"],
-                batch_size=16)
+                batch_size=32)
     pt.train_bc()
     
     if plot:
