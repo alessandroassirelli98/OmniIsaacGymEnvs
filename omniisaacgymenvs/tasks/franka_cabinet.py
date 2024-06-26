@@ -323,7 +323,7 @@ class FrankaCabinetTask(RLTask):
             dim=-1,
         )
 
-        self.compute_failure(self.drill_rot)
+        self.compute_failure(hand_pos, self.drill_rot)
         self.compute_success(self.drill_pos)
         # self._target_spheres.set_world_poses(positions=self.franka_grasp_pos, orientations=self.drill_grasp_rot)
         # print(self._frankas.get_measured_joint_efforts()[:, :7])
