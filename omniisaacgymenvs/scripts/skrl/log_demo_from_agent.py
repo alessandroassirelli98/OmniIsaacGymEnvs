@@ -152,7 +152,7 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
-checkpoint_path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/24-06-25_06-57-40-170244_PPO"
+checkpoint_path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-06-25_17-09-29-902404_PPO/checkpoints/best_agent.pt"
 agent.load(checkpoint_path)
 agent.set_running_mode("eval")
 
@@ -179,7 +179,8 @@ def on_press(key):
 listener = keyboard.Listener(on_press=on_press)  
 listener.start()
 
-while True:
+t = 0
+while t < 15000:
     # compute actions
     with torch.no_grad():
         actions = agent.act(states, timestep=0, timesteps=0)[0]
@@ -196,11 +197,13 @@ while True:
                 states, infos = env.reset()
         else:
             states = next_states
+    t += 1
+    print(t)
 
-    if kill:  # if key 'q' is pressed 
-        log.save_log()
-        env._simulation_app.close()
-        print(f'Saving demo in {file_path}')
-        break
+    #if kill:  # if key 'q' is pressed 
+log.save_log()
+env._simulation_app.close()
+print(f'Saving demo in {file_path}')
+
             
 

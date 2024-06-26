@@ -21,7 +21,7 @@ env:
   numProps: 4
   aggregateMode: 3
 
-  actionScale: 3.
+  actionScale: 2.5
   dofVelocityScale: 0.1
   ikVelocity: 2.
 
@@ -129,3 +129,4 @@ sim:
     rest_offset: 0.0
   drill:
    make_kinematic: False
+   mass: 0.1

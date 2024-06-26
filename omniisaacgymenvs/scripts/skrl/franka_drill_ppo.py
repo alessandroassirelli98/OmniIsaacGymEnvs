@@ -135,7 +135,7 @@ models["value"] = Critic(env.observation_space, env.action_space, device, False)
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
-plot=True
+plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
 
@@ -176,8 +176,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev4"}
-
+                                     "project": "franka_tekken 12 dof js bc rev2"}
 
 for key, value in algo_config.items():
     print(key, value)
@@ -214,11 +213,6 @@ for key, value in algo_config.items():
     print(f"Setting {key} to {value} of type {type(value)}")
 
 
-# Buffer prefill
-episode = parse_json_demo()
-demo_size = len(episode)
-demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=device)
-
 agent = PPO(models=models,
             memory=memory,
             cfg=cfg,
@@ -228,48 +222,51 @@ agent = PPO(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 150000}
+cfg_trainer = {"timesteps": 80000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
-# # demonstrations injection
-# if cfg["pretrain"]:
-#     transitions = []
-#     for tstep in episode:
-#         states = torch.tensor(tstep["states"], device=device)
-#         actions = torch.tensor(tstep["actions"], device=device)
-#         rewards = torch.tensor(tstep["rewards"], device=device)
-#         terminated = torch.tensor(tstep["terminated"], device=device)
-#         next_states = torch.tensor(tstep["next_states"], device=device)
-#         dict = {}
-#         dict["states"] = states
-#         dict["actions"] = actions
-#         dict["reward"] = rewards
-#         dict["next_states"] = next_states
-#         dict["terminated"] = terminated
-#         transitions.append(dict)
-#         demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
+# Buffer prefill
+episode = parse_json_demo()
+demo_size = len(episode)
+demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=device)
 
-#     # trainer.pre_train(transitions, 10)
-#     pt = PretrainerV2(agent=agent,
-#                     transitions=transitions,
-#                     lr=cfg["pretrainer_lr"],
-#                 epochs=cfg["pretrainer_epochs"],
-#                 batch_size=16)
+# # demonstrations injection
+if cfg["pretrain"] and not cfg["test"]:
+    transitions = []
+    for tstep in episode:
+        states = torch.tensor(tstep["states"], device=device)
+        actions = torch.tensor(tstep["actions"], device=device)
+        rewards = torch.tensor(tstep["rewards"], device=device)
+        terminated = torch.tensor(tstep["terminated"], device=device)
+        next_states = torch.tensor(tstep["next_states"], device=device)
+        dict = {}
+        dict["states"] = states
+        dict["actions"] = actions
+        dict["reward"] = rewards
+        dict["next_states"] = next_states
+        dict["terminated"] = terminated
+        transitions.append(dict)
+        demonstration_memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,terminated=terminated)
+
+    # trainer.pre_train(transitions, 10)
+    pt = PretrainerV2(agent=agent,
+                    transitions=transitions,
+                    lr=cfg["pretrainer_lr"],
+                epochs=cfg["pretrainer_epochs"],
+                batch_size=16)
+    pt.train_bc()
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.title("BC loss")
+        plt.plot(pt.log_policy_loss)
+        plt.plot(pt.log_policy_test_loss)
+        plt.legend(["train loss", "test loss"])
+        plt.show()
 
 # start training
 if cfg["checkpoint"]:
     agent.load(cfg["checkpoint"])
-
-# if cfg["pretrain"]:
-#     import matplotlib.pyplot as plt
-#     pt.train_bc()
-    
-#     if plot:
-#         plt.title("BC loss")
-#         plt.plot(pt.log_policy_loss)
-#         plt.plot(pt.log_policy_test_loss)
-#         plt.legend(["train loss", "test loss"])
-#         plt.show()
 
 if not cfg["test"]:
     trainer.train()

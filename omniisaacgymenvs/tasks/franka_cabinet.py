@@ -421,7 +421,7 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_lower_limits = dof_limits[0, :, 0].to(device=self._device)
         self.franka_dof_upper_limits = dof_limits[0, :, 1].to(device=self._device)
         self.franka_dof_speed_scales = torch.ones_like(self.franka_dof_lower_limits)
-        # self.franka_dof_speed_scales[self._frankas.gripper_indices] = 0.1
+        # self.franka_dof_speed_scales[self._frankas.clamp_drive_dof_indices] = 10.
         self.franka_dof_targets = torch.zeros(
             (self._num_envs, self.num_franka_dofs), dtype=torch.float, device=self._device
         )
