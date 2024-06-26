@@ -3,7 +3,6 @@ import torch.nn as nn
 import sys
 import git
 import os
-from pynput import keyboard
 
 
 from omniisaacgymenvs.utils.logger import Logger
@@ -152,7 +151,7 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
-checkpoint_path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-06-25_17-09-29-902404_PPO/checkpoints/best_agent.pt"
+checkpoint_path = "/home/alessandro.assirelli/devel/git-repos/OmniIsaacGymEnvs/omniisaacgymenvs/runs/torch/DianaTekken/24-06-26_16-02-09-834000_PPOFD/checkpoints/best_agent.pt"
 agent.load(checkpoint_path)
 agent.set_running_mode("eval")
 
@@ -170,14 +169,6 @@ for i in range(15):
 
 log = Logger(env)
 log.start_logging(file_path)             
-kill = False
-def on_press(key):
-    global kill
-    if (key == keyboard.Key.space):
-        kill = True
-
-listener = keyboard.Listener(on_press=on_press)  
-listener.start()
 
 t = 0
 while t < 15000:
