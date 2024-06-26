@@ -1,7 +1,7 @@
 configurations:
 ### PPO
   - nn_type: [SeparateNetworks]
-  - ratio_clip: [0.1, 0.2]
+  - ratio_clip: [0.2]
   - pretrain: [True, False]
-  - entropy_loss_scale: [0.001]
+  - entropy_loss_scale: [0.0001, 0.001]
   - random_seed: [1, 2, 3]

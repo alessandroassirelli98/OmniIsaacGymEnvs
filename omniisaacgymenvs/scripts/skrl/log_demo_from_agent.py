@@ -3,7 +3,7 @@ import torch.nn as nn
 import sys
 import git
 import os
-from pynput import keyboard
+# from pynput import keyboard
 
 
 from omniisaacgymenvs.utils.logger import Logger
@@ -152,7 +152,8 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
-checkpoint_path = "/home/alessandro.assirelli/devel/git-repos/OmniIsaacGymEnvs/omniisaacgymenvs/runs/torch/DianaTekken/24-06-25_06-57-40-170244_PPO/checkpoints/best_agent.pt"
+checkpoint_path = "/home/alessandro.assirelli/devel/git-repos/OmniIsaacGymEnvs/omniisaacgymenvs/runs/torch/DianaTekken/24-06-25_15-27-17-739875_PPO/checkpoints/best_agent.pt"
+
 agent.load(checkpoint_path)
 agent.set_running_mode("eval")
 
@@ -171,15 +172,15 @@ for i in range(15):
 log = Logger(env)
 log.start_logging(file_path)
 
-def on_press(self, key):
-    global kill
-    kill = False
-    if (key == keyboard.Key.space):
-        kill = True
+# def on_press(self, key):
+#     global kill
+#     kill = False
+#     if (key == keyboard.Key.space):
+#         kill = True
 
-listener = keyboard.Listener(on_press=on_press)
-
-while True:
+# listener = keyboard.Listener(on_press=on_press)
+t = 0
+while t < 15000:
     # compute actions
     with torch.no_grad():
         actions = agent.act(states, timestep=0, timesteps=0)[0]
@@ -196,11 +197,16 @@ while True:
                 states, infos = env.reset()
         else:
             states = next_states
+    t+=1
+    
+log.save_log()
+env._simulation_app.close()
+print(f'Saving demo in {file_path}')
 
-    if kill:  # if key 'q' is pressed 
-        log.save_log()
-        env._simulation_app.close()
-        print(f'Saving demo in {file_path}')
-        break
+    # if kill:  # if key 'q' is pressed 
+    #     log.save_log()
+    #     env._simulation_app.close()
+    #     print(f'Saving demo in {file_path}')
+    #     break
             
 

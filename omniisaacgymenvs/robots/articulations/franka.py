@@ -86,7 +86,7 @@ class Franka(Robot):
         stiffness = [4000 * np.pi / 180] * 7 + [400 * np.pi / 180] * 15
         damping = [800 * np.pi / 180] * 7 + [80 * np.pi / 180] * 15
         # max_force = [87, 87, 87, 87, 12, 12, 12]+  [200, 200, 200] * 5
-        max_force = [100, 100, 100, 100, 100, 100, 100]+  [200, 200, 200] * 5
+        max_force = [87, 87, 87, 87, 12, 12, 12] +  [200, 200, 200] * 5
         max_velocity = [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] + [100.] * 15
 
         for i, dof in enumerate(dof_paths):

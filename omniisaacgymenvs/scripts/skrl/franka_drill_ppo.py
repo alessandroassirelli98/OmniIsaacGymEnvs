@@ -142,8 +142,8 @@ cfg["commit_hash"] = commit_hash
 cfg["nn_type"] = "SeparateNetworks"
 cfg["random_seed"] = rs
 
-cfg["pretrain"] = True
-cfg["pretrainer_epochs"] = 15
+cfg["pretrain"] = False
+cfg["pretrainer_epochs"] = 25
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 8
@@ -174,9 +174,9 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof cs rev2"}
+                                     "project": "franka_tekken 12 dof cs bc"}
 
 for key, value in algo_config.items():
     print(key, value)
@@ -222,7 +222,7 @@ agent = PPO(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 150000}
+cfg_trainer = {"timesteps": 110000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # Buffer prefill
