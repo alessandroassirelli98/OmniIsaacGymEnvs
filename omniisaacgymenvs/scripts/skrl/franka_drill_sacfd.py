@@ -11,11 +11,22 @@ from skrl.resources.preprocessors.torch import RunningStandardScaler
 from skrl.trainers.torch import SequentialTrainer
 from skrl.utils import set_seed
 from omniisaacgymenvs.demonstrations.demo_parser import parse_json_demo
+from omniisaacgymenvs.utils.parse_algo_config import parse_arguments
 
 
 
 # seed for reproducibility
-set_seed(42)  # e.g. `set_seed(42)` for fixed seed
+ignore_args = ["headless", "task", "num_envs"] # These shouldn't be handled by this fcn
+algo_config = parse_arguments(ignore_args)
+if "random_seed" in algo_config.keys():
+    rs = int(algo_config["random_seed"])
+    print("set random seed ", rs)
+    exit
+else:
+    rs = 42
+
+# seed for reproducibility
+set_seed(rs)  # e.g. `set_seed(42)` for fixed seed
 
 
 # define models (stochastic and deterministic models) using mixins
@@ -76,6 +87,9 @@ models["target_critic_2"] = Critic(env.observation_space, env.action_space, devi
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/sac.html#configuration-and-hyperparameters
 cfg = SAC_DEFAULT_CONFIG.copy()
+cfg["random_seed"] = rs
+cfg["pretrain"] = False
+
 cfg["gradient_steps"] = 1
 cfg["batch_size"] = 4096
 cfg["discount_factor"] = 0.99
@@ -96,7 +110,8 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["sacfd "],
-                                     "project": "pick up trial 7 DOF with ik cut"}
+                                     "project": "franka_tekken 12 dof js rev5"}
+
 
 agent = SAC(models=models,
             memory=memory,
@@ -105,41 +120,41 @@ agent = SAC(models=models,
             action_space=env.action_space,
             device=device)
 
-# Buffer prefill
-episode = parse_json_demo()
-demo_size = len(episode)
-
 # configure and instantiate the RL trainer
 cfg_trainer = {"timesteps": 160000, "headless": True}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
-transitions = []
-mem_idx = 0
-env_id = 0  
-for i, tstep in enumerate(episode):
-    if i == (len(episode) // env.num_envs) * env.num_envs:
-        break
-    states = torch.tensor(tstep["states"], device=device)
-    actions = torch.tensor(tstep["actions"], device=device)
-    rewards = torch.tensor(tstep["rewards"], device=device)
-    terminated = torch.tensor(tstep["terminated"], device=device)
-    next_states = torch.tensor(tstep["next_states"], device=device)
-    dict = {}
-    dict["states"] = states
-    dict["actions"] = actions
-    dict["reward"] = rewards
-    dict["next_states"] = next_states
-    dict["terminated"] = terminated
-    transitions.append(dict)
+# Buffer prefill
+episode = parse_json_demo()
+demo_size = len(episode)
 
-    memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,
-                                    terminated=terminated, truncated=terminated)
+if cfg["pretrain"] and not cfg["test"]:
+    transitions = []
+    mem_idx = 0
+    env_id = 0  
+    for i, tstep in enumerate(episode):
+        if i == (len(episode) // env.num_envs) * env.num_envs:
+            break
+        states = torch.tensor(tstep["states"], device=device)
+        actions = torch.tensor(tstep["actions"], device=device)
+        rewards = torch.tensor(tstep["rewards"], device=device)
+        terminated = torch.tensor(tstep["terminated"], device=device)
+        next_states = torch.tensor(tstep["next_states"], device=device)
+        dict = {}
+        dict["states"] = states
+        dict["actions"] = actions
+        dict["reward"] = rewards
+        dict["next_states"] = next_states
+        dict["terminated"] = terminated
+        transitions.append(dict)
 
-    env_id += 1
-    if env_id == env.num_envs:
-        env_id = 0
-        mem_idx += 1
-print(len(transitions))
+        memory.add_samples(states=states, actions=actions, rewards=rewards, next_states=next_states,
+                                        terminated=terminated, truncated=terminated)
+
+        env_id += 1
+        if env_id == env.num_envs:
+            env_id = 0
+            mem_idx += 1
 
 # start training
 trainer.train()

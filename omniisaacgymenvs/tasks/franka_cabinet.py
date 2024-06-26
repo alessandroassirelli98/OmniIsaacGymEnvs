@@ -665,7 +665,7 @@ class FrankaCabinetTask(RLTask):
             torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
         )  # alignment of drill with world y
 
-        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
+        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
 
     def compute_success(self, drill_pos, SUCCESS=0.6):
         self.success_envs = drill_pos[:, 2] >= SUCCESS
