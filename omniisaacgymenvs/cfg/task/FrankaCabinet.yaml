@@ -26,9 +26,9 @@ env:
   ikVelocity: 2.
 
   distRewardScale: 200.
-  rotRewardScale: 5
+  rotRewardScale: 3
   aroundHandleRewardScale: 0.
-  openRewardScale: 20.
+  openRewardScale: 100.
   fingerDistRewardScale: 0.
   actionPenaltyScale: 0.1
   fingerCloseRewardScale: 10.
@@ -58,7 +58,7 @@ sim:
     worker_thread_count: ${....num_threads}
     solver_type: ${....solver_type}
     use_gpu: ${eq:${....sim_device},"gpu"} # set to False to run on CPU
-    solver_position_iteration_count: 12
+    solver_position_iteration_count: 32
     solver_velocity_iteration_count: 1
     contact_offset: 0.005
     rest_offset: 0.0
@@ -88,7 +88,7 @@ sim:
     enable_gyroscopic_forces: True
     # also in stage params
     # per-actor
-    solver_position_iteration_count: 12
+    solver_position_iteration_count: 32
     solver_velocity_iteration_count: 1
     sleep_threshold: 0.005
     stabilization_threshold: 0.001

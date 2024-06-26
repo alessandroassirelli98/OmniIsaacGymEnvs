@@ -421,7 +421,7 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_lower_limits = dof_limits[0, :, 0].to(device=self._device)
         self.franka_dof_upper_limits = dof_limits[0, :, 1].to(device=self._device)
         self.franka_dof_speed_scales = torch.ones_like(self.franka_dof_lower_limits)
-        # self.franka_dof_speed_scales[self._frankas.clamp_drive_dof_indices] = 10.
+        # self.franka_dof_speed_scales[self._frankas.clamp_drive_dof_indices] = 1.5
         self.franka_dof_targets = torch.zeros(
             (self._num_envs, self.num_franka_dofs), dtype=torch.float, device=self._device
         )
@@ -596,6 +596,7 @@ class FrankaCabinetTask(RLTask):
         open_reward = torch.zeros_like(rot_reward)
         d_target = torch.norm(self.drill_target_pos - drill_pos, p=2, dim=-1)
         open_reward = torch.where(d <= 0.04, 1 / (1 + d_target **2 ), open_reward)
+        open_reward = torch.where(d_target <= 0.03, open_reward + 0.05, open_reward)
         self.reward_terms_log["openReward"] = open_reward
 
 
@@ -652,7 +653,7 @@ class FrankaCabinetTask(RLTask):
         u = (torch.inverse(B) @ g).view(num_envs, num_dofs)
         return u
     
-    def compute_failure(self, drill_rot, FAIL=0.6448):
+    def compute_failure(self, hand_pos, drill_rot, FAIL=0.6448):
         axis1 = tf_vector(drill_rot, self.drill_inward_axis)
         axis2 = tf_vector(drill_rot, self.drill_right_axis)
 
@@ -664,7 +665,7 @@ class FrankaCabinetTask(RLTask):
             torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
         )  # alignment of drill with world y
 
-        self.failed_envs = torch.logical_or(dot1 < FAIL, dot2 < FAIL)
+        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
 
     def compute_success(self, drill_pos, SUCCESS=0.6):
         self.success_envs = drill_pos[:, 2] >= SUCCESS

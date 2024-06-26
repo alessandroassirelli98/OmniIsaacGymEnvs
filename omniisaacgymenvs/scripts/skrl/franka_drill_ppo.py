@@ -121,7 +121,6 @@ device = env.device
 
 # instantiate a memory as rollout buffer (any memory can be used for this)
 memory = RandomMemory(memory_size=16, num_envs=env.num_envs, device=device)
-samppling_demo_memory = RandomMemory(memory_size=16, num_envs=env.num_envs, device=device)
 
 
 # instantiate the agent's models (function approximators).
@@ -174,9 +173,9 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js bc rev2"}
+                                     "project": "franka_tekken 12 dof js rev5"}
 
 for key, value in algo_config.items():
     print(key, value)
