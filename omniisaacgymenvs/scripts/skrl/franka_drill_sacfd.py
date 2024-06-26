@@ -63,7 +63,7 @@ class Critic(DeterministicMixin, Model):
 
 
 # load and wrap the Omniverse Isaac Gym environment
-env = load_omniverse_isaacgym_env(task_name="DianaTekken", num_envs=1024)
+env = load_omniverse_isaacgym_env(task_name="FrankaCabinet", num_envs=1024)
 env = wrap_env(env)
 
 device = env.device
@@ -89,6 +89,8 @@ models["target_critic_2"] = Critic(env.observation_space, env.action_space, devi
 cfg = SAC_DEFAULT_CONFIG.copy()
 cfg["random_seed"] = rs
 cfg["pretrain"] = False
+cfg["test"] = False
+
 
 cfg["gradient_steps"] = 1
 cfg["batch_size"] = 4096
@@ -108,9 +110,24 @@ cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": dev
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["sacfd "],
                                      "project": "franka_tekken 12 dof js rev5"}
+
+for key, value in algo_config.items():
+    print(key, value)
+    if key == "checkpoint":
+        pass
+    elif value == 'True':
+        value = True
+    elif value == 'False':
+        value = False
+    elif '.' in value:
+        value = float(value)
+    else:
+        value = int(value)
+    cfg[str(key)] = value
+    print(f"Setting {key} to {value} of type {type(value)}")
 
 
 agent = SAC(models=models,
