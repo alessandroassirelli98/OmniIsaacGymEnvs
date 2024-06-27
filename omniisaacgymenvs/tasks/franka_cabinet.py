@@ -158,9 +158,9 @@ class FrankaCabinetTask(RLTask):
         )
 
     def get_drill(self):
-        self._drill_position = torch.tensor([0.4, 0, 0.53], device=self._device)
+        self._drill_position = torch.tensor([0.35, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, torch.pi], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0., -0.4, 0.53], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.25, -0.4, 0.53], device=self._device)
         self._drill_upper_bound = torch.tensor([0.6, 0.4, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device).squeeze(0)
 
@@ -402,7 +402,14 @@ class FrankaCabinetTask(RLTask):
         dof_pos = torch.zeros((num_indices, 3), device=self._device)
         dof_pos[:, :] = pos + self._env_pos[env_ids]
 
-        rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
+        # randomize yaw
+        axis = torch.ones((num_indices, 3), device=self._device)
+        axis[:, :2] = 0.
+        yaw = (torch.rand((len(env_ids),1), device=self._device)*2 - 1.) * 50 * torch.pi / 180
+        theta = yaw/2
+        rot = quat_unit(torch.cat([theta, axis], dim=1))
+
+        # rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
         vel = torch.zeros((num_indices, 6), device=self._device)
         self._drills.set_world_poses(positions=dof_pos,
                                      orientations=rot,
@@ -653,19 +660,11 @@ class FrankaCabinetTask(RLTask):
         u = (torch.inverse(B) @ g).view(num_envs, num_dofs)
         return u
     
-    def compute_failure(self, hand_pos, drill_rot, FAIL=0.6448):
-        axis1 = tf_vector(drill_rot, self.drill_inward_axis)
-        axis2 = tf_vector(drill_rot, self.drill_right_axis)
+    def compute_failure(self, hand_pos, drill_rot, FAIL=0.5):
+        cos_roll = torch.cos(get_euler_xyz(drill_rot)[0])
+        cos_pitch = torch.cos(get_euler_xyz(drill_rot)[1])
 
-
-        dot1 = torch.abs(
-            torch.bmm(axis1.view(self.num_envs, 1, 3), self.world_forward_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-        )  # alignment of drill with world x
-        dot2 = torch.abs(
-            torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-        )  # alignment of drill with world y
-
-        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
+        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(cos_roll < FAIL, cos_pitch < FAIL))
 
     def compute_success(self, drill_pos, SUCCESS=0.6):
         self.success_envs = drill_pos[:, 2] >= SUCCESS

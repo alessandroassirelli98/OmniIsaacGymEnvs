@@ -175,7 +175,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev5"}
+                                     "project": "franka_tekken 12 dof js rev6"}
 
 for key, value in algo_config.items():
     print(key, value)
@@ -227,7 +227,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 100000}
+cfg_trainer = {"timesteps": 120000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # # demonstrations injection
