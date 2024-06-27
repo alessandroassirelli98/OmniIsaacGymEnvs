@@ -134,7 +134,7 @@ models["value"] = Critic(env.observation_space, env.action_space, device, False)
 
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
-plot=True
+plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
 
@@ -160,7 +160,7 @@ cfg["entropy_loss_scale"] = 0.001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
-cfg["state_preprocessor"] = None
+cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
 
 cfg["value_preprocessor"] = RunningStandardScaler
@@ -173,7 +173,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
                                      "project": "franka_tekken 12 dof js rev5"}
 
@@ -231,7 +231,7 @@ cfg_trainer = {"timesteps": 100000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # # demonstrations injection
-if cfg["pretrain"]:
+if cfg["pretrain"] and not cfg["checkpoint"]:
     transitions = []
     for tstep in episode:
         states = torch.tensor(tstep["states"], device=device)

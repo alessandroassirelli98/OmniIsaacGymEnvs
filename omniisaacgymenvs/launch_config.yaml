@@ -1,4 +1,4 @@
 configurations:
 ### PPO
   - pretrain: [True, False]
-  - random_seed: [1, 2, 3]
+  - random_seed: [42, 1, 2, 3]
