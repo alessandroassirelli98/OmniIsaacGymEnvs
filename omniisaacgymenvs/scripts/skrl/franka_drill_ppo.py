@@ -137,6 +137,8 @@ models["value"] = Critic(env.observation_space, env.action_space, device, False)
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
+cfg["lambda_0"] = 0.2
+cfg["lambda_1"] = 0.99993
 
 cfg["nn_type"] = "SeparateNetworks"
 cfg["random_seed"] = rs
@@ -173,9 +175,9 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev5"}
+cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO","sparser"],
+                                     "project": "franka_tekken 12 dof js sparse"}
 
 for key, value in algo_config.items():
     print(key, value)
