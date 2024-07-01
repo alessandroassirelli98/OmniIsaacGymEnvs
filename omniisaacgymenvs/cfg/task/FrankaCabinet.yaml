@@ -26,14 +26,13 @@ env:
   ikVelocity: 2.
 
   distRewardScale: 200.
-  rotRewardScale: 3
+  rotRewardScale: 5
   aroundHandleRewardScale: 0.
-  openRewardScale: 100.
-  fingerDistRewardScale: 0.
+  openRewardScale: 20.
   actionPenaltyScale: 0.1
   fingerCloseRewardScale: 10.
-  fingerOpenRewardScale: 0.
-  goalAchievedBonus: 2.
+  heightRewardScale: 1.
+  goalAchievedBonus: 50.
   failPenalty: 1
 
 sim:
