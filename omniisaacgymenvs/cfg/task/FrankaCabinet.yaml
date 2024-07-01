@@ -25,10 +25,10 @@ env:
   dofVelocityScale: 0.1
   ikVelocity: 2.
 
-  distRewardScale: 200.
+  distRewardScale: 0.
   rotRewardScale: 0.
   aroundHandleRewardScale: 0.
-  openRewardScale: 100.
+  openRewardScale: 0.
   fingerDistRewardScale: 0.
   actionPenaltyScale: 0.
   fingerCloseRewardScale: 0.

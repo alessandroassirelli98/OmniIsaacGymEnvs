@@ -1,5 +1,5 @@
 configurations:
 ### PPO
-  - pretrain: [False]
-  - lambda_0: [0.]
+  - pretrain: [True]
+  - lambda_0: [0.1]
   - random_seed: [42, 1, 2]
