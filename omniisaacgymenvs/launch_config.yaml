@@ -1,5 +1,7 @@
 configurations:
 ### PPO
   - pretrain: [False]
-  - lambda_0: [0.]
-  - random_seed: [42, 1, 2]
+  - random_seed: [42, 3]
+  - entropy_loss_scale: [0.0001, 0.001]
+  - learning_rate: [0.0005, 0.001]
+  - ratio_clip: [0.2]

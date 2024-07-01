@@ -23,7 +23,7 @@ env:
 
   actionScale: 7.5
   dofVelocityScale: 0.1
-  ikVelocity: 2.
+  ikVelocity: 0.1
 
   distRewardScale: 100.
   rotRewardScale: 2.

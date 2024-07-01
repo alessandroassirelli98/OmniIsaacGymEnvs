@@ -137,7 +137,7 @@ models["value"] = Critic(env.observation_space, env.action_space, device, False)
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
-cfg["lambda_0"] = 0.2
+cfg["lambda_0"] = 0.
 cfg["lambda_1"] = 0.99993
 
 cfg["nn_type"] = "SeparateNetworks"
@@ -158,7 +158,7 @@ cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
-cfg["entropy_loss_scale"] = 0.001
+cfg["entropy_loss_scale"] = 0.0001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
@@ -176,8 +176,8 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO","sparser"],
-                                     "project": "franka_tekken 12 dof js sparse"}
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
+                                     "project": "franka_tekken 12 dof js rev6"}
 
 for key, value in algo_config.items():
     print(key, value)
@@ -229,7 +229,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 100000}
+cfg_trainer = {"timesteps": 120000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # # demonstrations injection

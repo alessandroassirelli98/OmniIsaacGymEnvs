@@ -37,7 +37,7 @@ class FrankaCabinetTask(RLTask):
         self.distX_offset = 0.04
         self.dt = 1 / 60.0
 
-        self._num_observations = 32
+        self._num_observations = 35
         self._num_actions = 12
 
         RLTask.__init__(self, name, env)
@@ -78,24 +78,21 @@ class FrankaCabinetTask(RLTask):
         self.open_reward_scale = self._task_cfg["env"]["openRewardScale"]
         self.reward_weights_log["openReward"] = self._task_cfg["env"]["openRewardScale"]
 
-        self.finger_dist_reward_scale = self._task_cfg["env"]["fingerDistRewardScale"]
-        self.reward_weights_log["fingerDistReward"] = self._task_cfg["env"]["fingerDistRewardScale"]
-
         self.action_penalty_scale = self._task_cfg["env"]["actionPenaltyScale"]
         self.reward_weights_log["actionPenalty"] = self._task_cfg["env"]["actionPenaltyScale"]
-
 
         self.finger_close_reward_scale = self._task_cfg["env"]["fingerCloseRewardScale"]
         self.reward_weights_log["fingerCloseReward"] = self._task_cfg["env"]["fingerCloseRewardScale"]
 
-        self.finger_open_reward_scale = self._task_cfg["env"]["fingerOpenRewardScale"]
-        self.reward_weights_log["fingerOpenReward"] = self._task_cfg["env"]["fingerOpenRewardScale"]
+        self.height_reward_scale = self._task_cfg["env"]["heightRewardScale"]
+        self.reward_weights_log["heightReward"] = self._task_cfg["env"]["heightRewardScale"]
 
         self.fail_penalty = self._task_cfg["env"]["failPenalty"]
 
 
 
         self.goal_achieved_bonus = self._task_cfg["env"]["goalAchievedBonus"]
+        self.reward_weights_log["goalBonusReward"] = 1.
 
     def set_up_scene(self, scene) -> None:
         self.get_franka()
@@ -158,9 +155,9 @@ class FrankaCabinetTask(RLTask):
         )
 
     def get_drill(self):
-        self._drill_position = torch.tensor([0.4, 0, 0.53], device=self._device)
+        self._drill_position = torch.tensor([0.35, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, torch.pi], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0., -0.4, 0.53], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.25, -0.4, 0.53], device=self._device)
         self._drill_upper_bound = torch.tensor([0.6, 0.4, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device).squeeze(0)
 
@@ -271,7 +268,7 @@ class FrankaCabinetTask(RLTask):
             [0, -0.99, 0., -2.6, -0., 3.14, 0.17] + [0.] * 20, device=self._device
         )
 
-        self.drill_target_pos = torch.tensor([0.45, 0, 0.6], device=self._device, dtype=torch.float).repeat(
+        self.drill_target_pos = torch.tensor([0.6, 0, 0.65], device=self._device, dtype=torch.float).repeat(
             (self._num_envs, 1)
         )
 
@@ -307,15 +304,18 @@ class FrankaCabinetTask(RLTask):
             / (self.franka_dof_upper_limits - self.franka_dof_lower_limits)
             - 1.0
         )
-        to_target = self.drill_grasp_pos - self.franka_grasp_pos
+
+        to_drill = self.drill_grasp_pos - self.franka_grasp_pos
+        to_target = self.drill_target_pos - (self.drill_pos - self._env_pos)
+        self.d_target = torch.norm(to_target, p=2, dim=-1)
 
         self.franka_thumb_pos, self.franka_thumb_rot = self._frankas._thumb_fingers.get_world_poses(clone=False)
         self.franka_index_pos, self.franka_index_rot = self._frankas._index_fingers.get_world_poses(clone=False)
-
         self.obs_buf = torch.cat(
             (
                 dof_pos_scaled[:, self._frankas.actuated_dof_indices],
                 (franka_dof_vel * self.dof_vel_scale)[:, self._frankas.actuated_dof_indices],
+                to_drill,
                 to_target,
                 self.drill_pos[:, 2].unsqueeze(-1),
                 self.drill_rot
@@ -324,8 +324,8 @@ class FrankaCabinetTask(RLTask):
         )
 
         self.compute_failure(hand_pos, self.drill_rot)
-        self.compute_success(self.drill_pos)
-        # self._target_spheres.set_world_poses(positions=self.franka_grasp_pos, orientations=self.drill_grasp_rot)
+        self.compute_success(self.d_target)
+        # self._target_spheres.set_world_poses(positions=self.drill_target_pos + self._env_pos)
         # print(self._frankas.get_measured_joint_efforts()[:, :7])
         observations = {self._frankas.name: {"obs_buf": self.obs_buf}}
         return observations
@@ -402,6 +402,13 @@ class FrankaCabinetTask(RLTask):
         dof_pos = torch.zeros((num_indices, 3), device=self._device)
         dof_pos[:, :] = pos + self._env_pos[env_ids]
 
+        # randomize yaw
+        # axis = torch.ones((num_indices, 3), device=self._device)
+        # axis[:, :2] = 0.
+        # yaw = (torch.rand((len(env_ids),1), device=self._device)*2 - 1.) * 50 * torch.pi / 180
+        # theta = yaw/2
+        # rot = quat_unit(torch.cat([theta, axis], dim=1))
+
         rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
         vel = torch.zeros((num_indices, 6), device=self._device)
         self._drills.set_world_poses(positions=dof_pos,
@@ -459,13 +466,12 @@ class FrankaCabinetTask(RLTask):
             self.rot_reward_scale,
             self.around_handle_reward_scale,
             self.open_reward_scale,
-            self.finger_dist_reward_scale,
+            self.height_reward_scale,
             self.action_penalty_scale,
             self.distX_offset,
             self._max_episode_length,
             self.franka_dof_pos,
             self.finger_close_reward_scale,
-            self.finger_open_reward_scale,
         )
 
     def is_done(self) -> None:
@@ -518,13 +524,12 @@ class FrankaCabinetTask(RLTask):
         rot_reward_scale,
         around_handle_reward_scale,
         open_reward_scale,
-        finger_dist_reward_scale,
+        height_reward_scale,
         action_penalty_scale,
         distX_offset,
         max_episode_length,
         joint_positions,
         finger_close_reward_scale,
-        finger_open_reward_scale,
     ):
 
         # distance from hand to the drawer
@@ -579,14 +584,6 @@ class FrankaCabinetTask(RLTask):
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
 
 
-        finger_open_reward = torch.zeros_like(rot_reward)
-        finger_open_reward = torch.where(
-            d >= 0.04, -torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_open_reward
-        )
-        self.reward_terms_log["fingerOpenReward"] = finger_open_reward
-
-
-
         # regularization on the actions (summed for each environment)
         action_penalty = torch.sum(actions**2, dim=-1)
         self.reward_terms_log["actionPenalty"] = action_penalty
@@ -594,21 +591,21 @@ class FrankaCabinetTask(RLTask):
 
         # how far the cabinet has been opened out
         open_reward = torch.zeros_like(rot_reward)
-        d_target = torch.norm(self.drill_target_pos - drill_pos, p=2, dim=-1)
-        open_reward = torch.where(d <= 0.04, 1 / (1 + d_target **2 ), open_reward)
-        open_reward = torch.where(d_target <= 0.03, open_reward + 0.05, open_reward)
+        open_reward = torch.where(d <= 0.04, 1 / (1 + self.d_target ** 2 ), open_reward)
         self.reward_terms_log["openReward"] = open_reward
 
+        height_reward = torch.zeros_like(rot_reward)
+        height_reward = torch.where(drill_pos[:, 2] > 0.59, height_reward + 1, height_reward)
+        self.reward_terms_log["heightReward"] = height_reward
 
         rewards = (
             dist_reward_scale * dist_reward
             + rot_reward_scale * rot_reward
             + around_handle_reward_scale * around_handle_reward
             + open_reward_scale * open_reward
-            # + finger_dist_reward_scale * finger_dist_reward
+            + height_reward * height_reward_scale
             - action_penalty_scale * action_penalty
             + finger_close_reward * finger_close_reward_scale
-            + finger_open_reward * finger_open_reward_scale
         )
 
         # self.reward_terms_log["distReward"] = dist_reward
@@ -621,8 +618,8 @@ class FrankaCabinetTask(RLTask):
 
 
         # bonus for opening drawer properly
-        rewards = torch.where(drill_pos[:, 2] > 0.56, rewards + 10 , rewards)
-        rewards = torch.where(drill_pos[:, 2] > 0.6, rewards + 2 * 10, rewards)
+        rewards = torch.where(self.success_envs,rewards + self.goal_achieved_bonus, rewards)
+        self.reward_terms_log["goalBonusReward"] = torch.where(self.success_envs, self.goal_achieved_bonus, torch.zeros_like(rewards))
         rewards = torch.where(self.failed_envs, 
                                       rewards - self.fail_penalty,
                                       rewards)
@@ -653,6 +650,13 @@ class FrankaCabinetTask(RLTask):
         u = (torch.inverse(B) @ g).view(num_envs, num_dofs)
         return u
     
+    # def compute_failure(self, hand_pos, drill_rot, RP_FAIL=0.5, YAW_FAIL=0.17):
+    #     cos_roll = torch.abs(torch.cos(get_euler_xyz(drill_rot)[0]))
+    #     cos_pitch = torch.abs(torch.cos(get_euler_xyz(drill_rot)[1]))
+    #     cos_yaw = torch.abs(torch.cos(get_euler_xyz(drill_rot)[2]))
+
+    #     self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(cos_yaw < YAW_FAIL, torch.logical_or(cos_roll < RP_FAIL, cos_pitch < RP_FAIL)))
+
     def compute_failure(self, hand_pos, drill_rot, FAIL=0.6448):
         axis1 = tf_vector(drill_rot, self.drill_inward_axis)
         axis2 = tf_vector(drill_rot, self.drill_right_axis)
@@ -665,7 +669,8 @@ class FrankaCabinetTask(RLTask):
             torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
         )  # alignment of drill with world y
 
-        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
+        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
 
-    def compute_success(self, drill_pos, SUCCESS=0.6):
-        self.success_envs = drill_pos[:, 2] >= SUCCESS
+
+    def compute_success(self, d, SUCCESS=0.05):
+        self.success_envs = (d <= SUCCESS)
