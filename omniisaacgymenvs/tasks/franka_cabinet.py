@@ -81,6 +81,9 @@ class FrankaCabinetTask(RLTask):
         self.action_penalty_scale = self._task_cfg["env"]["actionPenaltyScale"]
         self.reward_weights_log["actionPenalty"] = self._task_cfg["env"]["actionPenaltyScale"]
 
+        self.reg_penalty_scale = self._task_cfg["env"]["regPenaltyScale"]
+        self.reward_weights_log["regPenalty"] = self._task_cfg["env"]["regPenaltyScale"]
+
         self.finger_close_reward_scale = self._task_cfg["env"]["fingerCloseRewardScale"]
         self.reward_weights_log["fingerCloseReward"] = self._task_cfg["env"]["fingerCloseRewardScale"]
 
@@ -272,6 +275,10 @@ class FrankaCabinetTask(RLTask):
             (self._num_envs, 1)
         )
 
+        self.default_drill_pos = torch.tensor([0.35, 0, 0.53], device=self._device, dtype=torch.float).repeat(
+            (self._num_envs, 1)
+        )
+
         self.drill_pos = torch.ones((self._num_envs, 3), device=self._device) * self._drill_position + self._env_pos
         self.joint_actions = torch.zeros((self._num_envs, 12), device=self._device)
 
@@ -308,6 +315,7 @@ class FrankaCabinetTask(RLTask):
         to_drill = self.drill_grasp_pos - self.franka_grasp_pos
         to_target = self.drill_target_pos - (self.drill_pos - self._env_pos)
         self.d_target = torch.norm(to_target, p=2, dim=-1)
+        self.d_default = torch.norm(self.drill_target_pos - (self.default_drill_pos - self._env_pos), p=2, dim=-1)
 
         self.franka_thumb_pos, self.franka_thumb_rot = self._frankas._thumb_fingers.get_world_poses(clone=False)
         self.franka_index_pos, self.franka_index_rot = self._frankas._index_fingers.get_world_poses(clone=False)
@@ -414,6 +422,8 @@ class FrankaCabinetTask(RLTask):
         self._drills.set_world_poses(positions=dof_pos,
                                      orientations=rot,
                                     indices=indices)
+        self.default_drill_pos[env_ids, :] = dof_pos
+
         self._drills.set_velocities(vel, indices=indices)
 
         # bookkeeping
@@ -588,10 +598,13 @@ class FrankaCabinetTask(RLTask):
         action_penalty = torch.sum(actions**2, dim=-1)
         self.reward_terms_log["actionPenalty"] = action_penalty
 
+        joint_reg_penalty = torch.norm(self.franka_default_dof_pos[:7] - joint_positions[:, :7], p=2, dim=-1) **2
+        self.reward_terms_log["regPenalty"] = joint_reg_penalty
+
 
         # how far the cabinet has been opened out
         open_reward = torch.zeros_like(rot_reward)
-        open_reward = torch.where(d <= 0.04, 1 / (1 + self.d_target ** 2 ), open_reward)
+        open_reward = torch.where(drill_pos[:, 2] > 0.56, 1/ (1 + self.d_target ** 2 ), open_reward)
         self.reward_terms_log["openReward"] = open_reward
 
         height_reward = torch.zeros_like(rot_reward)
@@ -605,6 +618,7 @@ class FrankaCabinetTask(RLTask):
             + open_reward_scale * open_reward
             + height_reward * height_reward_scale
             - action_penalty_scale * action_penalty
+            - self.reg_penalty_scale * joint_reg_penalty
             + finger_close_reward * finger_close_reward_scale
         )
 
