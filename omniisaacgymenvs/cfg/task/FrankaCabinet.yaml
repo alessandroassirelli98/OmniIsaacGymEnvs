@@ -23,16 +23,18 @@ env:
 
   actionScale: 2.5
   dofVelocityScale: 0.1
-  ikVelocity: 2.
+  ikVelocity: 0.01
+
+  successType: "lift" # can be either lift or positioning
 
   distRewardScale: 200.
   rotRewardScale: 5
   aroundHandleRewardScale: 0.
   openRewardScale: 20.
-  actionPenaltyScale: 0.05
-  fingerCloseRewardScale: 7.
+  actionPenaltyScale: 0.1
+  fingerCloseRewardScale: 10.
   heightRewardScale: 1.
-  goalAchievedBonus: 50.
+  goalAchievedBonus: 10.
   failPenalty: 1
 
 sim:

@@ -5,9 +5,9 @@ physics_engine: ${..physics_engine}
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:4096,${...num_envs}}
+  numEnvs: ${resolve_default:1,${...num_envs}}
   envSpacing: 3.0
-  episodeLength: 5000
+  episodeLength: 500
   enableDebugVis: False
 
   clipObservations: 5.0
@@ -21,21 +21,21 @@ env:
   numProps: 4
   aggregateMode: 3
 
-  actionScale: 7.5
+  actionScale: 2.5
   dofVelocityScale: 0.1
-  ikVelocity: 0.1
+  ikVelocity: 0.01
 
-  distRewardScale: 100.
-  rotRewardScale: 2.
+  successType: "lift" # can be either lift or positioning
+
+  distRewardScale: 200.
+  rotRewardScale: 5
   aroundHandleRewardScale: 0.
-  openRewardScale: 0.
-  fingerDistRewardScale: 0.
-  actionPenaltyScale: 0.001
+  openRewardScale: 20.
+  actionPenaltyScale: 0.1
   fingerCloseRewardScale: 10.
-  fingerOpenRewardScale: 10.
-  goalAchievedBonus: 0.
-  failPenalty: 10
-
+  heightRewardScale: 1.
+  goalAchievedBonus: 10.
+  failPenalty: 1
 
 sim:
   dt: 0.0083 # 1/120 s
