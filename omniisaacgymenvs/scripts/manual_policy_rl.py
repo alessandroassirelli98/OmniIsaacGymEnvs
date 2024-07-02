@@ -37,7 +37,7 @@ import time
 import torch
 
 import omniisaacgymenvs
-from omniisaacgymenvs.utils.input_manager import KeyboardManager
+from omniisaacgymenvs.utils.input_manager import KeyboardManager, SpaceMouseManager
 from omniisaacgymenvs.envs.vec_env_rlgames import VecEnvRLGames
 from omniisaacgymenvs.utils.hydra_cfg.hydra_utils import *
 from omniisaacgymenvs.utils.hydra_cfg.reformat import omegaconf_to_dict, print_dict
@@ -64,9 +64,9 @@ def parse_hydra_configs(cfg: DictConfig):
     )
 
 
-    action = torch.zeros(5, dtype=torch.int16)
+    action = torch.zeros(7, dtype=torch.float32, device="cpu")
 
-    input_manager = KeyboardManager(action)
+    input_manager = SpaceMouseManager(action)
 
 
     # parse experiment directory
