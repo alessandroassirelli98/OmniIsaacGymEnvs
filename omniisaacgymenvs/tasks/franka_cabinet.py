@@ -418,7 +418,7 @@ class FrankaCabinetTask(RLTask):
         # randomize yaw
         axis = torch.ones((num_indices, 3), device=self._device)
         axis[:, :2] = 0.
-        yaw = (torch.rand((len(env_ids),1), device=self._device)*2 - 1.) * 50 * torch.pi / 180
+        yaw = (torch.rand((len(env_ids),1), device=self._device)*2 - 1.) * 90 * torch.pi / 180
         theta = yaw/2
         rot = quat_unit(torch.cat([theta, axis], dim=1))
 
@@ -691,15 +691,15 @@ class FrankaCabinetTask(RLTask):
         axis2 = tf_vector(drill_rot, self.drill_right_axis)
 
 
-        dot1 = torch.abs(
-            torch.bmm(axis1.view(self.num_envs, 1, 3), self.world_forward_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-        )  # alignment of drill with world x
-        dot2 = torch.abs(
-            torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-        )  # alignment of drill with world y
+        # dot1 = torch.abs(
+        #     torch.bmm(axis1.view(self.num_envs, 1, 3), self.world_forward_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
+        # )  # alignment of drill with world x
+        # dot2 = torch.abs(
+        #     torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
+        # )  # alignment of drill with world y
 
-        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
-
+        # self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
+        self.failed_envs = self.drill_pos[:,2] < 0.3
 
     def compute_success(self, success_type):
         if success_type == "lift":
