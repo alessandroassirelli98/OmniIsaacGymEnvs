@@ -62,23 +62,23 @@ class Franka(Robot):
             "panda_link5/panda_joint6",
             "panda_link6/panda_joint7",
 
-            "tekken/Right_Index_Basecover/Right_Index_1",
-            "tekken/Right_Middle_Basecover/Right_Middle_1",
-            "tekken/Right_Ring_Basecover/Right_Ring_1",
-            "tekken/Right_Little_Basecover/Right_Little_1",
-            "tekken/Right_Thumb_Basecover/Right_Thumb_1",
+            "Right_Index_Basecover/Right_Index_1",
+            "Right_Middle_Basecover/Right_Middle_1",
+            "Right_Ring_Basecover/Right_Ring_1",
+            "Right_Little_Basecover/Right_Little_1",
+            "Right_Thumb_Basecover/Right_Thumb_1",
 
-            "tekken/Right_Index_Phaprox/Right_Index_2",
-            "tekken/Right_Middle_Phaprox/Right_Middle_2",
-            "tekken/Right_Ring_Phaprox/Right_Ring_2",
-            "tekken/Right_Little_Phaprox/Right_Little_2",
-            "tekken/Right_Thumb_Phaprox/Right_Thumb_2",
+            "Right_Index_Phaprox/Right_Index_2",
+            "Right_Middle_Phaprox/Right_Middle_2",
+            "Right_Ring_Phaprox/Right_Ring_2",
+            "Right_Little_Phaprox/Right_Little_2",
+            "Right_Thumb_Phaprox/Right_Thumb_2",
 
-            "tekken/Right_Index_Phamed/Right_Index_3",
-            "tekken/Right_Middle_Phamed/Right_Middle_3",
-            "tekken/Right_Ring_Phamed/Right_Ring_3",
-            "tekken/Right_Little_Phamed/Right_Little_3",
-            "tekken/Right_Thumb_Phamed/Right_Thumb_3"
+            "Right_Index_Phamed/Right_Index_3",
+            "Right_Middle_Phamed/Right_Middle_3",
+            "Right_Ring_Phamed/Right_Ring_3",
+            "Right_Little_Phamed/Right_Little_3",
+            "Right_Thumb_Phamed/Right_Thumb_3"
         ]
 
         drive_type = ["angular"] * 22

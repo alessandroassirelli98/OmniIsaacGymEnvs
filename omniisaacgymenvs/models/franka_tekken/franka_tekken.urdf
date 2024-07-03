@@ -240,12 +240,20 @@
       </geometry>
       <!-- <material name="palm_color"/> -->
     </visual>
+    Same as visual mesh, as it gets simplified in the usd
     <collision>
-      <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="./meshes/collision/tekken/hit-hand-2-palm-right.stl"/>
+        <mesh filename="./meshes/visual/tekken/palm-right.dae"/>
       </geometry>
     </collision>
+    <!-- Default collision mesh for palm -->
+    <!-- <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="./meshes/collision/tekken/palm-right-collision.obj"/>
+      </geometry>
+    </collision> -->
   </link>
   <!-- Add a virtual palm link to get the transform of this point via TF for grasping (we align this frame with
         a normal of a point from an object point cloud.) -->

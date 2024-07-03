@@ -144,7 +144,7 @@ class FrankaCabinetTask(RLTask):
         self.init_data()
 
     def get_franka(self):
-        usd_path=f'{omniisaacgymenvs.__path__[0]}/models/franka_tekken.usd'
+        usd_path=f'{omniisaacgymenvs.__path__[0]}/models/franka_tekken/franka_tekken/franka_tekken.usd'
         franka = Franka(prim_path=self.default_zero_env_path + "/franka", name="franka", usd_path=usd_path)
         self._sim_config.apply_articulation_settings(
             "franka", get_prim_at_path(franka.prim_path), self._sim_config.parse_actor_config("franka")
@@ -224,7 +224,7 @@ class FrankaCabinetTask(RLTask):
         )
         palm_pose = get_env_local_pose(
             self._env_pos[0],
-            UsdGeom.Xformable(stage.GetPrimAtPath("/World/envs/env_0/franka/tekken/palm_link_hithand")),
+            UsdGeom.Xformable(stage.GetPrimAtPath("/World/envs/env_0/franka/palm_link_hithand")),
             self._device,
         )
 
