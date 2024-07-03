@@ -416,13 +416,13 @@ class FrankaCabinetTask(RLTask):
 
         # self.drill_target_pos[env_ids, :2] = pos[:, :2]
         # randomize yaw
-        # axis = torch.ones((num_indices, 3), device=self._device)
-        # axis[:, :2] = 0.
-        # yaw = (torch.rand((len(env_ids),1), device=self._device)*2 - 1.) * 50 * torch.pi / 180
-        # theta = yaw/2
-        # rot = quat_unit(torch.cat([theta, axis], dim=1))
+        axis = torch.ones((num_indices, 3), device=self._device)
+        axis[:, :2] = 0.
+        yaw = (torch.rand((len(env_ids),1), device=self._device)*2 - 1.) * 50 * torch.pi / 180
+        theta = yaw/2
+        rot = quat_unit(torch.cat([theta, axis], dim=1))
 
-        rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
+        # rot = torch.ones((num_indices, 4), device=self._device) * self._drills_rot
         vel = torch.zeros((num_indices, 6), device=self._device)
         self._drills.set_world_poses(positions=dof_pos,
                                      orientations=rot,

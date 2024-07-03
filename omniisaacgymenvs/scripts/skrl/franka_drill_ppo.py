@@ -151,14 +151,14 @@ cfg["learning_epochs"] = 8
 cfg["mini_batches"] = 4  # 16 * 8192 / 32768
 cfg["discount_factor"] = 0.99
 cfg["lambda"] = 0.95
-cfg["learning_rate"] = 1e-3
+cfg["learning_rate"] = 5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = False
-cfg["entropy_loss_scale"] = 0.001
+cfg["entropy_loss_scale"] = 0.0001
 cfg["value_loss_scale"] = 2.0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 
@@ -175,7 +175,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
                                      "project": "franka_tekken 12 dof js rev6"}
 
