@@ -270,7 +270,7 @@ class FrankaCabinetTask(RLTask):
             [0, -0.99, 0., -2.6, -0., 3.14, 0.17] + [0.] * 20, device=self._device
         )
 
-        self.drill_target_pos = torch.tensor([0.7, 0, 0.65], device=self._device, dtype=torch.float).repeat(
+        self.drill_target_pos = torch.tensor([0.6, 0, 0.75], device=self._device, dtype=torch.float).repeat(
             (self._num_envs, 1)
         )
 
@@ -621,6 +621,7 @@ class FrankaCabinetTask(RLTask):
             - action_penalty_scale * action_penalty
             + finger_close_reward * finger_close_reward_scale
         )
+        # print(self.d_target)
 
         # self.reward_terms_log["distReward"] = dist_reward
         # self.reward_terms_log["rotReward"] = rot_reward
@@ -632,7 +633,10 @@ class FrankaCabinetTask(RLTask):
 
 
         # bonus for opening drawer properly
-        rewards = torch.where(self.success_envs,rewards + self.goal_achieved_bonus, rewards)
+        if self.success_type == "positioning":
+            rewards = torch.where(self.drill_pos[:, 2] > 0.7, rewards + self.goal_achieved_bonus, rewards)
+            rewards = torch.where(self.success_envs, rewards + 2 * self.goal_achieved_bonus, rewards)
+
         self.reward_terms_log["goalBonusReward"] = torch.where(self.success_envs, self.goal_achieved_bonus, torch.zeros_like(rewards))
         rewards = torch.where(self.failed_envs, 
                                       rewards - self.fail_penalty,
