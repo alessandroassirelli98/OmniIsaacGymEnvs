@@ -145,9 +145,9 @@ class FrankaCabinetTask(RLTask):
 
     def get_franka(self):
         usd_path=f'{omniisaacgymenvs.__path__[0]}/models/franka_tekken/franka_tekken/franka_tekken.usd'
-        franka = Franka(prim_path=self.default_zero_env_path + "/franka", name="franka", usd_path=usd_path)
+        self.franka = Franka(prim_path=self.default_zero_env_path + "/franka", name="franka", usd_path=usd_path)
         self._sim_config.apply_articulation_settings(
-            "franka", get_prim_at_path(franka.prim_path), self._sim_config.parse_actor_config("franka")
+            "franka", get_prim_at_path(self.franka.prim_path), self._sim_config.parse_actor_config("franka")
         )
 
     def get_cabinet(self):
@@ -430,6 +430,17 @@ class FrankaCabinetTask(RLTask):
         self.default_drill_pos[env_ids, :] = dof_pos
 
         self._drills.set_velocities(vel, indices=indices)
+        
+
+        if hasattr(self, "_ref_cubes"):
+            ref_cube_pos = dof_pos
+            q = euler_angles_to_quats(torch.tensor([0, -torch.pi/2, 0], device=self._device).unsqueeze(0))
+            rot = torch.ones((num_indices, 4), device=self._device) * q
+
+            ref_cube_pos[:, 0] = ref_cube_pos[:, 0] + torch.ones((num_indices, 1), device=self._device) * 0.4
+            ref_cube_pos[:, 2] = ref_cube_pos[:, 2] + torch.ones((num_indices, 1), device=self._device) *0.01
+
+            self._ref_cubes.set_world_poses(positions=ref_cube_pos, orientations=rot, indices=indices)
 
         # bookkeeping
         self.reset_buf[env_ids] = 0

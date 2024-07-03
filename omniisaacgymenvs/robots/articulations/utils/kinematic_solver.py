@@ -22,14 +22,14 @@ class KinematicsSolver(ArticulationKinematicsSolver):
 
     def __init__(self, articulation) -> None:
         # Load Diana URDF
-        urdf_dir = f'{os.getcwd()}{"/models/diana.urdf"}'
-        descriptor_dir = f'{os.getcwd()}{"/models/robot_descriptor.yaml"}'
+        urdf_dir = f'{os.getcwd()}{"/models/franka_tekken/franka_tekken.urdf"}'
+        descriptor_dir = f'{os.getcwd()}{"/models/franka_tekken/franka_description.yaml"}'
 
         self._kinematics_solver = LulaKinematicsSolver(
             robot_description_path = descriptor_dir,
             urdf_path = urdf_dir
         )
 
-        ee_name = "link_7"
+        ee_name = "panda_link8"
         ArticulationKinematicsSolver.__init__(self, articulation, self._kinematics_solver, ee_name)
         return
