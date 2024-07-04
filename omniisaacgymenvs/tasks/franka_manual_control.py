@@ -59,8 +59,8 @@ class FrankaManualTask(FrankaCabinetTask):
         target_pos, target_rot = self._ref_cubes.get_world_poses()
         rpy_target = torch.tensor(get_euler_xyz(target_rot)).unsqueeze(0)
         target_pos[0, :3] += actions[:3] * 0.003
-        rpy_target[0, :] += actions[3:6] * 0.003
-        target_rot = euler_angles_to_quats(rpy_target)
+        # rpy_target[0, :] += actions[3:6] * 0.003
+        # target_rot = euler_angles_to_quats(rpy_target)
         # target_pos, target_rot = self._ref_cubes.get_world_poses()
         # target_pos -= self._env_pos
         # rpy_target = torch.tensor(get_euler_xyz(target_rot), device=self._device).unsqueeze(0)
@@ -81,6 +81,7 @@ class FrankaManualTask(FrankaCabinetTask):
             gripper = torch.tensor([-1., -1., -1., -1., -1.], device=self._device).unsqueeze(0)
 
         if succ:
+            self._articulation_controller.apply_action(robot_actions)
             robots_actions = torch.zeros((1, 12), dtype=torch.float32)
             robots_actions[:, :7] = torch.tensor(robot_actions.joint_positions)
             robots_actions[:, :7] = (robots_actions[:, :7] - self.franka.get_applied_action().joint_positions[:7])/(self.dt * self.action_scale)
