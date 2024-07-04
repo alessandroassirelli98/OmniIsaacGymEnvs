@@ -71,6 +71,9 @@ class FrankaCabinetTask(RLTask):
 
         self.rot_reward_scale = self._task_cfg["env"]["rotRewardScale"]
         self.reward_weights_log["rotReward"] = self._task_cfg["env"]["rotRewardScale"]
+
+        self.drill_alignment_reward_scale = self._task_cfg["env"]["drillAlignmentScale"]
+        self.reward_weights_log["drillAlignmentReward"] = self._task_cfg["env"]["drillAlignmentScale"]
         
         self.around_handle_reward_scale = self._task_cfg["env"]["aroundHandleRewardScale"]
         self.reward_weights_log["aroundHandleReward"] = self._task_cfg["env"]["aroundHandleRewardScale"]
@@ -259,7 +262,7 @@ class FrankaCabinetTask(RLTask):
             (self._num_envs, 1)
         )
 
-        self.world_forward_axis = torch.tensor([1, 0, 0], device=self._device, dtype=torch.float).repeat(
+        self.world_forward_axis = torch.tensor([-1, 0, 0], device=self._device, dtype=torch.float).repeat(
             (self._num_envs, 1)
         )
         self.world_right_axis = torch.tensor([0, 1, 0], device=self._device, dtype=torch.float).repeat(
@@ -579,6 +582,19 @@ class FrankaCabinetTask(RLTask):
         rot_reward = 0.5 * (torch.sign(dot1) * dot1**2 + torch.sign(dot2) * dot2**2)
         self.reward_terms_log["rotReward"] = rot_reward
 
+        axis1 = tf_vector(self.drill_rot, self.drill_inward_axis)
+        axis2 = tf_vector(self.drill_rot, self.drill_right_axis)
+        dot1 = torch.abs(
+            torch.bmm(axis1.view(self.num_envs, 1, 3), self.world_forward_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
+        )  # alignment of drill with world x
+        dot2 = torch.abs(
+            torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
+        )  # alignment of drill with world y
+
+        drill_alignment_reward = torch.zeros_like(rot_reward)
+        drill_alignment_reward = torch.where(d <= 0.04, 0.5 * (torch.sign(dot1) * dot1**2 + torch.sign(dot2) * dot2**2), drill_alignment_reward)
+        self.reward_terms_log["drillAlignmentReward"] = drill_alignment_reward
+
 
         # bonus if left finger is above the drawer handle and right below
         around_handle_reward = torch.zeros_like(rot_reward)
@@ -609,7 +625,6 @@ class FrankaCabinetTask(RLTask):
         )
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
 
-
         # regularization on the actions (summed for each environment)
         action_penalty = torch.sum(actions**2, dim=-1)
         self.reward_terms_log["actionPenalty"] = action_penalty
@@ -626,6 +641,7 @@ class FrankaCabinetTask(RLTask):
         rewards = (
             dist_reward_scale * dist_reward
             + rot_reward_scale * rot_reward
+            + drill_alignment_reward * self.drill_alignment_reward_scale
             + around_handle_reward_scale * around_handle_reward
             + open_reward_scale * open_reward
             + height_reward * height_reward_scale
@@ -679,27 +695,26 @@ class FrankaCabinetTask(RLTask):
         u = (torch.inverse(B) @ g).view(num_envs, num_dofs)
         return u
     
-    # def compute_failure(self, hand_pos, drill_rot, RP_FAIL=0.5, YAW_FAIL=0.17):
-    #     cos_roll = torch.abs(torch.cos(get_euler_xyz(drill_rot)[0]))
-    #     cos_pitch = torch.abs(torch.cos(get_euler_xyz(drill_rot)[1]))
-    #     cos_yaw = torch.abs(torch.cos(get_euler_xyz(drill_rot)[2]))
+    def compute_failure(self, hand_pos, drill_rot, RP_FAIL=0.5, YAW_FAIL=0.17):
+        cos_roll = torch.abs(torch.cos(get_euler_xyz(drill_rot)[0]))
+        cos_pitch = torch.abs(torch.cos(get_euler_xyz(drill_rot)[1]))
 
-    #     self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(cos_yaw < YAW_FAIL, torch.logical_or(cos_roll < RP_FAIL, cos_pitch < RP_FAIL)))
+        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(cos_roll < RP_FAIL, cos_pitch < RP_FAIL))
 
-    def compute_failure(self, hand_pos, drill_rot, FAIL=0.6448):
-        axis1 = tf_vector(drill_rot, self.drill_inward_axis)
-        axis2 = tf_vector(drill_rot, self.drill_right_axis)
+    # def compute_failure(self, hand_pos, drill_rot, FAIL=0.6448):
+    #     axis1 = tf_vector(drill_rot, self.drill_inward_axis)
+    #     axis2 = tf_vector(drill_rot, self.drill_right_axis)
 
 
-        # dot1 = torch.abs(
-        #     torch.bmm(axis1.view(self.num_envs, 1, 3), self.world_forward_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-        # )  # alignment of drill with world x
-        # dot2 = torch.abs(
-        #     torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-        # )  # alignment of drill with world y
+    #     # dot1 = torch.abs(
+    #     #     torch.bmm(axis1.view(self.num_envs, 1, 3), self.world_forward_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
+    #     # )  # alignment of drill with world x
+    #     # dot2 = torch.abs(
+    #     #     torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
+    #     # )  # alignment of drill with world y
 
-        # self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
-        self.failed_envs = self.drill_pos[:,2] < 0.3
+    #     # self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
+    #     self.failed_envs = self.drill_pos[:,2] < 0.3
 
     def compute_success(self, success_type):
         if success_type == "lift":
