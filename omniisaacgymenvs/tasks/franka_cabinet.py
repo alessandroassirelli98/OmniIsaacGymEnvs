@@ -39,7 +39,7 @@ class FrankaCabinetTask(RLTask):
         self._num_observations = 43
         self._num_actions = 12
 
-        self.show_target = True
+        self.show_target = False
 
         RLTask.__init__(self, name, env)
         return
@@ -164,7 +164,7 @@ class FrankaCabinetTask(RLTask):
         self.init_data()
 
     def get_franka(self):
-        usd_path=f'{omniisaacgymenvs.__path__[0]}/models/franka_tekken/franka_tekken/franka_tekken.usd'
+        usd_path=f'{omniisaacgymenvs.__path__[0]}/models/franka_tekken_instantiable/franka_tekken_instantiable.usd'
         self.franka = Franka(prim_path=self.default_zero_env_path + "/franka", name="franka", usd_path=usd_path)
         self._sim_config.apply_articulation_settings(
             "franka", get_prim_at_path(self.franka.prim_path), self._sim_config.parse_actor_config("franka")
