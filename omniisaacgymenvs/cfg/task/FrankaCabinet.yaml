@@ -7,7 +7,7 @@ physics_engine: ${..physics_engine}
 env:
   numEnvs: ${resolve_default:8196,${...num_envs}}
   envSpacing: 3.0
-  episodeLength: 700
+  episodeLength: 600
   enableDebugVis: False
 
   clipObservations: 5.0
@@ -25,17 +25,17 @@ env:
   dofVelocityScale: 0.1
   ikVelocity: 0.01
 
-  successType: "positioning" # can be either lift or positioning
+  successType: "positioning_orient" # can be either lift or positioning
 
   distRewardScale: 200.
-  rotRewardScale: 10
+  rotRewardScale: 5
   drillAlignmentScale: 3
   aroundHandleRewardScale: 0.
-  openRewardScale: 30.
+  openRewardScale: 10.
   actionPenaltyScale: 0.1
-  fingerCloseRewardScale: 10.
+  fingerCloseRewardScale: 5.
   heightRewardScale: 1.
-  goalAchievedBonus: 10.
+  goalAchievedBonus: 15.
   failPenalty: 1
 
 sim:

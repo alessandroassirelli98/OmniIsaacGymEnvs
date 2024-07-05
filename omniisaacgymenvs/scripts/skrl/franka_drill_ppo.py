@@ -143,7 +143,7 @@ cfg["lambda_1"] = 0.99993
 cfg["nn_type"] = "SeparateNetworks"
 cfg["random_seed"] = rs
 
-cfg["pretrain"] = True
+cfg["pretrain"] = False
 cfg["pretrainer_epochs"] = 5
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
@@ -175,9 +175,9 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO"],
-                                     "project": "franka_tekken 12 dof js rev6 positioning"}
+cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "fingertip_pos"],
+                                     "project": "franka_tekken 12 dof js rev6 positioning and orienting"}
 
 for key, value in algo_config.items():
     print(key, value)
