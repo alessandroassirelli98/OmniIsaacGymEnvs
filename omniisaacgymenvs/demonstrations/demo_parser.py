@@ -13,7 +13,7 @@ def parse_json_demo():
             with open(f'{root}{"/"}{filename}') as f:
                 data = json.load(f)
                 df_tmp = pd.json_normalize(data["Isaac Sim Data"])
-                df_tmp.columns = ["time", "timestep", "states", "actions", "rewards", "terminated", "applied_joint_act"]
+                df_tmp.columns = ["time", "timestep", "states", "actions", "rewards", "terminated"]
                 df.append(df_tmp)
     if len(df) == 1:
         df = df[0]

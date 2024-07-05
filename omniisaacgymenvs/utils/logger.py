@@ -17,8 +17,7 @@ class Logger():
             return  {robot.name : {"states" : task.obs_buf.tolist(),
                                    "actions" : task.actions.tolist(),
                                     "rewards": task.rew_buf.tolist(),
-                                    "terminated": task.reset_buf.tolist(),
-                                    "applied_joint_actions": robot.get_applied_actions().joint_positions.tolist()}}
+                                    "terminated": task.reset_buf.tolist()}}
         
         self.data_logger.add_data_frame_logging_func(frame_logging_func)
         

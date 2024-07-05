@@ -151,7 +151,7 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
-checkpoint_path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/24-06-26_16-02-09-834000_PPOFD"
+checkpoint_path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/24-07-03_17-36-47-932239_PPOFD"
 agent.load(checkpoint_path)
 agent.set_running_mode("eval")
 

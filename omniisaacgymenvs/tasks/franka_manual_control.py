@@ -81,7 +81,7 @@ class FrankaManualTask(FrankaCabinetTask):
             gripper = torch.tensor([-1., -1., -1., -1., -1.], device=self._device).unsqueeze(0)
 
         if succ:
-            self._articulation_controller.apply_action(robot_actions)
+            # self._articulation_controller.apply_action(robot_actions)
             robots_actions = torch.zeros((1, 12), dtype=torch.float32)
             robots_actions[:, :7] = torch.tensor(robot_actions.joint_positions)
             robots_actions[:, :7] = (robots_actions[:, :7] - self.franka.get_applied_action().joint_positions[:7])/(self.dt * self.action_scale)
