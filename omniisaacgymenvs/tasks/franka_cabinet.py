@@ -36,11 +36,19 @@ class FrankaCabinetTask(RLTask):
         self.distX_offset = 0.04
         self.dt = 1 / 60.0
 
-        self._num_observations = 70
+        self.obs_type = "partial"
+        if self.obs_type =="full":
+            self._num_observations = 70
+        elif self.obs_type == "partial":
+            self._num_observations = 37
+
         self._num_actions = 12
+        self.height_positioning_thr = 0.6
+        self.rot_success_thr = 0.2
+        self.pos_success_thr = 0.06
 
         self.show_target = False
-        self.joint_closure = False
+        self.joint_closure = True
 
         RLTask.__init__(self, name, env)
         return
@@ -372,25 +380,38 @@ class FrankaCabinetTask(RLTask):
 
         self.franka_thumb_pos, self.franka_thumb_rot = self._frankas._thumb_fingers.get_world_poses(clone=False)
         self.franka_index_pos, self.franka_index_rot = self._frankas._index_fingers.get_world_poses(clone=False)
-        self.obs_buf = torch.cat(
-            (
-                dof_pos_scaled[:, self._frankas.actuated_dof_indices],
-                (franka_dof_vel * self.dof_vel_scale)[:, self._frankas.actuated_dof_indices],
-                to_drill,
-                to_target,
-                self.drill_pos - self._env_pos,
-                self.drill_rot,
-                self.drill_linvel,
-                self.drill_angvel * 0.2,
-                self._frankas.get_measured_joint_efforts()[:, self._frankas.actuated_dof_indices],
-                self.indexes_pos - self._env_pos,
-                self.middles_pos - self._env_pos,
-                self.rings_pos - self._env_pos,
-                self.littles_pos - self._env_pos,
-                self.thumbs_pos - self._env_pos
-            ),
-            dim=-1,
-        )
+        if self.obs_type == "full":
+            self.obs_buf = torch.cat(
+                (
+                    dof_pos_scaled[:, self._frankas.actuated_dof_indices],
+                    (franka_dof_vel * self.dof_vel_scale)[:, self._frankas.actuated_dof_indices],
+                    to_drill,
+                    to_target,
+                    self.drill_pos - self._env_pos,
+                    self.drill_rot,
+                    self.drill_linvel,
+                    self.drill_angvel * 0.2,
+                    self._frankas.get_measured_joint_efforts()[:, self._frankas.actuated_dof_indices],
+                    self.indexes_pos - self._env_pos,
+                    self.middles_pos - self._env_pos,
+                    self.rings_pos - self._env_pos,
+                    self.littles_pos - self._env_pos,
+                    self.thumbs_pos - self._env_pos
+                ),
+                dim=-1,
+            )
+        elif self.obs_type == "partial":
+            self.obs_buf = torch.cat(
+                (
+                    dof_pos_scaled[:, self._frankas.actuated_dof_indices],
+                    (franka_dof_vel * self.dof_vel_scale)[:, self._frankas.actuated_dof_indices],
+                    to_drill,
+                    to_target,
+                    self.drill_pos - self._env_pos,
+                    self.drill_rot,
+                ),
+                dim=-1,
+            )
 
         self.compute_failure(hand_pos, self.drill_rot)
         self.compute_success(self.success_type)
@@ -640,37 +661,43 @@ class FrankaCabinetTask(RLTask):
             torch.bmm(axis3.view(num_envs, 1, 3), axis4.view(num_envs, 3, 1)).squeeze(-1).squeeze(-1)
         )  # alignment of up axis for gripper
 
-        # reward for matching the orientation of the hand to the drawer (fingers wrapped)
+        # reward for matching the orientation of the hand to the drill (MAX 1)
         rot_reward = 0.5 * (torch.sign(dot1) * dot1**2 + torch.sign(dot2) * dot2**2)
         self.reward_terms_log["rotReward"] = rot_reward
 
-        # Reward for matching target orientation
-        drill_alignment_reward = 1.0 / (torch.abs(self.target_rot_dist) + 0.1) * rot_reward_scale
-        self.reward_terms_log["drillAlignmentReward"] = drill_alignment_reward
-
         finger_close_reward = torch.zeros_like(rot_reward)
         if self.joint_closure:
+            # Rew for closing all the fingers joints (MAX 1)
             finger_close_reward = torch.where(
-                d <= 0.04, torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
+                d <= 0.04, 0.12 * torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
             )
         else:
+            # Rew for putting fingertip at target pos (MAX 1)
             finger_close_reward = torch.where(
                 d <= 0.04, 
-                1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2), finger_close_reward
+                0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)), finger_close_reward
             )
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
+        
+        # Reward for matching target orientation (MAX 1)
+        drill_alignment_reward = torch.zeros_like(rot_reward)
+        drill_alignment_reward = torch.where(self.drill_pos[:, 2] > self.height_positioning_thr,
+                                              0.1 * (1.0 / (torch.abs(self.target_rot_dist) + 0.1)) * drill_alignment_reward,
+                                              drill_alignment_reward)
+        self.reward_terms_log["drillAlignmentReward"] = drill_alignment_reward
 
-        # regularization on the actions (summed for each environment)
-        action_penalty = torch.sum(actions**2, dim=-1)
+        # regularization on the actions (summed for each environment) (MAX 1)
+        action_penalty = 0.08 * torch.sum(actions**2, dim=-1)
         self.reward_terms_log["actionPenalty"] = action_penalty
 
-        # how far the cabinet has been opened out
+        # how far the cabinet has been opened out (MAX 1)
         open_reward = torch.zeros_like(rot_reward)
-        open_reward = torch.where(self.drill_pos[:, 2] > 0.59, (1 / (1 + self.d_target**2)), open_reward)
+        open_reward = torch.where(self.drill_pos[:, 2] > self.height_positioning_thr, (1 / (1 + self.d_target**2)), open_reward)
         self.reward_terms_log["openReward"] = open_reward
 
+        # Bonus if it reaches the thr height (MAX 1)
         height_reward = torch.zeros_like(rot_reward)
-        height_reward = torch.where(drill_pos[:, 2] > 0.59, height_reward + 1, height_reward)
+        height_reward = torch.where(drill_pos[:, 2] > self.height_positioning_thr, height_reward + 1, height_reward)
         self.reward_terms_log["heightReward"] = height_reward
 
         rewards = (
@@ -689,11 +716,11 @@ class FrankaCabinetTask(RLTask):
             rewards = torch.where(self.success_envs, rewards + 2 * self.goal_achieved_bonus, rewards)
 
         if self.success_type == "positioning_orient":
-            rewards = torch.where(self.drill_pos[:, 2] > 0.7, rewards + self.goal_achieved_bonus, rewards)
-            rewards = torch.where(torch.abs(self.target_rot_dist) <= 0.1, rewards + self.goal_achieved_bonus, rewards)
+            rewards = torch.where(self.success_rot_envs, rewards + self.goal_achieved_bonus, rewards)
+            rewards = torch.where(self.success_rot_envs, rewards + self.goal_achieved_bonus, rewards)
             rewards = torch.where(self.success_envs, rewards + 4 * self.goal_achieved_bonus, rewards)
-
         self.reward_terms_log["goalBonusReward"] = torch.where(self.success_envs, self.goal_achieved_bonus, torch.zeros_like(rewards))
+        
         rewards = torch.where(self.failed_envs, 
                                       rewards - self.fail_penalty,
                                       rewards)
@@ -702,6 +729,10 @@ class FrankaCabinetTask(RLTask):
     
     def get_extras(self):
         self.extras["success"] = self.success_envs
+        if self.success_type == "positioning_orient":
+            self.extras["success_pos"] = self.success_pos_envs
+            self.extras["success_rot"] = self.success_rot_envs
+
         self.extras["rew_terms"] = self.reward_terms_log
         self.extras["rew_weights"] = self.reward_weights_log
     
@@ -723,27 +754,14 @@ class FrankaCabinetTask(RLTask):
 
         self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(cos_roll < RP_FAIL, cos_pitch < RP_FAIL))
 
-    # def compute_failure(self, hand_pos, drill_rot, FAIL=0.6448):
-    #     axis1 = tf_vector(drill_rot, self.drill_inward_axis)
-    #     axis2 = tf_vector(drill_rot, self.drill_right_axis)
-
-
-    #     # dot1 = torch.abs(
-    #     #     torch.bmm(axis1.view(self.num_envs, 1, 3), self.world_forward_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-    #     # )  # alignment of drill with world x
-    #     # dot2 = torch.abs(
-    #     #     torch.bmm(axis2.view(self.num_envs, 1, 3), self.world_right_axis.view(self.num_envs, 3, 1)).squeeze(-1).squeeze(-1)
-    #     # )  # alignment of drill with world y
-
-    #     # self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.3, torch.logical_or(dot1 < FAIL, dot2 < FAIL))
-    #     self.failed_envs = self.drill_pos[:,2] < 0.3
 
     def compute_success(self, success_type):
         if success_type == "lift":
-            self.success_envs = self.drill_pos[:, 2] > 0.7
+            self.success_envs = self.drill_pos[:, 2] > self.height_positioning_thr
         if success_type == "positioning":
-            self.success_envs = self.d_target <= 0.06
+            self.success_envs = self.d_target <= self.pos_success_thr
         if success_type == "positioning_orient":
-            self.success_envs = torch.logical_and(self.d_target <= 0.06, torch.abs(self.target_rot_dist) <= 0.1)
-
+            self.success_envs = torch.logical_and(self.d_target <= self.pos_success_thr, torch.abs(self.target_rot_dist) <= self.rot_success_thr)
+            self.success_pos_envs = self.d_target <= self.pos_success_thr
+            self.success_rot_envs = torch.abs(self.target_rot_dist) <= self.rot_success_thr
 

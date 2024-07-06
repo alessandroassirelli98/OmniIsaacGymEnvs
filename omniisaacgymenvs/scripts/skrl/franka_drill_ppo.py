@@ -176,7 +176,7 @@ cfg["experiment"]["write_interval"] = 200
 cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "fingertip_pos"],
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "joint_pos"],
                                      "project": "franka_tekken 12 dof js rev6 positioning and orienting"}
 
 for key, value in algo_config.items():
@@ -221,7 +221,6 @@ demonstration_memory = RandomMemory(memory_size=demo_size, num_envs=1, device=de
 agent = PPOFD(models=models,
             memory=memory,
             demonstration_memory=demonstration_memory,
-            sampling_demo_memory=demonstration_memory,
             cfg=cfg,
             observation_space=env.observation_space,
             action_space=env.action_space,
@@ -229,7 +228,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 150000}
+cfg_trainer = {"timesteps": 100000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # # demonstrations injection

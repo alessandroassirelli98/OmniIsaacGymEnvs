@@ -5,7 +5,7 @@ physics_engine: ${..physics_engine}
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:8196,${...num_envs}}
+  numEnvs: ${resolve_default:4096,${...num_envs}}
   envSpacing: 3.0
   episodeLength: 600
   enableDebugVis: False
@@ -29,13 +29,13 @@ env:
 
   distRewardScale: 200.
   rotRewardScale: 5
-  drillAlignmentScale: 3
+  drillAlignmentScale: 10
   aroundHandleRewardScale: 0.
   openRewardScale: 10.
-  actionPenaltyScale: 0.1
-  fingerCloseRewardScale: 5.
+  actionPenaltyScale: 1.
+  fingerCloseRewardScale: 7.
   heightRewardScale: 1.
-  goalAchievedBonus: 15.
+  goalAchievedBonus: 30.
   failPenalty: 1
 
 sim:
@@ -60,7 +60,7 @@ sim:
     worker_thread_count: ${....num_threads}
     solver_type: ${....solver_type}
     use_gpu: ${eq:${....sim_device},"gpu"} # set to False to run on CPU
-    solver_position_iteration_count: 32
+    solver_position_iteration_count: 12
     solver_velocity_iteration_count: 1
     contact_offset: 0.005
     rest_offset: 0.0
@@ -90,7 +90,7 @@ sim:
     enable_gyroscopic_forces: True
     # also in stage params
     # per-actor
-    solver_position_iteration_count: 32
+    solver_position_iteration_count: 12
     solver_velocity_iteration_count: 1
     sleep_threshold: 0.005
     stabilization_threshold: 0.001
