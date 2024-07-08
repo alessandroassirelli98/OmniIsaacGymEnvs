@@ -325,10 +325,10 @@ class FrankaCabinetTask(RLTask):
         hand_pos, hand_rot = self._frankas._hands.get_world_poses(clone=False)
 
         self.indexes_pos, _ = self._frankas._index_fingers.get_world_poses(clone=False)
-        self.middles_pos, _ = self._frankas._index_fingers.get_world_poses(clone=False)
-        self.rings_pos, _ = self._frankas._index_fingers.get_world_poses(clone=False)
-        self.littles_pos, _ = self._frankas._index_fingers.get_world_poses(clone=False)
-        self.thumbs_pos, _ = self._frankas._index_fingers.get_world_poses(clone=False)
+        self.middles_pos, _ = self._frankas._middle_fingers.get_world_poses(clone=False)
+        self.rings_pos, _ = self._frankas._ring_fingers.get_world_poses(clone=False)
+        self.littles_pos, _ = self._frankas._little_fingers.get_world_poses(clone=False)
+        self.thumbs_pos, _ = self._frankas._thumb_fingers.get_world_poses(clone=False)
 
         self.drill_pos, self.drill_rot = self._drills.get_world_poses(clone=False)
         self.drill_vel = self._drills.get_velocities(clone=False)
@@ -705,7 +705,9 @@ class FrankaCabinetTask(RLTask):
             )
         elif(self.finger_reward_type == "fingertip_position"):
             # Rew for putting fingertip at target pos (MAX 1)
-            finger_close_reward = 0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2))
+            finger_close_reward = torch.where(d <= 0.04,
+                                              0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)),
+                                              finger_close_reward)
         else:
             print(f"Warning! invalid fingertp position reward type. Setting it to zero")
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
