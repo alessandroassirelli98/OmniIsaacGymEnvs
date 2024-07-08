@@ -36,19 +36,12 @@ class FrankaCabinetTask(RLTask):
         self.distX_offset = 0.04
         self.dt = 1 / 60.0
 
-        self.obs_type = "full"
-        if self.obs_type =="full":
-            self._num_observations = 70
-        elif self.obs_type == "partial":
-            self._num_observations = 37
-
         self._num_actions = 12
         self.height_positioning_thr = 0.6
         self.rot_success_thr = 0.2
         self.pos_success_thr = 0.07
 
-        self.show_target = False
-        self.joint_closure = False
+        self.show_target = True
 
         RLTask.__init__(self, name, env)
         return
@@ -104,9 +97,18 @@ class FrankaCabinetTask(RLTask):
         self.goal_achieved_bonus = self._task_cfg["env"]["goalAchievedBonus"]
         self.reward_weights_log["goalBonusReward"] = 1.
 
+        self.obs_type = self._task_cfg["env"]["obsType"]
+        if self.obs_type =="full":
+            self._num_observations = 70
+        elif self.obs_type == "partial":
+            self._num_observations = 37
+
+        self.finger_reward_type = self._task_cfg["env"]["fingerRewardType"]
+        self.pull_drill_enable = self._task_cfg["env"]["pullDrillEnable"]
+        
+
     def set_up_scene(self, scene) -> None:
         self.get_franka()
-        # self.get_cabinet()
         self.get_drill()
         self.get_table()
         if self.show_target: self.get_target_sphere()
@@ -207,8 +209,7 @@ class FrankaCabinetTask(RLTask):
                                   color=self.cube_color,
                                   )
         self._sim_config.apply_articulation_settings("table", get_prim_at_path(table.prim_path), self._sim_config.parse_actor_config("table"))
-
-    
+   
     def get_target_sphere(self):
         self._target_sphere_color = torch.tensor([0.1, 0.9, 0.1], device=self._device)
         self._target_sphere_position = torch.tensor([0.6, 0., 0.7], device=self._device)
@@ -218,7 +219,7 @@ class FrankaCabinetTask(RLTask):
         self._target_sphere = VisualSphere(prim_path= self.default_zero_env_path + "/target_sphere",
                                   name="target_sphere",
                                   translation= self._target_sphere_position,
-                                  radius=0.05,
+                                  radius=self.pos_success_thr,
                                   color=self._target_sphere_color)
         
         self._target_sphere.set_collision_enabled(False)
@@ -300,8 +301,9 @@ class FrankaCabinetTask(RLTask):
             (self._num_envs, 1)
         )
 
-        self.drill_target_lower_bound = torch.tensor([-0., -0.5, 0.7], device=self._device)
-        self.drill_target_upper_bound = torch.tensor([0.65, 0.5, 0.85], device = self._device)
+        self.drill_target_center = torch.tensor([0.3, 0., 0.75], device=self._device)
+        self.drill_target_lower_bound = torch.tensor([0.1, -0.5, 0.7], device=self._device)
+        self.drill_target_upper_bound = torch.tensor([0.6, 0.5, 0.85], device = self._device)
 
 
         self.default_drill_pos = torch.tensor([0.35, 0, 0.53], device=self._device, dtype=torch.float).repeat(
@@ -441,6 +443,7 @@ class FrankaCabinetTask(RLTask):
         self.franka_dof_targets[:, self._frankas.clamped_dof_indices[5:]] = self.franka_dof_targets[:, self._frankas.clamp_drive_dof_indices]
         env_ids_int32 = torch.arange(self._frankas.count, dtype=torch.int32, device=self._device)
 
+        if self.pull_drill_enable: self.pull_downward(strength=3.)
         self._frankas.set_joint_position_targets(self.franka_dof_targets, indices=env_ids_int32)
 
     def pull_downward(self, strength=1.5):
@@ -503,13 +506,13 @@ class FrankaCabinetTask(RLTask):
 
         self._drills.set_velocities(vel, indices=indices)
 
-        pos = tensor_clamp(
-            self._drill_position.unsqueeze(0)
-            + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
+        target_pos = tensor_clamp(
+            self.drill_target_center.unsqueeze(0)
+            + 1. * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
             self.drill_target_lower_bound,
             self.drill_target_upper_bound,
             )
-        self.drill_target_pos[env_ids, :] = pos
+        self.drill_target_pos[env_ids, :] = target_pos
         
 
         if hasattr(self, "_ref_cubes"):
@@ -666,17 +669,19 @@ class FrankaCabinetTask(RLTask):
         self.reward_terms_log["rotReward"] = rot_reward
 
         finger_close_reward = torch.zeros_like(rot_reward)
-        if self.joint_closure:
+        if self.finger_reward_type == "joint_position":
             # Rew for closing all the fingers joints (MAX 1)
             finger_close_reward = torch.where(
                 d <= 0.04, 0.12 * torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
             )
-        else:
+        elif(self.finger_reward_type == "fingertip_position"):
             # Rew for putting fingertip at target pos (MAX 1)
             finger_close_reward = torch.where(
                 d <= 0.04, 
                 0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)), finger_close_reward
             )
+        else:
+            print(f"Warning! invalid fingertp position reward type. Setting it to zero")
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
         
         # Reward for matching target orientation (MAX 1)

@@ -25,7 +25,11 @@ env:
   dofVelocityScale: 0.1
   ikVelocity: 0.01
 
-  successType: "positioning_orient" # can be either lift or positioning
+  successType: "positioning_orient" # can be either "lift" "positioning" "positioning_orient"
+  obsType: "full" #can be either "full" or "partial"
+  fingerRewardType: "fingertip_position" #can be either "joint_position" or "fingertip_position"
+
+  pullDrillEnable: False
 
   distRewardScale: 20.
   rotRewardScale: 0.5
