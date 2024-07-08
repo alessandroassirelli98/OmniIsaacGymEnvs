@@ -27,9 +27,9 @@ env:
 
   successType: "positioning_orient" # can be either lift or positioning
 
-  distRewardScale: 200.
-  rotRewardScale: 5
-  drillAlignmentScale: 10
+  distRewardScale: 20.
+  rotRewardScale: 0.5
+  drillAlignmentScale: 5
   aroundHandleRewardScale: 0.
   openRewardScale: 10.
   actionPenaltyScale: 1.

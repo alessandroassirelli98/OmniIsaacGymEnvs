@@ -3,5 +3,5 @@ configurations:
   - pretrain: [False]
   - random_seed: [42, 3, 2]
   - entropy_loss_scale: [0.0001, 0.001]
-  - learning_rate: [0.0005, 0.001]
+  - learning_rate: [0.0005]
   - ratio_clip: [0.2]

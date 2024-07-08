@@ -36,7 +36,7 @@ class FrankaCabinetTask(RLTask):
         self.distX_offset = 0.04
         self.dt = 1 / 60.0
 
-        self.obs_type = "partial"
+        self.obs_type = "full"
         if self.obs_type =="full":
             self._num_observations = 70
         elif self.obs_type == "partial":
@@ -45,10 +45,10 @@ class FrankaCabinetTask(RLTask):
         self._num_actions = 12
         self.height_positioning_thr = 0.6
         self.rot_success_thr = 0.2
-        self.pos_success_thr = 0.06
+        self.pos_success_thr = 0.07
 
         self.show_target = False
-        self.joint_closure = True
+        self.joint_closure = False
 
         RLTask.__init__(self, name, env)
         return
@@ -682,7 +682,7 @@ class FrankaCabinetTask(RLTask):
         # Reward for matching target orientation (MAX 1)
         drill_alignment_reward = torch.zeros_like(rot_reward)
         drill_alignment_reward = torch.where(self.drill_pos[:, 2] > self.height_positioning_thr,
-                                              0.1 * (1.0 / (torch.abs(self.target_rot_dist) + 0.1)) * drill_alignment_reward,
+                                              0.1 * (1.0 / (torch.abs(self.target_rot_dist) + 0.1)),
                                               drill_alignment_reward)
         self.reward_terms_log["drillAlignmentReward"] = drill_alignment_reward
 
@@ -763,5 +763,5 @@ class FrankaCabinetTask(RLTask):
         if success_type == "positioning_orient":
             self.success_envs = torch.logical_and(self.d_target <= self.pos_success_thr, torch.abs(self.target_rot_dist) <= self.rot_success_thr)
             self.success_pos_envs = self.d_target <= self.pos_success_thr
-            self.success_rot_envs = torch.abs(self.target_rot_dist) <= self.rot_success_thr
+            self.success_rot_envs = torch.logical_and(self.drill_pos[:, 2] > self.height_positioning_thr, torch.abs(self.target_rot_dist) <= self.rot_success_thr)
 
