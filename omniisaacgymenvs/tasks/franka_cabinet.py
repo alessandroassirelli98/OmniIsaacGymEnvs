@@ -41,7 +41,7 @@ class FrankaCabinetTask(RLTask):
         self.rot_success_thr = 0.2
         self.pos_success_thr = 0.07
 
-        self.show_target = True
+        self.show_target = False
 
         RLTask.__init__(self, name, env)
         return
@@ -316,6 +316,7 @@ class FrankaCabinetTask(RLTask):
         self.rings_pos_target, _ = self._ring_targets.get_local_poses()
         self.littles_pos_target, _ = self._little_targets.get_local_poses()
         self.thumbs_pos_target, _ = self._thumb_targets.get_local_poses()
+        self.target_fingers_rotations = torch.tensor([ 1.0, 0.0, 0.0, 0.0], device = self._device).repeat(self._num_envs, 1)
 
         self.drill_pos = torch.ones((self._num_envs, 3), device=self._device) * self._drill_position + self._env_pos
         self.joint_actions = torch.zeros((self._num_envs, 12), device=self._device)
@@ -368,15 +369,30 @@ class FrankaCabinetTask(RLTask):
         quat_diff = quat_mul(self.drill_rot, quat_conjugate(self.default_drill_rot))
         self.target_rot_dist = 2.0 * torch.asin(torch.clamp(torch.norm(quat_diff[:, 1:4], p=2, dim=-1), max=1.0)) 
 
-        to_index = self.indexes_pos_target + self.drill_pos - self.indexes_pos
+        to_index = self.compute_finger_target_transforms(self.drill_rot,
+                                                         self.drill_pos,
+                                                         self.target_fingers_rotations,
+                                                         self.indexes_pos_target) - self.indexes_pos
         self.d_index = torch.norm(to_index, p=2, dim=-1)
-        to_middle = self.middles_pos_target + self.drill_pos - self.middles_pos
+        to_middle = self.compute_finger_target_transforms(self.drill_rot,
+                                                         self.drill_pos,
+                                                         self.target_fingers_rotations,
+                                                         self.middles_pos_target) - self.middles_pos
         self.d_middle = torch.norm(to_middle, p=2, dim=-1)
-        to_ring = self.rings_pos_target + self.drill_pos - self.rings_pos
+        to_ring = self.compute_finger_target_transforms(self.drill_rot,
+                                                         self.drill_pos,
+                                                         self.target_fingers_rotations,
+                                                         self.rings_pos_target) - self.rings_pos
         self.d_ring = torch.norm(to_ring, p=2, dim=-1)
-        to_little = self.littles_pos_target + self.drill_pos - self.littles_pos
+        to_little = self.compute_finger_target_transforms(self.drill_rot,
+                                                         self.drill_pos,
+                                                         self.target_fingers_rotations,
+                                                         self.littles_pos_target) - self.littles_pos
         self.d_little = torch.norm(to_little, p=2, dim=-1)
-        to_thumb = self.thumbs_pos_target + self.drill_pos - self.thumbs_pos
+        to_thumb = self.compute_finger_target_transforms(self.drill_rot,
+                                                         self.drill_pos,
+                                                         self.target_fingers_rotations,
+                                                         self.thumbs_pos_target) - self.thumbs_pos
         self.d_thumb = torch.norm(to_thumb, p=2, dim=-1)
 
 
@@ -617,6 +633,19 @@ class FrankaCabinetTask(RLTask):
         )
 
         return global_franka_rot, global_franka_pos, global_drawer_rot, global_drawer_pos
+    
+    def compute_finger_target_transforms(
+        self,
+        drill_rot,
+        drill_pos,
+        drill_local_finger_target_rot,
+        drill_local_finger_target_pos,
+
+    ):
+        _, global_finger_target_pos = tf_combine(
+            drill_rot, drill_pos, drill_local_finger_target_rot, drill_local_finger_target_pos,
+        )
+        return (global_finger_target_pos)
 
     def compute_franka_reward(
         self,
@@ -676,10 +705,7 @@ class FrankaCabinetTask(RLTask):
             )
         elif(self.finger_reward_type == "fingertip_position"):
             # Rew for putting fingertip at target pos (MAX 1)
-            finger_close_reward = torch.where(
-                d <= 0.04, 
-                0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)), finger_close_reward
-            )
+            finger_close_reward = 0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2))
         else:
             print(f"Warning! invalid fingertp position reward type. Setting it to zero")
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
