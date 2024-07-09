@@ -105,6 +105,7 @@ class FrankaCabinetTask(RLTask):
 
         self.finger_reward_type = self._task_cfg["env"]["fingerRewardType"]
         self.pull_drill_enable = self._task_cfg["env"]["pullDrillEnable"]
+        self.target_random_scaling = self._task_cfg["env"]["targetRandomScaling"]
         
 
     def set_up_scene(self, scene) -> None:
@@ -524,7 +525,7 @@ class FrankaCabinetTask(RLTask):
 
         target_pos = tensor_clamp(
             self.drill_target_center.unsqueeze(0)
-            + 1. * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
+            + self.target_random_scaling * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
             self.drill_target_lower_bound,
             self.drill_target_upper_bound,
             )

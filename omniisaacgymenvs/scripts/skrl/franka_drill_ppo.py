@@ -177,7 +177,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "joint_pos"],
-                                     "project": "franka_tekken 12 dof js rev6 positioning and orienting"}
+                                     "project": "franka_tekken 12 dof js rev6 positioning and orienting w env log"}
 cfg["env"] = env.task._task_cfg["env"]
 
 for key, value in algo_config.items():

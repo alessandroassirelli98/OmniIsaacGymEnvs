@@ -18,6 +18,8 @@ env:
   startPositionNoise: 0.0
   startRotationNoise: 0.0
 
+  targetRandomScaling: 0.25
+
   numProps: 4
   aggregateMode: 3
 
