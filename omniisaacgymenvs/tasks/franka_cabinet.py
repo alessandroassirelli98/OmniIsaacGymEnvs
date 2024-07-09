@@ -290,7 +290,7 @@ class FrankaCabinetTask(RLTask):
         franka_local_grasp_pose_rot, franka_local_pose_pos = tf_combine(
             hand_pose_inv_rot, hand_pose_inv_pos, palm_pose[3:7], palm_pose[0:3]
         )
-        franka_local_pose_pos += torch.tensor([0., 0., 0.02], device=self._device)
+        franka_local_pose_pos += torch.tensor([0.02, 0., 0.02], device=self._device)
         self.franka_local_grasp_pos = franka_local_pose_pos.repeat((self._num_envs, 1))
         self.franka_local_grasp_rot = franka_local_grasp_pose_rot.repeat((self._num_envs, 1))
 
@@ -707,7 +707,7 @@ class FrankaCabinetTask(RLTask):
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
-        dist_reward = torch.where(d <= 0.03, dist_reward + 0.005, dist_reward)
+        dist_reward = torch.where(d <= 0.03, dist_reward + 0.05, dist_reward)
         self.reward_terms_log["distReward"] = dist_reward
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
@@ -730,7 +730,7 @@ class FrankaCabinetTask(RLTask):
         if self.finger_reward_type == "joint_position":
             # Rew for closing all the fingers joints (MAX 1)
             finger_close_reward = torch.where(
-                d <= self.d_threshold, 0.12 * torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
+                d <= self.d_threshold, (1/15) * torch.sum(joint_positions[:, 12:], dim=1), finger_close_reward
             )
         elif(self.finger_reward_type == "fingertip_position"):
             # Rew for putting fingertip at target pos (MAX 1)
