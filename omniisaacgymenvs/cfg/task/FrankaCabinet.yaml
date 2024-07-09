@@ -19,6 +19,7 @@ env:
   startRotationNoise: 0.0
 
   targetRandomScaling: 0.25
+  distanceThreshold: 0.05
 
   numProps: 4
   aggregateMode: 3

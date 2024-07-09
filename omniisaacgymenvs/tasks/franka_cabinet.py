@@ -106,6 +106,7 @@ class FrankaCabinetTask(RLTask):
         self.finger_reward_type = self._task_cfg["env"]["fingerRewardType"]
         self.pull_drill_enable = self._task_cfg["env"]["pullDrillEnable"]
         self.target_random_scaling = self._task_cfg["env"]["targetRandomScaling"]
+        self.d_threshold = self._task_cfg["env"]["distanceThreshold"]
         
 
     def set_up_scene(self, scene) -> None:
@@ -702,11 +703,11 @@ class FrankaCabinetTask(RLTask):
         if self.finger_reward_type == "joint_position":
             # Rew for closing all the fingers joints (MAX 1)
             finger_close_reward = torch.where(
-                d <= 0.04, 0.12 * torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
+                d <= self.d_threshold, 0.12 * torch.sum(joint_positions[:, self._frankas.clamp_drive_dof_indices], dim=1), finger_close_reward
             )
         elif(self.finger_reward_type == "fingertip_position"):
             # Rew for putting fingertip at target pos (MAX 1)
-            finger_close_reward = torch.where(d <= 0.04,
+            finger_close_reward = torch.where(d <= self.d_threshold,
                                               0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)),
                                               finger_close_reward)
         else:
