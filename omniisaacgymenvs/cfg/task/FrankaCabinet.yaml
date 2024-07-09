@@ -38,9 +38,9 @@ env:
   rotRewardScale: 0.5
   drillAlignmentScale: 5
   aroundHandleRewardScale: 0.
-  openRewardScale: 10.
+  openRewardScale: 20.
   actionPenaltyScale: 1.
-  fingerCloseRewardScale: 30.
+  fingerCloseRewardScale: 10.
   heightRewardScale: 1.
   goalAchievedBonus: 30.
   failPenalty: 1
