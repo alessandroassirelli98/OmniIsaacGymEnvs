@@ -120,7 +120,34 @@ class FrankaCabinetTask(RLTask):
         self._frankas = FrankaView(prim_paths_expr="/World/envs/.*/franka", name="franka_view")
         self.robots_to_log.append(self._frankas)
         # self._cabinets = CabinetView(prim_paths_expr="/World/envs/.*/cabinet", name="cabinet_view")
-        self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False)
+        if self.finger_reward_type == "enforce_contacts":
+            self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False,
+                                        prepare_contact_sensors=True,
+                                        #    track_contact_forces=True,
+                                        contact_filter_prim_paths_expr=["/World/envs/.*/franka/Right_Thumb_Phaprox",
+                                                                        "/World/envs/.*/franka/Right_Thumb_Phamed",
+                                                                        "/World/envs/.*/franka/Right_Thumb_Phadist",
+
+                                                                        "/World/envs/.*/franka/Right_Index_Phaprox",
+                                                                        "/World/envs/.*/franka/Right_Index_Phamed",
+                                                                        "/World/envs/.*/franka/Right_Index_Phadist",
+
+                                                                        "/World/envs/.*/franka/Right_Middle_Phaprox",
+                                                                        "/World/envs/.*/franka/Right_Middle_Phamed",
+                                                                        "/World/envs/.*/franka/Right_Middle_Phadist",
+
+                                                                        "/World/envs/.*/franka/Right_Ring_Phaprox",
+                                                                        "/World/envs/.*/franka/Right_Ring_Phamed",
+                                                                        "/World/envs/.*/franka/Right_Ring_Phadist",
+
+                                                                        "/World/envs/.*/franka/Right_Little_Phaprox",
+                                                                        "/World/envs/.*/franka/Right_Little_Phamed",
+                                                                        "/World/envs/.*/franka/Right_Little_Phadist",
+                                                                        ]
+                                            )
+        else:
+            self._drills = RigidPrimView(prim_paths_expr="/World/envs/.*/drill", name="drill_view", reset_xform_properties=False)
+
         self._tables = GeometryPrimView(prim_paths_expr="/World/envs/.*/table", name="cube_view", 
                                        reset_xform_properties=False)
         if self.show_target: self._target_spheres = XFormPrimView(prim_paths_expr="/World/envs/.*/target_sphere", name="target_view", 
@@ -710,6 +737,12 @@ class FrankaCabinetTask(RLTask):
             finger_close_reward = torch.where(d <= self.d_threshold,
                                               0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)),
                                               finger_close_reward)
+        elif(self.finger_reward_type == "enforce_contacts"):
+            # Rew for maxing contacts with drill (MAX 1)
+            cm = self._drills.get_contact_force_matrix()
+            self.cm_bool_to_manipulability(cm)
+            finger_close_reward = self.manipulability * 1/15
+
         else:
             print(f"Warning! invalid fingertp position reward type. Setting it to zero")
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
@@ -800,3 +833,8 @@ class FrankaCabinetTask(RLTask):
             self.success_pos_envs = self.d_target <= self.pos_success_thr
             self.success_rot_envs = torch.logical_and(self.drill_pos[:, 2] > self.height_positioning_thr, torch.abs(self.target_rot_dist) <= self.rot_success_thr)
 
+    def cm_bool_to_manipulability(self, cm, TOL=1e-3):
+        thumb_contact_idxs = [0, 1, 2]
+        res = torch.norm(cm, dim=2) > TOL
+        self.manipulability = torch.where(torch.logical_and(torch.any(res[:, thumb_contact_idxs], dim=1), torch.any(res[:, 3:], dim=1)),
+                                           torch.count_nonzero(res, dim=1), 0.)

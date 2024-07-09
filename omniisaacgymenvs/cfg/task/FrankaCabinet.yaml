@@ -30,7 +30,7 @@ env:
 
   successType: "positioning_orient" # can be either "lift" "positioning" "positioning_orient"
   obsType: "full" #can be either "full" or "partial"
-  fingerRewardType: "fingertip_position" #can be either "joint_position" or "fingertip_position"
+  fingerRewardType: "enforce_contacts" #can be either "joint_position" or "fingertip_position" or "enforce_contacts"
 
   pullDrillEnable: False
 
