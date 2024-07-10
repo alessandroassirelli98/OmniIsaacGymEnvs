@@ -40,10 +40,11 @@ env:
   aroundHandleRewardScale: 0.
   openRewardScale: 20.
   actionPenaltyScale: 1.
-  fingerCloseRewardScale: 20.
+  fingerCloseRewardScale: 50.
   heightRewardScale: 1.
   goalAchievedBonus: 30.
-  failPenalty: 1
+  okFailPenalty: 1.
+  badFailPenalty: 1000.
 
 sim:
   dt: 0.0083 # 1/120 s

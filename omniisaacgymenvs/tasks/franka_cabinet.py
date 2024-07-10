@@ -90,7 +90,8 @@ class FrankaCabinetTask(RLTask):
         self.height_reward_scale = self._task_cfg["env"]["heightRewardScale"]
         self.reward_weights_log["heightReward"] = self._task_cfg["env"]["heightRewardScale"]
 
-        self.fail_penalty = self._task_cfg["env"]["failPenalty"]
+        self.ok_fail_penalty = self._task_cfg["env"]["okFailPenalty"]
+        self.bad_fail_penalty = self._task_cfg["env"]["badFailPenalty"]
 
         self.success_type = self._task_cfg["env"]["successType"]
 
@@ -707,7 +708,7 @@ class FrankaCabinetTask(RLTask):
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
-        dist_reward = torch.where(d <= 0.03, dist_reward + 0.05, dist_reward)
+        dist_reward = torch.where(d <= 0.03, dist_reward + 0.5, dist_reward)
         self.reward_terms_log["distReward"] = dist_reward
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
@@ -741,7 +742,7 @@ class FrankaCabinetTask(RLTask):
             # Rew for maxing contacts with drill (MAX 1)
             cm = self._drills.get_contact_force_matrix()
             self.cm_bool_to_manipulability(cm)
-            finger_close_reward = self.manipulability * 1/15
+            finger_close_reward = torch.where(d <= self.d_threshold, self.manipulability * 1/15, self.finger_close_reward)
 
         else:
             print(f"Warning! invalid fingertp position reward type. Setting it to zero")
@@ -789,9 +790,12 @@ class FrankaCabinetTask(RLTask):
             rewards = torch.where(self.success_envs, rewards + 4 * self.goal_achieved_bonus, rewards)
         self.reward_terms_log["goalBonusReward"] = torch.where(self.success_envs, self.goal_achieved_bonus, torch.zeros_like(rewards))
         
-        rewards = torch.where(self.failed_envs, 
-                                      rewards - self.fail_penalty,
+        rewards = torch.where(self.bad_fail, 
+                                      rewards - self.bad_fail_penalty,
                                       rewards)
+        rewards = torch.where(self.ok_fail, 
+                                rewards - self.ok_fail_penalty,
+                                rewards)
 
         return rewards
     
@@ -820,7 +824,9 @@ class FrankaCabinetTask(RLTask):
         cos_roll = torch.abs(torch.cos(get_euler_xyz(drill_rot)[0]))
         cos_pitch = torch.abs(torch.cos(get_euler_xyz(drill_rot)[1]))
 
-        self.failed_envs = torch.logical_or(hand_pos[:, 2] < 0.4, torch.logical_or(cos_roll < RP_FAIL, cos_pitch < RP_FAIL))
+        self.bad_fail = hand_pos[:, 2] < 0.4
+        self.ok_fail = torch.logical_or(cos_roll < RP_FAIL, cos_pitch < RP_FAIL)
+        self.failed_envs = torch.logical_or(self.bad_fail, self.ok_fail)
 
 
     def compute_success(self, success_type):
