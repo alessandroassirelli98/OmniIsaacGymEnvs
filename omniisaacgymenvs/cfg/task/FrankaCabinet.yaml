@@ -42,7 +42,8 @@ env:
   actionPenaltyScale: 1.
   fingerCloseRewardScale: 50.
   heightRewardScale: 1.
-  goalAchievedBonus: 30.
+  goalAchievedBonus: 10.
+  triggerPressBonus: 30.
   okFailPenalty: 1.
   badFailPenalty: 1000.
 

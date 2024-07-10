@@ -98,6 +98,11 @@ class FrankaCabinetTask(RLTask):
         self.goal_achieved_bonus = self._task_cfg["env"]["goalAchievedBonus"]
         self.reward_weights_log["goalBonusReward"] = 1.
 
+        self.trigger_press_bonus = self._task_cfg["env"]["triggerPressBonus"]
+        self.reward_weights_log["triggerPressBonus"] = 1.
+
+
+
         self.obs_type = self._task_cfg["env"]["obsType"]
         if self.obs_type =="full":
             self._num_observations = 70
@@ -742,11 +747,16 @@ class FrankaCabinetTask(RLTask):
             # Rew for maxing contacts with drill (MAX 1)
             cm = self._drills.get_contact_force_matrix()
             self.cm_bool_to_manipulability(cm)
-            finger_close_reward = torch.where(d <= self.d_threshold, self.manipulability * 1/15, self.finger_close_reward)
+            finger_close_reward = torch.where(d <= self.d_threshold, self.manipulability * 1/15, finger_close_reward)
 
         else:
             print(f"Warning! invalid fingertp position reward type. Setting it to zero")
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
+
+        trigger_press_reward = torch.zeros_like(rot_reward)
+        trigger_press_reward = torch.where(self.d_index <= 0.35, self.trigger_press_bonus, trigger_press_reward)
+        self.reward_terms_log["triggerPressBonus"] = finger_close_reward
+
         
         # Reward for matching target orientation (MAX 1)
         drill_alignment_reward = torch.zeros_like(rot_reward)
