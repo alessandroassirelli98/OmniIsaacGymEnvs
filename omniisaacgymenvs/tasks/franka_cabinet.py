@@ -222,8 +222,8 @@ class FrankaCabinetTask(RLTask):
     def get_drill(self):
         self._drill_position = torch.tensor([0.35, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, torch.pi], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.25, -0.4, 0.53], device=self._device)
-        self._drill_upper_bound = torch.tensor([0.6, 0.4, 0.53], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.1, -0.45, 0.53], device=self._device)
+        self._drill_upper_bound = torch.tensor([0.5, 0.45, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device).squeeze(0)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
@@ -533,7 +533,7 @@ class FrankaCabinetTask(RLTask):
 
         pos = tensor_clamp(
             self._drill_position.unsqueeze(0)
-            + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
+            + 1. * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
             self._drill_lower_bound,
             self._drill_upper_bound,
             )
@@ -754,7 +754,7 @@ class FrankaCabinetTask(RLTask):
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
 
         trigger_press_reward = torch.zeros_like(rot_reward)
-        trigger_press_reward = torch.where(self.d_index <= 0.35, self.trigger_press_bonus, trigger_press_reward)
+        trigger_press_reward = torch.where(self.d_index <= 0.035, self.trigger_press_bonus, trigger_press_reward)
         self.reward_terms_log["triggerPressBonus"] = finger_close_reward
 
         
@@ -770,8 +770,7 @@ class FrankaCabinetTask(RLTask):
         self.reward_terms_log["actionPenalty"] = action_penalty
 
         # how far the cabinet has been opened out (MAX 1)
-        open_reward = torch.zeros_like(rot_reward)
-        open_reward = torch.where(self.drill_pos[:, 2] > self.height_positioning_thr, (1 / (1 + self.d_target**2)), open_reward)
+        open_reward = (self.d_default **2 - self.d_target**2) / ((1 + self.d_target**2) * (1 + self.d_default**2))
         self.reward_terms_log["openReward"] = open_reward
 
         # Bonus if it reaches the thr height (MAX 1)
