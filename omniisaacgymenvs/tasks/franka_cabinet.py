@@ -222,7 +222,7 @@ class FrankaCabinetTask(RLTask):
     def get_drill(self):
         self._drill_position = torch.tensor([0.35, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, torch.pi], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.1, -0.45, 0.53], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.2, -0.45, 0.53], device=self._device)
         self._drill_upper_bound = torch.tensor([0.5, 0.45, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device).squeeze(0)
 
@@ -755,7 +755,7 @@ class FrankaCabinetTask(RLTask):
 
         trigger_press_reward = torch.zeros_like(rot_reward)
         trigger_press_reward = torch.where(self.d_index <= 0.035, self.trigger_press_bonus, trigger_press_reward)
-        self.reward_terms_log["triggerPressBonus"] = finger_close_reward
+        self.reward_terms_log["triggerPressBonus"] = trigger_press_reward
 
         
         # Reward for matching target orientation (MAX 1)
