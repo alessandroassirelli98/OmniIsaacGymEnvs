@@ -5,7 +5,7 @@ physics_engine: ${..physics_engine}
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:4096,${...num_envs}}
+  numEnvs: ${resolve_default:2048,${...num_envs}}
   envSpacing: 3.0
   episodeLength: 600
   enableDebugVis: False
@@ -18,7 +18,7 @@ env:
   startPositionNoise: 0.0
   startRotationNoise: 0.0
 
-  targetRandomScaling: 0.25
+  targetRandomScaling: 0.5
   distanceThreshold: 0.05
 
   numProps: 4
@@ -29,8 +29,8 @@ env:
   ikVelocity: 0.01
 
   successType: "positioning_orient" # can be either "lift" "positioning" "positioning_orient"
-  obsType: "partial" #can be either "full" or "partial"
-  fingerRewardType: "joint_position" #can be either "joint_position" or "fingertip_position" or "enforce_contacts"
+  obsType: "full" #can be either "full" or "partial"
+  fingerRewardType: "mixed" #can be either "joint_position" or "fingertip_position" or "enforce_contacts" or "mixed"
 
   pullDrillEnable: False
 
@@ -41,9 +41,9 @@ env:
   openRewardScale: 20.
   actionPenaltyScale: 1.
   fingerCloseRewardScale: 50.
-  heightRewardScale: 1.
+  heightRewardScale: 0.
   goalAchievedBonus: 15.
-  triggerPressBonus: 30.
+  triggerPressBonus: 40.
   okFailPenalty: 1.
   badFailPenalty: 1000.
 

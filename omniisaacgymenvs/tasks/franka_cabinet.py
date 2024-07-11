@@ -160,6 +160,8 @@ class FrankaCabinetTask(RLTask):
                                 reset_xform_properties=False)
         self._index_targets = XFormPrimView(prim_paths_expr="/World/envs/.*/drill/index_target", name="index_target_view", 
                                 reset_xform_properties=False)
+        self._index_fingertip_targets = XFormPrimView(prim_paths_expr="/World/envs/.*/drill/index_fingertip_target", name="index_fingertiptarget_view", 
+                                reset_xform_properties=False)
         self._middle_targets = XFormPrimView(prim_paths_expr="/World/envs/.*/drill/middle_target", name="middle_ringt_view", 
                                 reset_xform_properties=False)
         self._ring_targets = XFormPrimView(prim_paths_expr="/World/envs/.*/drill/ring_target", name="ring_target_view", 
@@ -173,6 +175,7 @@ class FrankaCabinetTask(RLTask):
         scene.add(self._frankas._hands)
         scene.add(self._frankas._thumb_fingers)
         scene.add(self._frankas._index_fingers)
+        scene.add(self._frankas._index_fingertip)
         scene.add(self._frankas._middle_fingers)
         scene.add(self._frankas._ring_fingers)
         scene.add(self._frankas._little_fingers)
@@ -222,8 +225,8 @@ class FrankaCabinetTask(RLTask):
     def get_drill(self):
         self._drill_position = torch.tensor([0.35, 0, 0.53], device=self._device)
         orientation = torch.tensor([0, 0, torch.pi], device=self._device).unsqueeze(0)
-        self._drill_lower_bound = torch.tensor([0.25, -0.4, 0.53], device=self._device)
-        self._drill_upper_bound = torch.tensor([0.6, 0.4, 0.53], device=self._device)
+        self._drill_lower_bound = torch.tensor([0.2, -0.45, 0.53], device=self._device)
+        self._drill_upper_bound = torch.tensor([0.5, 0.45, 0.53], device=self._device)
         self._drills_rot = euler_angles_to_quats(orientation, device=self._device).squeeze(0)
 
         self._drill = Drill(prim_path=self.default_zero_env_path + '/drill',
@@ -347,6 +350,7 @@ class FrankaCabinetTask(RLTask):
         self.default_drill_rot = self._drills_rot.repeat((self._num_envs, 1))
 
         self.indexes_pos_target, _ = self._index_targets.get_local_poses()
+        self.indexes_fingertip_pos_target, _ = self._index_targets.get_local_poses()
         self.middles_pos_target, _ = self._middle_targets.get_local_poses()
         self.rings_pos_target, _ = self._ring_targets.get_local_poses()
         self.littles_pos_target, _ = self._little_targets.get_local_poses()
@@ -360,6 +364,7 @@ class FrankaCabinetTask(RLTask):
         hand_pos, hand_rot = self._frankas._hands.get_world_poses(clone=False)
 
         self.indexes_pos, _ = self._frankas._index_fingers.get_world_poses(clone=False)
+        self.indexes_fingertips_pos, _ = self._frankas._index_fingertip.get_world_poses(clone=False)
         self.middles_pos, _ = self._frankas._middle_fingers.get_world_poses(clone=False)
         self.rings_pos, _ = self._frankas._ring_fingers.get_world_poses(clone=False)
         self.littles_pos, _ = self._frankas._little_fingers.get_world_poses(clone=False)
@@ -409,6 +414,12 @@ class FrankaCabinetTask(RLTask):
                                                          self.target_fingers_rotations,
                                                          self.indexes_pos_target) - self.indexes_pos
         self.d_index = torch.norm(to_index, p=2, dim=-1)
+        to_index_fingertip = self.compute_finger_target_transforms(self.drill_rot,
+                                                         self.drill_pos,
+                                                         self.target_fingers_rotations,
+                                                         self.indexes_fingertip_pos_target) - self.indexes_fingertips_pos
+        self.d_index_fingertip = torch.norm(to_index_fingertip, p=2, dim=-1)
+
         to_middle = self.compute_finger_target_transforms(self.drill_rot,
                                                          self.drill_pos,
                                                          self.target_fingers_rotations,
@@ -533,7 +544,7 @@ class FrankaCabinetTask(RLTask):
 
         pos = tensor_clamp(
             self._drill_position.unsqueeze(0)
-            + 0.25 * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
+            + 1. * (torch.rand((len(env_ids), 3), device=self._device) - 0.5),
             self._drill_lower_bound,
             self._drill_upper_bound,
             )
@@ -748,14 +759,20 @@ class FrankaCabinetTask(RLTask):
             cm = self._drills.get_contact_force_matrix()
             self.cm_bool_to_manipulability(cm)
             finger_close_reward = torch.where(d <= self.d_threshold, self.manipulability * 1/15, finger_close_reward)
+        elif(self.finger_reward_type == "mixed"):
+            finger_close_reward = torch.where(
+                d <= self.d_threshold, (1/4) * torch.sum(joint_positions[:, 13:17], dim=1), finger_close_reward
+            )
+            finger_close_reward = torch.where(d <= self.d_threshold, 1/(1 + self.d_index_fingertip **2), finger_close_reward
+            )
 
         else:
             print(f"Warning! invalid fingertp position reward type. Setting it to zero")
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
 
         trigger_press_reward = torch.zeros_like(rot_reward)
-        trigger_press_reward = torch.where(self.d_index <= 0.35, self.trigger_press_bonus, trigger_press_reward)
-        self.reward_terms_log["triggerPressBonus"] = finger_close_reward
+        trigger_press_reward = torch.where(self.d_index <= 0.01, self.trigger_press_bonus, trigger_press_reward)
+        self.reward_terms_log["triggerPressBonus"] = trigger_press_reward
 
         
         # Reward for matching target orientation (MAX 1)
@@ -770,8 +787,7 @@ class FrankaCabinetTask(RLTask):
         self.reward_terms_log["actionPenalty"] = action_penalty
 
         # how far the cabinet has been opened out (MAX 1)
-        open_reward = torch.zeros_like(rot_reward)
-        open_reward = torch.where(self.drill_pos[:, 2] > self.height_positioning_thr, (1 / (1 + self.d_target**2)), open_reward)
+        open_reward = (self.d_default **2 - self.d_target**2) / ((1 + self.d_target**2) * (1 + self.d_default**2))
         self.reward_terms_log["openReward"] = open_reward
 
         # Bonus if it reaches the thr height (MAX 1)

@@ -177,7 +177,7 @@ cfg["experiment"]["checkpoint_interval"] = 200
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "joint_pos"],
-                                     "project": "franka_tekken 12 dof js rev6 positioning and orienting w env log"}
+                                     "project": "franka_tekken 12 dof js rev7"}
 cfg["env"] = env.task._task_cfg["env"]
 
 for key, value in algo_config.items():
@@ -229,7 +229,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 120000}
+cfg_trainer = {"timesteps": 160000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # # demonstrations injection
