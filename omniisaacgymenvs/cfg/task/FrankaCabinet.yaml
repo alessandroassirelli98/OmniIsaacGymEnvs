@@ -29,7 +29,7 @@ env:
   ikVelocity: 0.01
 
   successType: "positioning_orient" # can be either "lift" "positioning" "positioning_orient"
-  obsType: "full" #can be either "full" or "partial"
+  obsType: "partial" #can be either "full" or "partial"
   fingerRewardType: "joint_position" #can be either "joint_position" or "fingertip_position" or "enforce_contacts"
 
   pullDrillEnable: False
@@ -42,7 +42,7 @@ env:
   actionPenaltyScale: 1.
   fingerCloseRewardScale: 50.
   heightRewardScale: 1.
-  goalAchievedBonus: 10.
+  goalAchievedBonus: 15.
   triggerPressBonus: 30.
   okFailPenalty: 1.
   badFailPenalty: 1000.
