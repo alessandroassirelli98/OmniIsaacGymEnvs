@@ -260,7 +260,7 @@ class FrankaCabinetTask(RLTask):
         self._target_sphere = VisualSphere(prim_path= self.default_zero_env_path + "/target_sphere",
                                   name="target_sphere",
                                   translation= self._target_sphere_position,
-                                  radius=self.pos_success_thr,
+                                  radius=0.01,#self.pos_success_thr,
                                   color=self._target_sphere_color)
         
         self._target_sphere.set_collision_enabled(False)
@@ -297,16 +297,16 @@ class FrankaCabinetTask(RLTask):
         )
 
         hand_pose_inv_rot, hand_pose_inv_pos = tf_inverse(hand_pose[3:7], hand_pose[0:3])
+        palm_pose[:3] += torch.tensor([-0.05, 0., -0.02], device=self._device)
 
         grasp_pose_axis = 1
         franka_local_grasp_pose_rot, franka_local_pose_pos = tf_combine(
             hand_pose_inv_rot, hand_pose_inv_pos, palm_pose[3:7], palm_pose[0:3]
         )
-        franka_local_pose_pos += torch.tensor([0.02, 0., 0.02], device=self._device)
         self.franka_local_grasp_pos = franka_local_pose_pos.repeat((self._num_envs, 1))
         self.franka_local_grasp_rot = franka_local_grasp_pose_rot.repeat((self._num_envs, 1))
 
-        drill_local_grasp_pose = torch.tensor([0.0, 0.0, 0.01, 1.0, 0.0, 0.0, 0.0], device=self._device)
+        drill_local_grasp_pose = torch.tensor([0.0, 0.0, 0.02, 1.0, 0.0, 0.0, 0.0], device=self._device)
         self.drill_local_grasp_pos = drill_local_grasp_pose[0:3].repeat((self._num_envs, 1))
         self.drill_local_grasp_rot = drill_local_grasp_pose[3:7].repeat((self._num_envs, 1))
 
@@ -726,7 +726,7 @@ class FrankaCabinetTask(RLTask):
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
-        dist_reward = torch.where(d <= 0.03, dist_reward + self.dist_bonus, dist_reward)
+        dist_reward = torch.where(d <= 0.025, dist_reward * 0, dist_reward)
         self.reward_terms_log["distReward"] = dist_reward
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
