@@ -341,6 +341,9 @@ class FrankaCabinetTask(RLTask):
         self.drill_target_pos = torch.tensor([0.5, 0, 0.75], device=self._device, dtype=torch.float).repeat(
             (self._num_envs, 1)
         )
+        self._ref_joint_targets = torch.tensor([0.2025, 0.3868, 0.7259, 0.8537, 0.4276], 
+                                            device=self._device).repeat((self._num_envs, 1)
+        )
 
         self.drill_target_center = torch.tensor([0.3, 0., 0.75], device=self._device)
         self.drill_target_lower_bound = torch.tensor([0.0, -0.5, 0.7], device=self._device)
@@ -359,6 +362,8 @@ class FrankaCabinetTask(RLTask):
         self.littles_pos_target, _ = self._little_targets.get_local_poses()
         self.thumbs_pos_target, _ = self._thumb_targets.get_local_poses()
         self.target_fingers_rotations = torch.tensor([ 1.0, 0.0, 0.0, 0.0], device = self._device).repeat(self._num_envs, 1)
+
+        self.exp_joints = math.exp(1.57 * self.alpha_finger)
 
         self.drill_pos = torch.ones((self._num_envs, 3), device=self._device) * self._drill_position + self._env_pos
         self.joint_actions = torch.zeros((self._num_envs, 12), device=self._device)
@@ -748,14 +753,22 @@ class FrankaCabinetTask(RLTask):
         finger_close_reward = torch.zeros_like(rot_reward)
         if self.finger_reward_type == "joint_position":
             # Rew for closing all the fingers joints (MAX 1)
+            # finger_close_reward = torch.where(
+            #     d <= self.d_threshold, (1/5) * torch.sum(self._ref_joint_targets - joint_positions[:, 12:17], dim=1), finger_close_reward
+            # )
             finger_close_reward = torch.where(
-                d <= self.d_threshold, (1/15) * torch.sum(joint_positions[:, 12:], dim=1), finger_close_reward
+                d <= self.d_threshold, (1/5) * 
+                torch.sum((torch.exp(self.alpha_finger * (self._ref_joint_targets - joint_positions[:, 12])) - torch.exp(self.alpha_finger * self._ref_joint_targets)) /
+                  (1 - torch.exp(self.alpha_finger * self._ref_joint_targets)), dim=1), 
+                finger_close_reward
             )
+
         elif(self.finger_reward_type == "fingertip_position"):
             # Rew for putting fingertip at target pos (MAX 1)
             finger_close_reward = torch.where(d <= self.d_threshold,
                                               0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)),
                                               finger_close_reward)
+            
         elif(self.finger_reward_type == "fingertip_position_exp"):
             # Rew for putting fingertip at target pos (MAX 1)
             finger_close_reward = torch.where(d <= self.d_threshold,
@@ -773,7 +786,7 @@ class FrankaCabinetTask(RLTask):
 
         elif(self.finger_reward_type == "mixed"):
             finger_close_reward = 1/5 * torch.where(d <= self.d_threshold, 
-                                                    torch.sum(torch.exp(- self.alpha_finger * 1/(1.57 * 4) * torch.abs(joint_positions[:, 13:17])), dim=1)
+                                                    1/(1.57) * (torch.sum(joint_positions[:, 13:17], dim=1))
                                                     + torch.exp(- self.alpha_finger * self.d_index_fingertip),
                                                       finger_close_reward)
 
