@@ -260,7 +260,7 @@ class FrankaCabinetTask(RLTask):
         self._target_sphere = VisualSphere(prim_path= self.default_zero_env_path + "/target_sphere",
                                   name="target_sphere",
                                   translation= self._target_sphere_position,
-                                  radius=0.01,#self.pos_success_thr,
+                                  radius=self.pos_success_thr,
                                   color=self._target_sphere_color)
         
         self._target_sphere.set_collision_enabled(False)
