@@ -70,6 +70,7 @@ class FrankaCabinetTask(RLTask):
         self.ik_velocity = self._task_cfg["env"]["ikVelocity"]
 
         self.dist_reward_scale = self._task_cfg["env"]["distRewardScale"]
+        self.dist_bonus = self._task_cfg["env"]["distBonus"]
         self.reward_weights_log["distReward"] =  self._task_cfg["env"]["distRewardScale"]
 
         self.rot_reward_scale = self._task_cfg["env"]["rotRewardScale"]
@@ -80,6 +81,8 @@ class FrankaCabinetTask(RLTask):
 
         self.open_reward_scale = self._task_cfg["env"]["openRewardScale"]
         self.reward_weights_log["openReward"] = self._task_cfg["env"]["openRewardScale"]
+        self.alpha_open = self._task_cfg["env"]["alphaOpen"]
+        self.alpha_finger = self._task_cfg["env"]["alphaFinger"]
 
         self.action_penalty_scale = self._task_cfg["env"]["actionPenaltyScale"]
         self.reward_weights_log["actionPenalty"] = self._task_cfg["env"]["actionPenaltyScale"]
@@ -340,8 +343,8 @@ class FrankaCabinetTask(RLTask):
         )
 
         self.drill_target_center = torch.tensor([0.3, 0., 0.75], device=self._device)
-        self.drill_target_lower_bound = torch.tensor([0.1, -0.5, 0.7], device=self._device)
-        self.drill_target_upper_bound = torch.tensor([0.6, 0.5, 0.85], device = self._device)
+        self.drill_target_lower_bound = torch.tensor([0.0, -0.5, 0.7], device=self._device)
+        self.drill_target_upper_bound = torch.tensor([0.7, 0.5, 0.85], device = self._device)
 
 
         self.default_drill_pos = torch.tensor([0.35, 0, 0.53], device=self._device, dtype=torch.float).repeat(
@@ -724,7 +727,7 @@ class FrankaCabinetTask(RLTask):
         # distance from hand to the drawer
         d = torch.norm(franka_grasp_pos - drill_grasp_pos, p=2, dim=-1)
         dist_reward = torch.log(1 / (1 + d**2))
-        dist_reward = torch.where(d <= 0.03, dist_reward + 0.5, dist_reward)
+        dist_reward = torch.where(d <= 0.03, dist_reward + self.dist_bonus, dist_reward)
         self.reward_terms_log["distReward"] = dist_reward
 
         axis1 = tf_vector(franka_grasp_rot, gripper_forward_axis)
@@ -754,24 +757,33 @@ class FrankaCabinetTask(RLTask):
             finger_close_reward = torch.where(d <= self.d_threshold,
                                               0.2 * (1 / (1 + self.d_index**2) + 1 / (1 + self.d_middle**2) + 1 / (1 + self.d_ring**2) + 1 / (1 + self.d_little**2) + 1 / (1 + self.d_thumb**2)),
                                               finger_close_reward)
+        elif(self.finger_reward_type == "fingertip_position_exp"):
+            # Rew for putting fingertip at target pos (MAX 1)
+            finger_close_reward = torch.where(d <= self.d_threshold,
+                                              0.2 * (torch.exp(- self.alpha_finger * self.d_index) 
+                                                     + torch.exp(- self.alpha_finger * self.d_middle)
+                                                     + torch.exp(- self.alpha_finger * self.d_ring) 
+                                                     + torch.exp(- self.alpha_finger * self.d_little) 
+                                                     + torch.exp(- self.alpha_finger * self.d_thumb)),
+                                              finger_close_reward)
         elif(self.finger_reward_type == "enforce_contacts"):
             # Rew for maxing contacts with drill (MAX 1)
             cm = self._drills.get_contact_force_matrix()
             self.cm_bool_to_manipulability(cm)
             finger_close_reward = torch.where(d <= self.d_threshold, self.manipulability * 1/15, finger_close_reward)
+
         elif(self.finger_reward_type == "mixed"):
-            finger_close_reward = torch.where(
-                d <= self.d_threshold, (1/4) * torch.sum(joint_positions[:, 13:17], dim=1), finger_close_reward
-            )
-            finger_close_reward = torch.where(d <= self.d_threshold, 1/(1 + self.d_index_fingertip **2), finger_close_reward
-            )
+            finger_close_reward = 1/5 * torch.where(d <= self.d_threshold, 
+                                                    torch.sum(torch.exp(- self.alpha_finger * torch.abs(joint_positions[:, 13:])), dim=1)
+                                                    + torch.exp(- self.alpha_finger * self.d_index_fingertip),
+                                                      finger_close_reward)
 
         else:
             print(f"Warning! invalid fingertp position reward type. Setting it to zero")
         self.reward_terms_log["fingerCloseReward"] = finger_close_reward
 
         trigger_press_reward = torch.zeros_like(rot_reward)
-        trigger_press_reward = torch.where(self.d_index <= 0.01, self.trigger_press_bonus, trigger_press_reward)
+        trigger_press_reward = torch.where(self.d_index <= 0.018, self.trigger_press_bonus, trigger_press_reward)
         self.reward_terms_log["triggerPressBonus"] = trigger_press_reward
 
         
@@ -787,7 +799,8 @@ class FrankaCabinetTask(RLTask):
         self.reward_terms_log["actionPenalty"] = action_penalty
 
         # how far the cabinet has been opened out (MAX 1)
-        open_reward = (self.d_default **2 - self.d_target**2) / ((1 + self.d_target**2) * (1 + self.d_default**2))
+        # open_reward = (self.d_default **2 - self.d_target**2) / ((1 + self.d_target**2) * (1 + self.d_default**2))
+        open_reward = (torch.exp(- self.alpha_open * self.d_target)- torch.exp(- self.alpha_open * self.d_default)) / (1 - torch.exp(- self.alpha_open * self.d_default))
         self.reward_terms_log["openReward"] = open_reward
 
         # Bonus if it reaches the thr height (MAX 1)
