@@ -30,7 +30,7 @@ env:
 
   successType: "positioning_orient" # can be either "lift" "positioning" "positioning_orient"
   obsType: "full" #can be either "full" or "partial"
-  fingerRewardType: "mixed" #can be either "joint_position" or "fingertip_position" or "enforce_contacts" or "mixed"
+  fingerRewardType: "joint_position" #can be either "joint_position" or "fingertip_position" or "enforce_contacts" or "mixed"
 
   pullDrillEnable: False
 
@@ -41,15 +41,15 @@ env:
   aroundHandleRewardScale: 0.
   openRewardScale: 55.
   actionPenaltyScale: 1.
-  fingerCloseRewardScale: 50.
+  fingerCloseRewardScale: 35.
   heightRewardScale: 0.
   goalAchievedBonus: 15.
-  triggerPressBonus: 40.
+  triggerPressBonus: 60.
   okFailPenalty: 1.
   badFailPenalty: 1000.
 
-  alphaOpen: 1
-  alphaFinger: 0.5
+  alphaOpen: 3.
+  alphaFinger: 3.
 
 sim:
   dt: 0.0083 # 1/120 s

@@ -172,8 +172,8 @@ cfg["learning_rate_scheduler"] = KLAdaptiveRL
 cfg["kl_threshold"] = 0.008
 
 # logging to TensorBoard and write checkpoints (in timesteps)
-cfg["experiment"]["write_interval"] = 200
-cfg["experiment"]["checkpoint_interval"] = 200
+cfg["experiment"]["write_interval"] = 800
+cfg["experiment"]["checkpoint_interval"] = 800
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
 cfg["experiment"]["wandb"] = False
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "joint_pos"],

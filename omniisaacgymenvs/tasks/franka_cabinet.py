@@ -758,7 +758,7 @@ class FrankaCabinetTask(RLTask):
             # )
             finger_close_reward = torch.where(
                 d <= self.d_threshold, (1/5) * 
-                torch.sum((torch.exp(self.alpha_finger * (self._ref_joint_targets - joint_positions[:, 12])) - torch.exp(self.alpha_finger * self._ref_joint_targets)) /
+                torch.sum((torch.exp(self.alpha_finger * torch.abs(self._ref_joint_targets - joint_positions[:, 12:17])) - torch.exp(self.alpha_finger * self._ref_joint_targets)) /
                   (1 - torch.exp(self.alpha_finger * self._ref_joint_targets)), dim=1), 
                 finger_close_reward
             )
