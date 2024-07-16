@@ -12,9 +12,11 @@ import omniisaacgymenvs
 
 import carb
 from pxr import PhysxSchema
+from omni.isaac.core.robots.robot import Robot
 
 
-class Drill(XFormPrim):
+
+class Drill(Robot):
 
     def __init__(
         self,
@@ -25,9 +27,11 @@ class Drill(XFormPrim):
         translation: Optional[np.ndarray] = None,
         orientation: Optional[np.ndarray] = None,
     ) -> None:
+        
+        self._position = torch.tensor([1.0, 0.0, 0.0]) if translation is None else translation
+        self._orientation = torch.tensor([0.0, 0.0, 0.0, 1.0]) if orientation is None else orientation
 
-
-        usd_path=f'{omniisaacgymenvs.__path__[0]}/models/Cordless_Drill.usd'
+        usd_path=f'{omniisaacgymenvs.__path__[0]}/models/drill_trigger.usd'
 
 
         self._usd_path = usd_path
@@ -37,9 +41,8 @@ class Drill(XFormPrim):
         super().__init__(
             prim_path=prim_path,
             name=name,
-            position=position,
-            translation=translation,
-            orientation=orientation,
+            translation=self._position,
+            orientation=self._orientation,
         )
 
 
