@@ -757,11 +757,12 @@ class FrankaCabinetTask(RLTask):
             #     d <= self.d_threshold, (1/5) * torch.sum(self._ref_joint_targets - joint_positions[:, 12:17], dim=1), finger_close_reward
             # )
             finger_close_reward = torch.where(
-                d <= self.d_threshold, (1/5) * 
+                d <= self.d_threshold, (1/6) * 
                 torch.sum((torch.exp(self.alpha_finger * torch.abs(self._ref_joint_targets - joint_positions[:, 12:17])) - torch.exp(self.alpha_finger * self._ref_joint_targets)) /
-                  (1 - torch.exp(self.alpha_finger * self._ref_joint_targets)), dim=1), 
+                  (1 - torch.exp(self.alpha_finger * self._ref_joint_targets)), dim=1) + (1/6) * torch.exp(- self.alpha_finger * self.d_index_fingertip), 
                 finger_close_reward
             )
+            
 
         elif(self.finger_reward_type == "fingertip_position"):
             # Rew for putting fingertip at target pos (MAX 1)
