@@ -137,14 +137,14 @@ models["value"] = Critic(env.observation_space, env.action_space, device, False)
 plot=False
 cfg = PPOFD_DEFAULT_CONFIG.copy()
 cfg["commit_hash"] = commit_hash
-cfg["lambda_0"] = 0.
-cfg["lambda_1"] = 0.99993
+cfg["lambda_0"] = 0.1
+cfg["lambda_1"] = 0.9999
 
 cfg["nn_type"] = "SeparateNetworks"
 cfg["random_seed"] = rs
 
-cfg["pretrain"] = False
-cfg["pretrainer_epochs"] = 5
+cfg["pretrain"] = True
+cfg["pretrainer_epochs"] = 1
 cfg["pretrainer_lr"] = 1e-3
 cfg["rollouts"] = 16  # memory_size
 cfg["learning_epochs"] = 8
@@ -175,8 +175,8 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 800
 cfg["experiment"]["checkpoint_interval"] = 800
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = True
-cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "joint_pos"],
+cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "joint_pos", "simplified"],
                                      "project": "franka_tekken 12 dof js rev9"}
 cfg["env"] = env.task._task_cfg["env"]
 
@@ -229,7 +229,7 @@ agent = PPOFD(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 200000}
+cfg_trainer = {"timesteps": 130000}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # # demonstrations injection

@@ -37,14 +37,14 @@ env:
   distRewardScale: 20.
   distBonus: 0.
   rotRewardScale: 0.5
-  drillAlignmentScale: 5
+  drillAlignmentScale: 0.
   aroundHandleRewardScale: 0.
   openRewardScale: 55.
-  actionPenaltyScale: 1.
-  fingerCloseRewardScale: 35.
+  actionPenaltyScale: 0.
+  fingerCloseRewardScale: 0.
   heightRewardScale: 0.
   goalAchievedBonus: 15.
-  triggerPressBonus: 60.
+  triggerPressBonus: 0.
   okFailPenalty: 1.
   badFailPenalty: 1000.
 
