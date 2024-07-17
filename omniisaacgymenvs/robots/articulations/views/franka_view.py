@@ -1,7 +1,7 @@
 from typing import Optional
 
 from omni.isaac.core.articulations import ArticulationView
-from omni.isaac.core.prims import RigidPrimView
+from omni.isaac.core.prims import RigidPrimView, XFormPrimView
 
 
 class FrankaView(ArticulationView):
@@ -17,9 +17,13 @@ class FrankaView(ArticulationView):
         self._hands = RigidPrimView(
             prim_paths_expr="/World/envs/.*/franka/panda_link7", name="hands_view", reset_xform_properties=False
         )
-        self._palm_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/tekken/palm_link_hithand", name="palm_centers_view", reset_xform_properties=False)
-        self._thumb_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/tekken/Right_Thumb_Phadist", name="right_thumbs_view", reset_xform_properties=False)
-        self._index_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/tekken/Right_Index_Phadist", name="right_indices_view", reset_xform_properties=False)
+        self._palm_centers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/palm_link_hithand", name="palm_centers_view", reset_xform_properties=False)
+        self._thumb_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/Right_Thumb_Phadist", name="right_thumbs_view", reset_xform_properties=False)
+        self._index_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/Right_Index_Phadist", name="right_indices_view", reset_xform_properties=False)
+        self._index_fingertip = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/Right_Index_Fingertip", name="right_fingertip_indices_view", reset_xform_properties=False)
+        self._middle_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/Right_Middle_Phadist", name="right_middles_view", reset_xform_properties=False)
+        self._ring_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/Right_Ring_Phadist", name="right_rings_view", reset_xform_properties=False)
+        self._little_fingers = RigidPrimView(prim_paths_expr="/World/envs/.*/franka/Right_Little_Phadist", name="right_littles_view", reset_xform_properties=False)
 
         # self._lfingers = RigidPrimView(
         #     prim_paths_expr="/World/envs/.*/franka/panda_leftfinger", name="lfingers_view", reset_xform_properties=False

@@ -49,10 +49,11 @@ def import_tasks(cfg):
     from omniisaacgymenvs.tasks.warp.ant import AntLocomotionTask as AntLocomotionTaskWarp
     from omniisaacgymenvs.tasks.warp.cartpole import CartpoleTask as CartpoleTaskWarp
     from omniisaacgymenvs.tasks.warp.humanoid import HumanoidLocomotionTask as HumanoidLocomotionTaskWarp
-    from omniisaacgymenvs.tasks.franka_manual_control import FrankaManualTask
 
-    if (cfg["task_name"] == "DianaTekkenManualControl"):
+    if (cfg["task_name"] == "DianaTekkenManualControl" or cfg["task_name"] == "FrankaManual"):
         from omniisaacgymenvs.tasks.diana_tekken_manual_control import DianaTekkenManualControlTask
+        from omniisaacgymenvs.tasks.franka_manual_control import FrankaManualTask
+
 
     # Mappings from strings to environments
     task_map = {
@@ -76,10 +77,11 @@ def import_tasks(cfg):
         "ShadowHandOpenAI_FF": ShadowHandTask,
         "ShadowHandOpenAI_LSTM": ShadowHandTask,
         "DianaTekken": DianaTekkenTask,
-        "FrankaManual": FrankaManualTask
     }
     if (cfg["task_name"] == "DianaTekkenManualControl"):
         task_map["DianaTekkenManualControl"] = DianaTekkenManualControlTask
+    if (cfg["task_name"] == "FrankaManual"):
+        task_map["FrankaManual"] = FrankaManualTask
     
 
     task_map_warp = {

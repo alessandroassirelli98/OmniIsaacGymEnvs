@@ -5,9 +5,9 @@ physics_engine: ${..physics_engine}
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:2048,${...num_envs}}
+  numEnvs: ${resolve_default:4096,${...num_envs}}
   envSpacing: 3.0
-  episodeLength: 500
+  episodeLength: 600
   enableDebugVis: False
 
   clipObservations: 5.0
@@ -18,23 +18,38 @@ env:
   startPositionNoise: 0.0
   startRotationNoise: 0.0
 
+  targetRandomScaling: 0.5
+  distanceThreshold: 0.05
+
   numProps: 4
   aggregateMode: 3
 
   actionScale: 2.5
   dofVelocityScale: 0.1
-  ikVelocity: 2.
+  ikVelocity: 0.01
 
-  distRewardScale: 0.
-  rotRewardScale: 0.
+  successType: "positioning_orient" # can be either "lift" "positioning" "positioning_orient"
+  obsType: "full" #can be either "full" or "partial"
+  fingerRewardType: "joint_position" #can be either "joint_position" or "fingertip_position" or "enforce_contacts" or "mixed"
+
+  pullDrillEnable: False
+
+  distRewardScale: 20.
+  distBonus: 0.
+  rotRewardScale: 0.5
+  drillAlignmentScale: 5
   aroundHandleRewardScale: 0.
-  openRewardScale: 0.
-  fingerDistRewardScale: 0.
-  actionPenaltyScale: 0.
-  fingerCloseRewardScale: 0.
-  fingerOpenRewardScale: 0.
-  goalAchievedBonus: 2.
-  failPenalty: 1
+  openRewardScale: 55.
+  actionPenaltyScale: 1.
+  fingerCloseRewardScale: 35.
+  heightRewardScale: 0.
+  goalAchievedBonus: 15.
+  triggerPressBonus: 60.
+  okFailPenalty: 1.
+  badFailPenalty: 1000.
+
+  alphaOpen: 3.
+  alphaFinger: 3.
 
 sim:
   dt: 0.0083 # 1/120 s
@@ -58,7 +73,7 @@ sim:
     worker_thread_count: ${....num_threads}
     solver_type: ${....solver_type}
     use_gpu: ${eq:${....sim_device},"gpu"} # set to False to run on CPU
-    solver_position_iteration_count: 32
+    solver_position_iteration_count: 12
     solver_velocity_iteration_count: 1
     contact_offset: 0.005
     rest_offset: 0.0
@@ -88,7 +103,7 @@ sim:
     enable_gyroscopic_forces: True
     # also in stage params
     # per-actor
-    solver_position_iteration_count: 32
+    solver_position_iteration_count: 12
     solver_velocity_iteration_count: 1
     sleep_threshold: 0.005
     stabilization_threshold: 0.001

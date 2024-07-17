@@ -18,6 +18,7 @@ from omni.isaac.core.objects import (
     FixedCuboid, DynamicSphere, DynamicCuboid,
     VisualCuboid, FixedSphere
 )
+from omniisaacgymenvs.robots.articulations.utils.kinematic_solver import KinematicsSolver
 
 from omniisaacgymenvs.tasks.franka_cabinet import FrankaCabinetTask
 
@@ -29,15 +30,16 @@ class FrankaManualTask(FrankaCabinetTask):
         self.obs_buf = torch.zeros(self._num_observations)
 
     def set_up_scene(self, scene) -> None:
-        # self.get_reference_cube()
+        self.get_reference_cube()
         super().set_up_scene(scene)
-        # self._ref_cubes = GeometryPrimView(
-        #     prim_paths_expr="/World/envs/.*/ref_cube",
-        #     name="ref_cube_view",
-        #     reset_xform_properties=False
-        # )
-        # scene.add(self._ref_cubes)
-        # scene.add(self._robot)
+        self._ref_cubes = GeometryPrimView(prim_paths_expr="/World/envs/.*/ref_cube", name="ref_cube_view", reset_xform_properties=False)
+        scene.add(self._ref_cubes)
+
+        scene.add(self.franka)
+        self._ik = KinematicsSolver(self.franka)
+        self._articulation_controller = self.franka.get_articulation_controller()
+        robot_base_translation,robot_base_orientation = self.franka.get_world_pose()
+        self._ik._kinematics_solver.set_robot_base_pose(np.array(robot_base_translation), np.array(robot_base_orientation))
 
     def get_reference_cube(self):
         self._ref_cube = VisualCuboid(
@@ -50,12 +52,15 @@ class FrankaManualTask(FrankaCabinetTask):
         )
 
     def post_reset(self):
-        self.cloned_robot_actions = np.zeros(8)
+        self.cloned_robot_actions = np.zeros(12)
         super().post_reset()
 
     def pre_physics_step(self, actions: torch.tensor) -> None:
-        delta_pos = actions[:3]
-        delta_rot = actions[3:6]
+        target_pos, target_rot = self._ref_cubes.get_world_poses()
+        rpy_target = torch.tensor(get_euler_xyz(target_rot)).unsqueeze(0)
+        target_pos[0, :3] += actions[:3] * 0.003
+        # rpy_target[0, :] += actions[3:6] * 0.003
+        # target_rot = euler_angles_to_quats(rpy_target)
         # target_pos, target_rot = self._ref_cubes.get_world_poses()
         # target_pos -= self._env_pos
         # rpy_target = torch.tensor(get_euler_xyz(target_rot), device=self._device).unsqueeze(0)
@@ -63,7 +68,11 @@ class FrankaManualTask(FrankaCabinetTask):
         # rpy_target[0, :3] += delta_rot
         # target_rot = euler_angles_to_quats(rpy_target)
 
-        # self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
+        self._ref_cubes.set_world_poses(positions=target_pos, orientations=target_rot)
+
+        robot_actions, succ = self._ik.compute_inverse_kinematics(
+                                    target_position=np.array(target_pos.squeeze(0)),
+                                    target_orientation=np.array(target_rot.squeeze(0)))
 
         # This can be 0. or 1. I check 0.5 just because of floating point
         if actions[-1] >= 0.5:
@@ -71,17 +80,17 @@ class FrankaManualTask(FrankaCabinetTask):
         else:
             gripper = torch.tensor([-1., -1., -1., -1., -1.], device=self._device).unsqueeze(0)
 
-        dpose = torch.cat([delta_pos.unsqueeze(0), delta_rot.unsqueeze(0)], dim=1).unsqueeze(-1) * self.ik_velocity
-
-        # Get the jacobian of the EE
-        jeef = self._frankas.get_jacobians()[:, 7, :, :7]
-        arm = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7) / (self.dt * self.action_scale)
-
-        action = torch.cat([arm, gripper], dim=1)
+        if succ:
+            # self._articulation_controller.apply_action(robot_actions)
+            robots_actions = torch.zeros((1, 12), dtype=torch.float32)
+            robots_actions[:, :7] = torch.tensor(robot_actions.joint_positions)
+            robots_actions[:, :7] = (robots_actions[:, :7] - self.franka.get_applied_action().joint_positions[:7])/(self.dt * self.action_scale)
+            robot_actions = torch.cat([robots_actions, gripper], dim=1)
+            robots_actions = tensor_clamp(robots_actions, -0.8 * torch.ones(1, 12), 0.8 * torch.ones(1, 12))
+            super().pre_physics_step(robots_actions)
+        else:
+            carb.log_warn("IK did not converge to a solution.  No action is being taken.")
         
-
-        super().pre_physics_step(action)
-
     def get_observations(self) -> dict:
         super().get_observations()
     
