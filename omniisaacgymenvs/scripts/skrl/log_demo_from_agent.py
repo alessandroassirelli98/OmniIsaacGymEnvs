@@ -151,7 +151,7 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
-checkpoint_path = "/home/ows-user/devel/git-repos/OmniIsaacGymEnvs_forked/omniisaacgymenvs/runs/torch/DianaTekken/24-07-11_02-53-47-665912_PPOFD/checkpoints/best_agent.pt"
+checkpoint_path = "/home/alessandro.assirelli/devel/git-repos/OmniIsaacGymEnvs/omniisaacgymenvs/runs/torch/DianaTekken/24-07-14_14-29-14-845169_PPOFD/checkpoints/best_agent.pt"
 agent.load(checkpoint_path)
 agent.set_running_mode("eval")
 
@@ -171,7 +171,7 @@ log = Logger(env)
 log.start_logging(file_path)             
 
 t = 0
-while t < 15000:
+while t < 18000:
     # compute actions
     with torch.no_grad():
         actions = agent.act(states, timestep=0, timesteps=0)[0]

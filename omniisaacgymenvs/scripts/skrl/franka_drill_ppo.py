@@ -175,7 +175,7 @@ cfg["kl_threshold"] = 0.008
 cfg["experiment"]["write_interval"] = 800
 cfg["experiment"]["checkpoint_interval"] = 800
 cfg["experiment"]["directory"] = "runs/torch/DianaTekken"
-cfg["experiment"]["wandb"] = False
+cfg["experiment"]["wandb"] = True
 cfg["experiment"]["wandb_kwargs"] = {"tags" : ["PPO", "joint_pos"],
                                      "project": "franka_tekken 12 dof js rev9"}
 cfg["env"] = env.task._task_cfg["env"]
