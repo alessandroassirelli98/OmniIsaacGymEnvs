@@ -27,6 +27,7 @@ from omniisaacgymenvs.robots.articulations.drill import Drill
 from omni.isaac.core.prims import GeometryPrimView, RigidPrimView, XFormPrimView
 from omniisaacgymenvs.robots.articulations.views.cabinet_view import CabinetView
 from omniisaacgymenvs.robots.articulations.views.franka_view import FrankaView
+from skrl.utils import omniverse_isaacgym_utils
 from pxr import Usd, UsdGeom
 
 
@@ -347,10 +348,17 @@ class FrankaCabinetTask(RLTask):
         # self.joint_actions = self.actions
 
         jeef = self._frankas.get_jacobians()[:, 7, :, :7]
-        dpose = actions[:, :6].unsqueeze(-1) * self.ik_velocity
-        # self.hand_pos_des = self.hand_pos + dpose[:, :3]
+        self.pos_target = self.hand_pos + actions[:, :3] * self.ik_velocity
 
-        self.joint_actions[:, :7] = 1. * self.control_ik(j_eef=jeef, dpose=dpose, num_envs=self._num_envs, num_dofs=7)
+        _, q_target = self.get_quat_target(actions[:, 3:6] * self.ik_velocity, self.quat_target)
+
+        delta_dof_pos = omniverse_isaacgym_utils.ik(jeef,  # franka hand index: 8
+                                                    current_position=self.hand_pos - self._env_pos,
+                                                    current_orientation=self.hand_rot,
+                                                    goal_position=self.pos_target,
+                                                    goal_orientation=None)
+
+        self.joint_actions[:, :7] = delta_dof_pos
         self.joint_actions[:, 7:] = actions[:, 6:]
 
         targets = self.franka_dof_targets[:, self._frankas.actuated_dof_indices] + self.joint_actions 
@@ -441,6 +449,9 @@ class FrankaCabinetTask(RLTask):
 
         # randomize all envs
         indices = torch.arange(self._num_envs, dtype=torch.int64, device=self._device)
+        self.hand_pos, self.hand_rot = self._frankas._hands.get_local_poses()
+        self.pos_target = self.hand_pos
+        self.quat_target = self.hand_rot
         self.reset_idx(indices)
 
     def calculate_metrics(self) -> None:
@@ -656,6 +667,28 @@ class FrankaCabinetTask(RLTask):
         g = j_eef_T @ dpose
         u = (torch.inverse(B) @ g).view(num_envs, num_dofs)
         return u
+
+    def get_quat_target(self, d_rot, c_rot):
+        angle = torch.norm(d_rot, p=2, dim=-1)
+        axis = d_rot[:, 3:6] / angle.unsqueeze(-1)
+        rot_actions_quat = quat_from_angle_axis(angle, axis)
+        rot_actions_quat = torch.where(angle.unsqueeze(-1).repeat(1, 4) > 1e-6,
+            rot_actions_quat,
+            torch.tensor([1.0, 0.0, 0.0, 0.0], device=self.device).repeat(
+                self.num_envs, 1
+            ),
+        )
+        q_target = quat_mul(
+            rot_actions_quat, c_rot
+        )
+        return q_target, rot_actions_quat
+    
+    def get_axis_angle_error(self, q_target, q):
+        quat_norm = quat_mul(q, quat_conjugate(q))[:, 0]  # scalar component
+        ee_quat_inv = quat_conjugate(q) / quat_norm.unsqueeze(-1)
+        quat_error = quat_mul(q_target, ee_quat_inv)
+
+        return axis_angle_from_quat(quat_error)
     
     def compute_failure(self, drill_rot, FAIL=0.6448):
         axis1 = tf_vector(drill_rot, self.drill_inward_axis)
@@ -673,3 +706,18 @@ class FrankaCabinetTask(RLTask):
 
     def compute_success(self, drill_pos, SUCCESS=0.6):
         self.success_envs = drill_pos[:, 2] >= SUCCESS
+
+
+def axis_angle_from_quat(quat, eps=1.0e-6):
+    """Convert tensor of quaternions to tensor of axis-angles."""
+    # Reference: https://github.com/facebookresearch/pytorch3d/blob/bee31c48d3d36a8ea268f9835663c52ff4a476ec/pytorch3d/transforms/rotation_conversions.py#L516-L544
+
+    mag = torch.linalg.norm(quat[:, 1:4], dim=1)
+    half_angle = torch.atan2(mag, quat[:, 0])
+    angle = 2.0 * half_angle
+    sin_half_angle_over_angle = torch.where(
+        torch.abs(angle) > eps, torch.sin(half_angle) / angle, 1 / 2 - angle**2.0 / 48
+    )
+    axis_angle = quat[:, 1:4] / sin_half_angle_over_angle.unsqueeze(-1)
+
+    return axis_angle
